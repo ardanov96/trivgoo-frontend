@@ -35,19 +35,16 @@ const AgentVerification: React.FC = () => {
   const [idDocument, setIdDocument] = useState<File | null>(null);
   const [idDocumentName, setIdDocumentName] = useState<string>('');
 
-  // ✅ guard anti double-call (React 18 StrictMode dev)
   const didFetchRef = useRef(false);
 
   useEffect(() => {
     if (!user) navigate('/login');
   }, [user, navigate]);
 
-  // ✅ FIX: jangan pakai dependency [user] karena updateUser bikin user berubah → loop
   useEffect(() => {
     const userId = user?.id;
     if (!userId) return;
 
-    // StrictMode dev bisa memicu mount 2x, cegah terlihat seperti loop
     if (didFetchRef.current) return;
     didFetchRef.current = true;
 
@@ -57,22 +54,18 @@ const AgentVerification: React.FC = () => {
       try {
         const verification = await agentService.getMyVerification();
 
-        // fallback kalau null/undefined
-        const status =
-          (verification?.verification_status as VerificationStatus) ?? VerificationStatus.PENDING;
+        const status = verification?.verification_status as VerificationStatus;
 
         if (cancelled) return;
 
-        // ✅ hanya update kalau berubah (biar tidak memicu re-render loop)
         if (user?.verification_status !== status) {
           updateUser({ ...user, verification_status: status });
         }
       } catch {
         if (cancelled) return;
 
-        const status = VerificationStatus.PENDING;
-        if (user?.verification_status !== status) {
-          updateUser({ ...user, verification_status: status });
+        if (user?.verification_status !== VerificationStatus.PENDING) {
+          updateUser({ ...user, verification_status: VerificationStatus.PENDING });
         }
       }
     })();
@@ -80,10 +73,8 @@ const AgentVerification: React.FC = () => {
     return () => {
       cancelled = true;
     };
-    // ✅ depend cuma user?.id (stabil), bukan user object
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
-  // ✅ FIX: depend pada status saja
   useEffect(() => {
     if (user?.verification_status === VerificationStatus.VERIFIED) {
       navigate('/agent');
@@ -189,7 +180,6 @@ const AgentVerification: React.FC = () => {
       const vStatus =
         (verification?.verification_status as VerificationStatus) ?? VerificationStatus.PENDING;
 
-      // ✅ FIX: pakai key yang benar: verification_status
       if (freshUser) {
         const mergedUser = freshUser.user ? freshUser.user : freshUser;
         updateUser({

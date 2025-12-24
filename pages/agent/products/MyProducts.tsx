@@ -1,12 +1,17 @@
 import { Image as ImageIcon, Plus } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../../AuthContext';
 import { useToast } from '../../../components/ToastContext';
+
+// ✅ pakai API service
+import { agentProductService } from '../../../services/agentProductService';
+
+// campaign masih mock (sementara)
 import { mockService } from '../../../services/mockService';
 
-import { FlashSaleCampaign, Product } from '../../../types';
+import { AgentProduct, FlashSaleCampaign, Product } from '../../../types';
 
 import CampaignsStrip from '../components/CampaignStrip';
 import FlashSaleModal from '../components/FlashSaleModal';
@@ -18,7 +23,7 @@ const AgentProducts: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<AgentProduct[]>([]);
   const [campaigns, setCampaigns] = useState<FlashSaleCampaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -32,23 +37,29 @@ const AgentProducts: React.FC = () => {
   const [discountPercentage, setDiscountPercentage] = useState('');
   const [productToJoinId, setProductToJoinId] = useState<number | ''>('');
 
-  const eligibleProducts = useMemo(() => products.filter((p) => !p.flashSale), [products]);
+  // const eligibleProducts = useMemo(() => products.filter((p) => !p.flashSale), [products]);
 
   useEffect(() => {
     if (user) loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const loadData = async () => {
     if (!user) return;
+
     try {
       setIsLoading(true);
+
       const [prodData, campaignData] = await Promise.all([
-        mockService.getAgentProducts(user.id),
+        agentProductService.getMyProducts(),
         mockService.getCampaigns(),
       ]);
+
       setProducts(prodData);
       setCampaigns(campaignData);
+    } catch (e: any) {
+      console.error(e);
+      showToast(e?.message || 'Failed to load products', 'error');
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -64,11 +75,11 @@ const AgentProducts: React.FC = () => {
       !window.confirm('Are you sure you want to delete this product? This action cannot be undone.')
     )
       return;
+
     await mockService.deleteProduct(id);
     await loadData();
   };
 
-  // ---- Flash sale openers
   const openFlashSaleModal = (product: Product, campaign?: FlashSaleCampaign) => {
     setSelectedProduct(product);
 
@@ -125,6 +136,7 @@ const AgentProducts: React.FC = () => {
     const calculatedSalePrice = Math.round(targetProduct.price * (1 - percentage / 100));
 
     await mockService.requestFlashSale(targetProduct.id, calculatedSalePrice, selectedCampaign?.id);
+
     showToast('Request submitted successfully!', 'success');
     closeModal();
     await loadData();
@@ -157,7 +169,7 @@ const AgentProducts: React.FC = () => {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-gray-100 rounded-2xl animate-pulse"></div>
+            <div key={i} className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
           ))}
         </div>
       ) : products.length === 0 ? (
@@ -185,7 +197,7 @@ const AgentProducts: React.FC = () => {
               product={product}
               onToggleStatus={() => handleToggleStatus(product.id)}
               onDelete={() => handleDelete(product.id)}
-              onJoinFlashSale={() => openFlashSaleModal(product)}
+              onJoinFlashSale={() => openFlashSaleModal(null)}
               onNavigateEdit={() => navigate(`/agent/products/edit/${product.id}`)}
             />
           ))}
@@ -200,7 +212,7 @@ const AgentProducts: React.FC = () => {
           campaigns={campaigns}
           selectedCampaign={selectedCampaign}
           selectedProduct={selectedProduct}
-          eligibleProducts={eligibleProducts}
+          eligibleProducts={null}
           isJoiningCampaign={isJoiningCampaign}
           productToJoinId={productToJoinId}
           setProductToJoinId={setProductToJoinId}

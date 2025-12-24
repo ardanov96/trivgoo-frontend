@@ -1,7 +1,7 @@
 export enum UserRole {
-  ADMIN = "ADMIN",
-  AGENT = "AGENT",
-  CUSTOMER = "CUSTOMER",
+  ADMIN = 'ADMIN',
+  AGENT = 'AGENT',
+  CUSTOMER = 'CUSTOMER',
 }
 
 export type AuthUser = {
@@ -30,11 +30,11 @@ export type UploadMediaResponse = {
 };
 
 export interface TourDetails {
-  type: "tour";
+  type: 'tour';
   tourCategory: TourCategory; // Added
   duration: string;
   groupSize: string;
-  difficulty: "Easy" | "Moderate" | "Hard"; // Added
+  difficulty: 'Easy' | 'Moderate' | 'Hard'; // Added
   ageRestriction?: string; // Added
   meetingPoint: string; // Added
   itinerary: ItineraryDay[];
@@ -43,7 +43,7 @@ export interface TourDetails {
 }
 
 export interface StayDetails {
-  type: "stay";
+  type: 'stay';
   stayCategory: StayCategory; // Added
   checkIn: string;
   checkOut: string;
@@ -57,9 +57,9 @@ export interface StayDetails {
 }
 
 export interface CarDetails {
-  type: "car";
+  type: 'car';
   transportCategory: TransportCategory; // Added
-  transmission: "Automatic" | "Manual";
+  transmission: 'Automatic' | 'Manual';
   seats: number;
   luggage: number;
   fuelPolicy: string;
@@ -80,7 +80,7 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
-  role?: "CUSTOMER" | "AGENT" | "ADMIN";
+  role?: 'CUSTOMER' | 'AGENT' | 'ADMIN';
   specialization?: string;
 }
 
@@ -92,61 +92,61 @@ export type ApiEnvelope<T> = {
 };
 
 export enum BookingStatus {
-  PENDING = "pending",
-  CONFIRMED = "confirmed",
-  CANCELLED = "cancelled",
-  COMPLETED = "completed",
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  CANCELLED = 'cancelled',
+  COMPLETED = 'completed',
 }
 
 export enum PaymentStatus {
-  PENDING = "pending",
-  PAID = "paid",
-  FAILED = "failed",
+  PENDING = 'pending',
+  PAID = 'paid',
+  FAILED = 'failed',
 }
 
 export enum PayoutStatus {
-  PENDING = "pending",
-  PROCESSED = "processed",
-  REJECTED = "rejected",
+  PENDING = 'pending',
+  PROCESSED = 'processed',
+  REJECTED = 'rejected',
 }
 
 export enum VerificationStatus {
-  UNVERIFIED = "UNVERIFIED",
-  PENDING = "PENDING",
-  VERIFIED = "VERIFIED",
-  REJECTED = "REJECTED",
+  UNVERIFIED = 'UNVERIFIED',
+  PENDING = 'PENDING',
+  VERIFIED = 'VERIFIED',
+  REJECTED = 'REJECTED',
 }
 
 export enum AgentType {
-  INDIVIDUAL = "INDIVIDUAL",
-  CORPORATE = "CORPORATE",
+  INDIVIDUAL = 'INDIVIDUAL',
+  CORPORATE = 'CORPORATE',
 }
 
 export enum AgentSpecialization {
-  TOUR = "TOUR",
-  STAY = "STAY",
-  TRANSPORT = "TRANSPORT",
+  TOUR = 'TOUR',
+  STAY = 'STAY',
+  TRANSPORT = 'TRANSPORT',
 }
 
 export enum TourCategory {
-  NATURE = "Nature",
-  ADVENTURE = "Adventure",
-  SPIRITUAL = "Spiritual",
-  CULTURAL = "Cultural",
-  CULINARY = "Culinary",
+  NATURE = 'Nature',
+  ADVENTURE = 'Adventure',
+  SPIRITUAL = 'Spiritual',
+  CULTURAL = 'Cultural',
+  CULINARY = 'Culinary',
 }
 
 export enum StayCategory {
-  HOTEL = "Hotel",
-  VILLA = "Villa",
-  HOMESTAY = "Homestay",
-  RESORT = "Resort",
+  HOTEL = 'Hotel',
+  VILLA = 'Villa',
+  HOMESTAY = 'Homestay',
+  RESORT = 'Resort',
 }
 
 export enum TransportCategory {
-  CAR_RENTAL = "Car Rental",
-  AIRPORT_TRANSFER = "Airport Transfer",
-  MOTORBIKE = "Motorbike",
+  CAR_RENTAL = 'Car Rental',
+  AIRPORT_TRANSFER = 'Airport Transfer',
+  MOTORBIKE = 'Motorbike',
 }
 
 export interface FlashSaleCampaign {
@@ -165,7 +165,7 @@ export interface FlashSaleDetails {
   salePrice: number;
   originalPrice: number;
   discountPercentage: number;
-  status: "pending" | "approved" | "rejected" | "ended";
+  status: 'pending' | 'approved' | 'rejected' | 'ended';
   endTime?: string;
   requestDate: string;
   campaignId?: number;
@@ -189,6 +189,21 @@ export interface Review {
   date: string;
 }
 
+export type LoginResult = {
+  success: boolean;
+  user?: AuthUser;
+  message?: string;
+};
+
+export interface AuthContextValue {
+  user: AuthUser | null;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  logout: () => Promise<void>;
+  refreshMe: () => Promise<void>;
+  updateUser: (partial: Partial<AuthUser>) => void;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -197,7 +212,7 @@ export interface User {
   avatar?: string;
   balance?: number;
 
-  verificationStatus?: VerificationStatus;
+  verification_status?: VerificationStatus;
   agentType?: AgentType | null;
   specialization?: AgentSpecialization | null;
   documents?: {
@@ -220,28 +235,51 @@ export interface Category {
   image: string;
 }
 
+export interface ProductImage {
+  id: number;
+  url: string;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface Product {
   id: number;
-  ownerId: number;
-  ownerName?: string;
-  categoryId: number;
+
+  // owner
+  owner_id: number;
+  owner_name?: string;
+
+  // category
+  category_id: number;
+
+  // basic info
   name: string;
   description: string;
   price: number;
   currency: string;
   location: string;
+
+  // images
+  image: string; // cover (images[0] || fallback)
+  images: ProductImage[]; // relasi product_images
+
+  // meta
   rating: number;
-  image: string;
-  images?: string[];
+  is_active: boolean;
+  created_at?: string;
+
+  // optional business data
   features: string[];
   details?: ProductDetails;
-  reviews?: Review[];
 
-  dailyCapacity?: number;
-  blockedDates?: string[];
-  isActive?: boolean;
+  daily_capacity?: number;
+  blocked_dates?: string[];
 
+  // campaign
   flashSale?: FlashSaleDetails;
+
+  // optional
+  reviews?: Review[];
 }
 
 export interface Booking {
@@ -279,12 +317,8 @@ export interface PayoutRequest {
   date: string;
 }
 
-export type VerificationStatusUser =
-  | "UNVERIFIED"
-  | "PENDING"
-  | "VERIFIED"
-  | "REJECTED";
-export type AgentVerificationStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type VerificationStatusUser = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+export type AgentVerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface AgentVerification {
   id: number;
@@ -318,11 +352,26 @@ export interface AgentListItem {
   id: number;
   name: string;
   email: string;
-  role: "AGENT";
+  role: 'AGENT';
   avatar: string | null;
   verification_status: VerificationStatusUser;
   specialization: AgentSpecialization | null;
   verification: AgentVerification | null;
+}
+
+export interface AgentProductImage {
+  id: number;
+  url: string;
+  created_at: string;
+  sort_order: number;
+}
+
+export interface ProductItineraryItem {
+  day: number;
+  meals: string[];
+  title: string;
+  description: string;
+  accommodation: string;
 }
 
 export interface AgentProduct {
@@ -334,42 +383,26 @@ export interface AgentProduct {
   price: number;
   currency: string;
   location: string;
-  image: string;
-  images: string[];
-  features: string[];
-  details?: ProductDetails;
-  daily_capacity?: number;
-  blocked_dates?: string[];
-  rating?: number;
-  is_active?: boolean;
-  created_at?: string;
-}
 
-export type RawAgentProduct = {
-  id: number;
-  owner_id: number;
-  category_id: number;
-  name: string;
-  description: string;
-  price: number | string;
-  currency: string;
-  location: string;
-  image?: string;
-  image_url?: string;
-  images?: string[];
-  features?: string[];
-  details?: any;
-  daily_capacity?: number;
-  rating?: number | string;
-  is_active?: boolean | number;
-  created_at?: string;
-};
+  image: string; // cover
+  images: AgentProductImage[]; // array object
+
+  features: string[];
+  details: ProductDetails;
+  daily_capacity: number;
+  rating: number;
+  is_active: boolean;
+  created_at: string; // "2025-12-23T06:35:56.000Z"
+
+  // kalau endpoint lain kadang ada:
+  blocked_dates?: string[];
+}
 
 export type CustomerListItem = {
   id: number;
   name: string;
   email: string;
-  role: "CUSTOMER";
+  role: 'CUSTOMER';
   avatar: string | null;
 };
 

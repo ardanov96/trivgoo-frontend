@@ -12,12 +12,12 @@ import {
   Upload,
   User,
   X,
-} from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../AuthContext";
-import { agentProductService } from "../../services/agentProductService";
-import { mediaService } from "../../services/mediaService";
+} from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../AuthContext';
+import { agentProductService } from '../../services/agentProductService';
+import { mediaService } from '../../services/mediaService';
 import {
   AgentProduct,
   AgentProductPayload,
@@ -28,23 +28,21 @@ import {
   TourCategory,
   TransportCategory,
   VerificationStatus,
-} from "../../types";
+} from '../../types';
 
 type CoverState =
-  | { kind: "url"; url: string }
-  | { kind: "file"; file: File; preview: string }
+  | { kind: 'url'; url: string }
+  | { kind: 'file'; file: File; preview: string }
   | null;
 
-type GalleryItem =
-  | { kind: "url"; url: string }
-  | { kind: "file"; file: File; preview: string };
+type GalleryItem = { kind: 'url'; url: string } | { kind: 'file'; file: File; preview: string };
 
 const DEFAULT_COVER =
-  "https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=800&q=80";
+  'https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=800&q=80';
 
 const uniq = (arr: string[]) => Array.from(new Set(arr.filter(Boolean)));
 
-const MEDIA_PURPOSE = "agent-products";
+const MEDIA_PURPOSE = 'agent-products';
 
 const AgentAddProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -58,40 +56,40 @@ const AgentAddProduct: React.FC = () => {
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: "",
-    currency: "USD",
-    location: "",
-    image: "",
-    features: [""],
+    name: '',
+    description: '',
+    price: '',
+    currency: 'USD',
+    location: '',
+    image: '',
+    features: [''],
     dailyCapacity: 10,
     blockedDates: [] as string[],
   });
 
   const [coverState, setCoverState] = useState<CoverState>(null);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
-  const [newBlockedDate, setNewBlockedDate] = useState("");
+  const [newBlockedDate, setNewBlockedDate] = useState('');
 
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('');
 
   const [tourDetails, setTourDetails] = useState({
-    duration: "",
-    groupSize: "",
-    difficulty: "Easy" as "Easy" | "Moderate" | "Hard",
-    ageRestriction: "",
-    meetingPoint: "",
-    inclusions: [""],
-    exclusions: [""],
+    duration: '',
+    groupSize: '',
+    difficulty: 'Easy' as 'Easy' | 'Moderate' | 'Hard',
+    ageRestriction: '',
+    meetingPoint: '',
+    inclusions: [''],
+    exclusions: [''],
   });
 
   const [itineraryItems, setItineraryItems] = useState<ItineraryDay[]>([]);
   const [newDay, setNewDay] = useState<ItineraryDay>({
     day: 1,
-    title: "",
-    description: "",
+    title: '',
+    description: '',
     meals: [],
-    accommodation: "",
+    accommodation: '',
   });
 
   const [stayDetails, setStayDetails] = useState({
@@ -99,23 +97,23 @@ const AgentAddProduct: React.FC = () => {
     bathrooms: 1,
     beds: 1,
     breakfastIncluded: false,
-    amenities: [""],
+    amenities: [''],
   });
 
   const [carDetails, setCarDetails] = useState({
     seats: 4,
-    transmission: "Automatic",
+    transmission: 'Automatic',
     luggage: 2,
-    fuelPolicy: "Full to Full",
+    fuelPolicy: 'Full to Full',
     year: new Date().getFullYear(),
     driver: false,
   });
 
   useEffect(() => {
     return () => {
-      if (coverState?.kind === "file") URL.revokeObjectURL(coverState.preview);
+      if (coverState?.kind === 'file') URL.revokeObjectURL(coverState.preview);
       for (const item of galleryItems) {
-        if (item.kind === "file") URL.revokeObjectURL(item.preview);
+        if (item.kind === 'file') URL.revokeObjectURL(item.preview);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,8 +138,8 @@ const AgentAddProduct: React.FC = () => {
             onClick={() => setSelectedSubCategory(opt)}
             className={`cursor-pointer p-4 rounded-xl border-2 flex items-center justify-center text-center font-bold text-sm transition-all ${
               selectedSubCategory === opt
-                ? "border-primary-500 bg-primary-50 text-primary-700"
-                : "border-gray-100 hover:border-gray-200 text-gray-600"
+                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                : 'border-gray-100 hover:border-gray-200 text-gray-600'
             }`}
           >
             {opt}
@@ -168,9 +166,7 @@ const AgentAddProduct: React.FC = () => {
       setIsEditMode(true);
       (async () => {
         try {
-          const product: AgentProduct = await agentProductService.getMyProduct(
-            Number(id)
-          );
+          const product: AgentProduct = await agentProductService.getMyProduct(Number(id));
 
           if (product && product.owner_id === user?.id) {
             setFormData({
@@ -180,42 +176,43 @@ const AgentAddProduct: React.FC = () => {
               currency: product.currency,
               location: product.location,
               image: product.image,
-              features: product.features || [""],
+              features: product.features || [''],
               dailyCapacity: product.daily_capacity || 10,
               blockedDates: (product as any).blocked_dates || [],
             });
 
-            setCoverState(
-              product.image ? { kind: "url", url: product.image } : null
-            );
+            setCoverState(product.image ? { kind: 'url', url: product.image } : null);
 
             setGalleryItems(
-              (product.images || []).map((url) => ({ kind: "url", url }))
+              (product.images ?? []).map((img) => ({
+                kind: 'url' as const,
+                url: img.url,
+              })),
             );
 
             if (product.details) {
-              if (product.details.type === "tour") {
+              if (product.details.type === 'tour') {
                 setSelectedSubCategory(product.details.tourCategory);
                 setTourDetails({
                   duration: product.details.duration,
                   groupSize: product.details.groupSize,
                   difficulty: product.details.difficulty,
-                  ageRestriction: product.details.ageRestriction || "",
+                  ageRestriction: product.details.ageRestriction || '',
                   meetingPoint: product.details.meetingPoint,
                   inclusions: product.details.inclusions,
                   exclusions: product.details.exclusions,
                 });
                 setItineraryItems(product.details.itinerary);
-              } else if (product.details.type === "stay") {
+              } else if (product.details.type === 'stay') {
                 setSelectedSubCategory(product.details.stayCategory);
                 setStayDetails({
                   rooms: product.details.rooms,
                   bathrooms: product.details.bathrooms,
                   beds: product.details.beds,
                   breakfastIncluded: product.details.breakfastIncluded,
-                  amenities: product.details.amenities?.[0]?.items || [""],
+                  amenities: product.details.amenities?.[0]?.items || [''],
                 });
-              } else if (product.details.type === "car") {
+              } else if (product.details.type === 'car') {
                 setSelectedSubCategory(product.details.transportCategory);
                 setCarDetails({
                   seats: product.details.seats,
@@ -228,11 +225,11 @@ const AgentAddProduct: React.FC = () => {
               }
             }
           } else {
-            navigate("/agent/products");
+            navigate('/agent/products');
           }
         } catch (err) {
           console.error(err);
-          navigate("/agent/products");
+          navigate('/agent/products');
         }
       })();
     }
@@ -245,15 +242,13 @@ const AgentAddProduct: React.FC = () => {
           <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <ShieldAlert className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Verification Required
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification Required</h2>
           <p className="text-gray-600 mb-8">
-            You must complete the agent verification process and be approved by
-            an admin before you can add products.
+            You must complete the agent verification process and be approved by an admin before you
+            can add products.
           </p>
           <button
-            onClick={() => navigate("/agent/verification")}
+            onClick={() => navigate('/agent/verification')}
             className="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold shadow-lg hover:bg-amber-700 transition-colors"
           >
             Go to Verification
@@ -264,9 +259,7 @@ const AgentAddProduct: React.FC = () => {
   }
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -279,7 +272,7 @@ const AgentAddProduct: React.FC = () => {
   };
 
   const addFeature = () => {
-    setFormData((prev) => ({ ...prev, features: [...prev.features, ""] }));
+    setFormData((prev) => ({ ...prev, features: [...prev.features, ''] }));
   };
 
   const removeFeature = (index: number) => {
@@ -287,19 +280,13 @@ const AgentAddProduct: React.FC = () => {
     setFormData((prev) => ({ ...prev, features: newFeatures }));
   };
 
-  const handleListChange = (
-    setter: any,
-    list: string[],
-    index: number,
-    value: string
-  ) => {
+  const handleListChange = (setter: any, list: string[], index: number, value: string) => {
     const updated = [...list];
     updated[index] = value;
 
     setter((prev: any) => {
       if (setter === setTourDetails) {
-        const field =
-          list === tourDetails.inclusions ? "inclusions" : "exclusions";
+        const field = list === tourDetails.inclusions ? 'inclusions' : 'exclusions';
         return { ...prev, [field]: updated };
       }
       return { ...prev, amenities: updated };
@@ -307,15 +294,10 @@ const AgentAddProduct: React.FC = () => {
   };
 
   const addListItem = (setter: any, list: string[], field: string) => {
-    setter((prev: any) => ({ ...prev, [field]: [...list, ""] }));
+    setter((prev: any) => ({ ...prev, [field]: [...list, ''] }));
   };
 
-  const removeListItem = (
-    setter: any,
-    list: string[],
-    field: string,
-    index: number
-  ) => {
+  const removeListItem = (setter: any, list: string[], field: string, index: number) => {
     setter((prev: any) => ({
       ...prev,
       [field]: list.filter((_, i) => i !== index),
@@ -327,10 +309,10 @@ const AgentAddProduct: React.FC = () => {
     setItineraryItems((prev) => [...prev, { ...newDay, day: prev.length + 1 }]);
     setNewDay({
       day: itineraryItems.length + 2,
-      title: "",
-      description: "",
+      title: '',
+      description: '',
       meals: [],
-      accommodation: "",
+      accommodation: '',
     });
   };
 
@@ -358,7 +340,7 @@ const AgentAddProduct: React.FC = () => {
         ...prev,
         blockedDates: [...prev.blockedDates, newBlockedDate],
       }));
-      setNewBlockedDate("");
+      setNewBlockedDate('');
     }
   };
 
@@ -378,14 +360,14 @@ const AgentAddProduct: React.FC = () => {
     if (!file) return;
 
     setCoverState((prev) => {
-      if (prev?.kind === "file") URL.revokeObjectURL(prev.preview);
+      if (prev?.kind === 'file') URL.revokeObjectURL(prev.preview);
       return prev;
     });
 
     const preview = URL.createObjectURL(file);
-    setCoverState({ kind: "file", file, preview });
+    setCoverState({ kind: 'file', file, preview });
     setFormData((prev) => ({ ...prev, image: preview }));
-    e.target.value = "";
+    e.target.value = '';
   };
 
   const onPickGalleryFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -393,26 +375,26 @@ const AgentAddProduct: React.FC = () => {
     if (!files.length) return;
 
     const newItems: GalleryItem[] = files.map((file) => ({
-      kind: "file",
+      kind: 'file',
       file,
       preview: URL.createObjectURL(file),
     }));
 
     setGalleryItems((prev) => [...prev, ...newItems]);
-    e.target.value = "";
+    e.target.value = '';
   };
 
   const removeGalleryItem = (index: number) => {
     setGalleryItems((prev) => {
       const target = prev[index];
-      if (target?.kind === "file") URL.revokeObjectURL(target.preview);
+      if (target?.kind === 'file') URL.revokeObjectURL(target.preview);
       return prev.filter((_, i) => i !== index);
     });
   };
 
   const coverPreviewSrc = useMemo(() => {
-    if (!coverState) return "";
-    return coverState.kind === "url" ? coverState.url : coverState.preview;
+    if (!coverState) return '';
+    return coverState.kind === 'url' ? coverState.url : coverState.preview;
   }, [coverState]);
 
   // ====== helpers submit (refactor) ======
@@ -428,10 +410,10 @@ const AgentAddProduct: React.FC = () => {
 
     if (user.specialization === AgentSpecialization.TOUR) {
       return {
-        type: "tour",
+        type: 'tour',
         tourCategory: selectedSubCategory as TourCategory,
-        duration: tourDetails.duration || "1 Day",
-        groupSize: tourDetails.groupSize || "Flexible",
+        duration: tourDetails.duration || '1 Day',
+        groupSize: tourDetails.groupSize || 'Flexible',
         difficulty: tourDetails.difficulty,
         meetingPoint: tourDetails.meetingPoint,
         ageRestriction: tourDetails.ageRestriction,
@@ -443,17 +425,17 @@ const AgentAddProduct: React.FC = () => {
 
     if (user.specialization === AgentSpecialization.STAY) {
       return {
-        type: "stay",
+        type: 'stay',
         stayCategory: selectedSubCategory as StayCategory,
-        checkIn: "14:00",
-        checkOut: "11:00",
+        checkIn: '14:00',
+        checkOut: '11:00',
         rooms: Number(stayDetails.rooms),
         bathrooms: Number(stayDetails.bathrooms),
         beds: Number(stayDetails.beds),
         breakfastIncluded: stayDetails.breakfastIncluded,
         amenities: [
           {
-            category: "General",
+            category: 'General',
             items: stayDetails.amenities.filter((i) => i),
           },
         ],
@@ -463,9 +445,9 @@ const AgentAddProduct: React.FC = () => {
 
     if (user.specialization === AgentSpecialization.TRANSPORT) {
       return {
-        type: "car",
+        type: 'car',
         transportCategory: selectedSubCategory as TransportCategory,
-        transmission: carDetails.transmission as "Automatic" | "Manual",
+        transmission: carDetails.transmission as 'Automatic' | 'Manual',
         seats: Number(carDetails.seats),
         luggage: Number(carDetails.luggage),
         fuelPolicy: carDetails.fuelPolicy,
@@ -481,32 +463,27 @@ const AgentAddProduct: React.FC = () => {
   const collectExistingUrls = () => {
     const coverUrl = !coverState
       ? DEFAULT_COVER
-      : coverState.kind === "url"
+      : coverState.kind === 'url'
       ? coverState.url || DEFAULT_COVER
       : DEFAULT_COVER;
 
     const galleryUrls = galleryItems
-      .filter((x): x is { kind: "url"; url: string } => x.kind === "url")
+      .filter((x): x is { kind: 'url'; url: string } => x.kind === 'url')
       .map((x) => x.url);
 
     return { coverUrl, galleryUrls };
   };
 
   const uploadPendingMedia = async () => {
-    const coverFile = coverState?.kind === "file" ? coverState.file : null;
+    const coverFile = coverState?.kind === 'file' ? coverState.file : null;
 
     const galleryFiles = galleryItems
-      .filter(
-        (x): x is { kind: "file"; file: File; preview: string } =>
-          x.kind === "file"
-      )
+      .filter((x): x is { kind: 'file'; file: File; preview: string } => x.kind === 'file')
       .map((x) => x.file);
 
     // upload cover & gallery
     const [uploadedCoverUrl, uploadedGalleryUrls] = await Promise.all([
-      coverFile
-        ? mediaService.uploadOne(coverFile, MEDIA_PURPOSE)
-        : Promise.resolve(""),
+      coverFile ? mediaService.uploadOne(coverFile, MEDIA_PURPOSE) : Promise.resolve(''),
       galleryFiles.length
         ? mediaService.uploadMany(galleryFiles, MEDIA_PURPOSE)
         : Promise.resolve([] as string[]),
@@ -531,14 +508,10 @@ const AgentAddProduct: React.FC = () => {
         collectExistingUrls();
 
       // 3) upload yang baru (file)
-      const { uploadedCoverUrl, uploadedGalleryUrls } =
-        await uploadPendingMedia();
+      const { uploadedCoverUrl, uploadedGalleryUrls } = await uploadPendingMedia();
 
       const finalCoverUrl = uploadedCoverUrl || existingCoverUrl;
-      const finalGalleryUrls = uniq([
-        ...existingGalleryUrls,
-        ...(uploadedGalleryUrls || []),
-      ]);
+      const finalGalleryUrls = uniq([...existingGalleryUrls, ...(uploadedGalleryUrls || [])]);
 
       // 4) send create/update payload (sesuaikan field: image + images)
       const payload: AgentProductPayload = {
@@ -550,7 +523,7 @@ const AgentAddProduct: React.FC = () => {
         location: formData.location,
         image_url: finalCoverUrl,
         images: finalGalleryUrls,
-        features: formData.features.filter((f) => f.trim() !== ""),
+        features: formData.features.filter((f) => f.trim() !== ''),
         details,
         daily_capacity: Number(formData.dailyCapacity),
         blocked_dates: formData.blockedDates,
@@ -562,7 +535,7 @@ const AgentAddProduct: React.FC = () => {
         await agentProductService.createProduct(payload);
       }
 
-      navigate("/agent/products");
+      navigate('/agent/products');
     } catch (error) {
       console.error(error);
       // TODO: toast error
@@ -576,19 +549,19 @@ const AgentAddProduct: React.FC = () => {
       {/* Header */}
       <div className="flex items-center mb-8 sticky top-0 bg-gray-50 z-20 py-4">
         <button
-          onClick={() => navigate("/agent/products")}
+          onClick={() => navigate('/agent/products')}
           className="mr-4 p-2 hover:bg-gray-200 rounded-full transition-colors bg-white shadow-sm border border-gray-200"
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {isEditMode ? "Edit Product" : "Add New Service"}
+            {isEditMode ? 'Edit Product' : 'Add New Service'}
           </h1>
           <p className="text-sm text-gray-500">
             {isEditMode
-              ? "Update your listing details."
-              : "Create a compelling listing for your customers."}
+              ? 'Update your listing details.'
+              : 'Create a compelling listing for your customers.'}
           </p>
         </div>
         <div className="ml-auto">
@@ -684,11 +657,7 @@ const AgentAddProduct: React.FC = () => {
               <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mr-3 text-sm">
                 2
               </span>
-              {isTour
-                ? "Tour Specifics"
-                : isStay
-                ? "Property Details"
-                : "Vehicle Specs"}
+              {isTour ? 'Tour Specifics' : isStay ? 'Property Details' : 'Vehicle Specs'}
             </h3>
 
             {/* TOUR */}
@@ -814,18 +783,14 @@ const AgentAddProduct: React.FC = () => {
                       placeholder="Title (e.g. Island Hopping)"
                       className="w-full px-4 py-2 rounded-lg border border-gray-200 mb-2 text-sm"
                       value={newDay.title}
-                      onChange={(e) =>
-                        setNewDay({ ...newDay, title: e.target.value })
-                      }
+                      onChange={(e) => setNewDay({ ...newDay, title: e.target.value })}
                     />
 
                     <textarea
                       placeholder="Activity details..."
                       className="w-full px-4 py-2 rounded-lg border border-gray-200 mb-3 text-sm h-16 resize-none"
                       value={newDay.description}
-                      onChange={(e) =>
-                        setNewDay({ ...newDay, description: e.target.value })
-                      }
+                      onChange={(e) => setNewDay({ ...newDay, description: e.target.value })}
                     ></textarea>
 
                     <div className="mb-3">
@@ -838,7 +803,7 @@ const AgentAddProduct: React.FC = () => {
                           type="text"
                           placeholder="e.g. Hilton Garden Inn"
                           className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 text-sm"
-                          value={newDay.accommodation || ""}
+                          value={newDay.accommodation || ''}
                           onChange={(e) =>
                             setNewDay({
                               ...newDay,
@@ -854,15 +819,15 @@ const AgentAddProduct: React.FC = () => {
                         Meals Included
                       </label>
                       <div className="flex gap-2">
-                        {["Breakfast", "Lunch", "Dinner"].map((meal) => (
+                        {['Breakfast', 'Lunch', 'Dinner'].map((meal) => (
                           <button
                             key={meal}
                             type="button"
                             onClick={() => toggleMeal(meal)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
                               newDay.meals?.includes(meal)
-                                ? "bg-orange-100 border-orange-200 text-orange-700"
-                                : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                ? 'bg-orange-100 border-orange-200 text-orange-700'
+                                : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
                             }`}
                           >
                             {meal}
@@ -976,19 +941,14 @@ const AgentAddProduct: React.FC = () => {
                             setStayDetails,
                             stayDetails.amenities,
                             idx,
-                            e.target.value
+                            e.target.value,
                           )
                         }
                       />
                       <button
                         type="button"
                         onClick={() =>
-                          removeListItem(
-                            setStayDetails,
-                            stayDetails.amenities,
-                            "amenities",
-                            idx
-                          )
+                          removeListItem(setStayDetails, stayDetails.amenities, 'amenities', idx)
                         }
                         className="text-gray-300 hover:text-red-500"
                       >
@@ -998,13 +958,7 @@ const AgentAddProduct: React.FC = () => {
                   ))}
                   <button
                     type="button"
-                    onClick={() =>
-                      addListItem(
-                        setStayDetails,
-                        stayDetails.amenities,
-                        "amenities"
-                      )
-                    }
+                    onClick={() => addListItem(setStayDetails, stayDetails.amenities, 'amenities')}
                     className="text-primary-600 text-xs font-bold hover:underline"
                   >
                     + Add Amenity
@@ -1094,9 +1048,7 @@ const AgentAddProduct: React.FC = () => {
                     id="driver"
                     className="w-5 h-5 text-primary-600 rounded"
                     checked={carDetails.driver}
-                    onChange={(e) =>
-                      setCarDetails({ ...carDetails, driver: e.target.checked })
-                    }
+                    onChange={(e) => setCarDetails({ ...carDetails, driver: e.target.checked })}
                   />
                   <label
                     htmlFor="driver"
@@ -1138,13 +1090,13 @@ const AgentAddProduct: React.FC = () => {
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-2">
-                  Per {isTour ? "person" : isStay ? "night" : "day"}
+                  Per {isTour ? 'person' : isStay ? 'night' : 'day'}
                 </p>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Daily {isTour ? "Pax" : "Unit"} Capacity
+                  Daily {isTour ? 'Pax' : 'Unit'} Capacity
                 </label>
                 <input
                   type="number"
@@ -1232,11 +1184,7 @@ const AgentAddProduct: React.FC = () => {
                 className="w-full h-40 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-all bg-gray-50 relative overflow-hidden"
               >
                 {coverPreviewSrc ? (
-                  <img
-                    src={coverPreviewSrc}
-                    className="w-full h-full object-cover"
-                    alt="cover"
-                  />
+                  <img src={coverPreviewSrc} className="w-full h-full object-cover" alt="cover" />
                 ) : (
                   <div className="text-center">
                     <Upload className="w-6 h-6 mx-auto text-gray-400" />
@@ -1250,11 +1198,10 @@ const AgentAddProduct: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setCoverState((prev) => {
-                      if (prev?.kind === "file")
-                        URL.revokeObjectURL(prev.preview);
+                      if (prev?.kind === 'file') URL.revokeObjectURL(prev.preview);
                       return null;
                     });
-                    setFormData((prev) => ({ ...prev, image: "" }));
+                    setFormData((prev) => ({ ...prev, image: '' }));
                   }}
                   className="mt-2 text-xs font-bold text-red-500 hover:underline"
                 >
@@ -1270,17 +1217,10 @@ const AgentAddProduct: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-2">
                 {galleryItems.map((item, idx) => {
-                  const src = item.kind === "url" ? item.url : item.preview;
+                  const src = item.kind === 'url' ? item.url : item.preview;
                   return (
-                    <div
-                      key={idx}
-                      className="h-16 rounded-lg overflow-hidden relative group"
-                    >
-                      <img
-                        src={src}
-                        className="w-full h-full object-cover"
-                        alt="gallery"
-                      />
+                    <div key={idx} className="h-16 rounded-lg overflow-hidden relative group">
+                      <img src={src} className="w-full h-full object-cover" alt="gallery" />
                       <button
                         type="button"
                         onClick={() => removeGalleryItem(idx)}
@@ -1302,9 +1242,7 @@ const AgentAddProduct: React.FC = () => {
             </div>
 
             <div className="mt-8 pt-6 border-t border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                Highlights
-              </h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Highlights</h3>
               <div className="space-y-2">
                 {formData.features.map((feature, idx) => (
                   <div key={idx} className="flex gap-2">

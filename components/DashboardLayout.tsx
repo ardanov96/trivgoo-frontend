@@ -1,4 +1,3 @@
-// src/layouts/DashboardLayout.tsx
 import {
   BarChart2,
   CreditCard,
@@ -15,7 +14,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { authService } from '../services/authService';
@@ -31,9 +30,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // local snapshot biar UI tetap stabil saat fetch
-  const [localUser, setLocalUser] = useState<any>(user || null);
-  const [loadingUser, setLoadingUser] = useState(false);
+  const didFetchMeRef = useRef(false);
 
   const handleLogout = () => {
     logout();
@@ -57,58 +54,29 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
     </Link>
   );
 
-  // Sync local user when context changes
   useEffect(() => {
-    setLocalUser(user || null);
-  }, [user]);
-
-  // ✅ Refresh user via fetch supaya verificationStatus / role / avatar up to date
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      // belum login
-      return;
-    }
-
-    let cancelled = false;
+    if (didFetchMeRef.current) return;
+    didFetchMeRef.current = true;
 
     (async () => {
       try {
-        setLoadingUser(true);
-        const freshUser = await authService.me();
+        const me = await authService.me();
 
-        if (cancelled) return;
-
-        setLocalUser(freshUser);
-        updateUser(freshUser); // penting biar seluruh app ikut update
-      } catch (e: any) {
-        // 401/403 → token invalid/expired → logout
-        const code = e?.statusCode || e?.response?.status;
-        if (code === 401 || code === 403) {
-          if (!cancelled) handleLogout();
-        } else {
-          console.error('Failed to refresh user:', e?.message || e);
-        }
-      } finally {
-        if (!cancelled) setLoadingUser(false);
+        updateUser({
+          id: me.id,
+          name: me.name,
+          email: me.email,
+          role: me.role,
+          avatar: me.avatar,
+          specialization: me.specialization ?? null,
+          verification_status: me.verification_status,
+        });
+      } catch (err: any) {
+        const status = err?.response?.status;
+        if (status === 401) logout();
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
-
-    // 🔥 trigger juga tiap pindah route supaya saat masuk dashboard gak perlu manual refresh
-  }, [location.pathname]); // sengaja pakai pathname
-
-  const canShowVerify = useMemo(() => {
-    const status = localUser?.verificationStatus;
-    return role === UserRole.AGENT && status !== VerificationStatus.VERIFIED;
-  }, [role, localUser?.verificationStatus]);
-
-  const avatarSrc =
-    localUser?.avatar ||
-    'https://ui-avatars.com/api/?name=' + encodeURIComponent(localUser?.name || 'User');
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -162,8 +130,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mt-6">
                 Management
               </div>
-
-              {canShowVerify && (
+              {user?.verification_status !== VerificationStatus.VERIFIED && (
                 <NavItem to="/agent/verification" icon={ShieldCheck} label="Verify Account" />
               )}
 
@@ -176,13 +143,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center mb-4 px-2">
             <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mr-3 flex-shrink-0">
-              <img src={avatarSrc} alt="User" className="w-full h-full object-cover" />
+              <img
+                src={user.avatar || '/avatar.png'}
+                alt="User"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 truncate">
-                {localUser?.name || (loadingUser ? 'Loading...' : '-')}
-              </p>
-              <p className="text-xs text-gray-500 truncate">{localUser?.email || '-'}</p>
+              <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
+              <p className="text-xs text-gray-500 truncate">{user.email}</p>
             </div>
           </div>
 
@@ -196,7 +165,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden w-full">
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-4 lg:px-8 z-10 shrink-0">
           <div className="flex items-center">

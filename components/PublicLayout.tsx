@@ -7,57 +7,43 @@ import { authService } from '../services/authService';
 import { UserRole } from '../types';
 
 const PublicLayout: React.FC = () => {
-  const { user, logout, updateUser } = useAuth(); // ✅ butuh updateUser
+  const { user, logout, updateUser } = useAuth();
   const { wishlist } = useWishlist();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // ✅ biar ga double-call (React 18 strict mode dev)
   const didFetchMeRef = useRef(false);
 
-  // Handle scroll effect for navbar
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // ✅ AUTO REFRESH USER dari session (Redis) setiap layout mount / route berubah
   useEffect(() => {
-    // kalau user sudah ada, tetap boleh refresh untuk update avatar terbaru
-    // tapi jangan spam terus-terusan; cukup 1x per mount
     if (didFetchMeRef.current) return;
     didFetchMeRef.current = true;
 
     (async () => {
       try {
-        // authService.me() harus pakai credentials include (session cookie)
         const me = await authService.me();
 
-        // Bentuk response kamu bisa:
-        // - { user: {...} }
-        // - atau langsung {...user}
-
-        // ✅ merge ke user context
         updateUser({
           id: me.id,
           name: me.name,
           email: me.email,
           role: me.role,
-          avatar: me.avatar, // penting buat navbar
+          avatar: me.avatar,
           specialization: me.specialization ?? null,
-          verificationStatus: me.verificationStatus,
+          verification_status: me.verification_status,
         });
       } catch (err: any) {
-        // Kalau 401 berarti session sudah expired / belum login
-        // Jadi bersihin state (biar UI konsisten)
         const status = err?.response?.status;
         if (status === 401) logout();
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogout = () => {
@@ -75,7 +61,6 @@ const PublicLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-gray-50">
-      {/* Navigation - Glassmorphism */}
       <nav
         className={`fixed top-0 w-full z-50 transition-all duration-300 ease-in-out border-b ${
           scrolled || !isHome
@@ -152,7 +137,7 @@ const PublicLayout: React.FC = () => {
                   >
                     <img
                       className="h-9 w-9 rounded-full border-2 border-white shadow-sm mr-2 object-cover group-hover:border-primary-200 transition-colors"
-                      src={user.avatar || '/default-avatar.png'}
+                      src={user.avatar}
                       alt=""
                     />
                     <span>{user.name}</span>
@@ -303,7 +288,142 @@ const PublicLayout: React.FC = () => {
 
       {/* Footer (unchanged) */}
       <footer className="bg-gray-900 text-white pt-20 pb-10">
-        {/* ... footer kamu persis 그대로 ... */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
+            <div className="space-y-6">
+              <span className="text-3xl font-serif font-bold tracking-tighter text-white block">
+                trivgoo<span className="text-primary-500">.</span>
+              </span>
+              <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                Curating the world's most breathtaking adventures and luxury stays. Your journey
+                begins with a single click.
+              </p>
+              <div className="flex space-x-4">
+                {/* Social placeholders */}
+                <div className="w-10 h-10 bg-gray-800 rounded-full hover:bg-primary-600 transition-all cursor-pointer flex items-center justify-center text-gray-400 hover:text-white">
+                  <span className="sr-only">Facebook</span>
+                  <svg
+                    className="h-5 w-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="w-10 h-10 bg-gray-800 rounded-full hover:bg-primary-600 transition-all cursor-pointer flex items-center justify-center text-gray-400 hover:text-white">
+                  <span className="sr-only">Instagram</span>
+                  <svg
+                    className="h-5 w-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772 4.902 4.902 0 011.772-1.153c.636-.247 1.363-.416 2.427-.465 1.067-.047 1.407-.06 4.123-.06h2.28c-2.604-.251-5.18.251-5.18.251zm.968 1.954H9.79c-2.477 0-2.906.012-3.856.056-.95.044-1.463.197-1.805.33a3.02 3.02 0 00-1.115.727 3.02 3.02 0 00-.727 1.115c-.133.342-.286.855-.33 1.805-.044.95-.056 1.379-.056 3.856s.012 2.906.056 3.856c.044.95.197 1.463.33 1.805.215.549.512 1.047.882 1.472.425.37.923.667 1.472.882.342.133.855.286 1.805.33.95.044 1.379.056 3.856.056s2.906-.012 3.856-.056c.95-.044 1.463-.197 1.805-.33.549-.215 1.047-.512 1.472-.882.37-.425.667-.923.882-1.472.133-.342.286-.855.33-1.805.044-.95.056-1.379.056-3.856s-.012-2.906-.056-3.856c-.044-.95-.197-1.463-.33-1.805a3.02 3.02 0 00-.727-1.115 3.02 3.02 0 00-1.115-.727c-.342-.133-.855-.286-1.805-.33-.95-.044-1.379-.056-3.856-.056zm0 5.02a5.02 5.02 0 100 10.04 5.02 5.02 0 000-10.04zm0 1.954a3.066 3.066 0 110 6.132 3.066 3.066 0 010-6.132zm5.836-3.765a1.18 1.18 0 110 2.36 1.18 1.18 0 010-2.36z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-serif font-semibold mb-6 text-white tracking-wide">
+                Company
+              </h4>
+              <ul className="space-y-4 text-gray-400 text-sm">
+                <li>
+                  <a href="#" className="hover:text-primary-400 transition-colors">
+                    About Trivgoo
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary-400 transition-colors">
+                    Careers
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary-400 transition-colors">
+                    Press & Media
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary-400 transition-colors">
+                    Travel Blog
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-serif font-semibold mb-6 text-white tracking-wide">
+                Support
+              </h4>
+              <ul className="space-y-4 text-gray-400 text-sm">
+                <li>
+                  <a href="#" className="hover:text-primary-400 transition-colors">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary-400 transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary-400 transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-primary-400 transition-colors">
+                    Contact Us
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-serif font-semibold mb-6 text-white tracking-wide">
+                Stay Updated
+              </h4>
+              <p className="text-gray-400 text-sm mb-4 leading-relaxed">
+                Join our newsletter for exclusive deals and travel inspiration.
+              </p>
+              <form className="flex flex-col space-y-3">
+                <input
+                  type="email"
+                  placeholder="Your email address"
+                  className="px-4 py-3 rounded-xl bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all placeholder-gray-500 text-sm"
+                />
+                <button className="bg-primary-600 px-4 py-3 rounded-xl font-bold text-sm hover:bg-primary-500 transition-all shadow-lg shadow-primary-900/50 hover:translate-y-[-2px]">
+                  Subscribe Now
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">&copy; 2024 Trivgoo Inc. All rights reserved.</p>
+            <div className="flex space-x-6 text-gray-500 text-sm font-medium">
+              <a href="#" className="hover:text-white transition-colors">
+                Privacy
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Terms
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Sitemap
+              </a>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );

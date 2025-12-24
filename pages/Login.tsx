@@ -43,17 +43,12 @@ const Login: React.FC = () => {
       const verification = await agentService.getMyVerification();
       if (!verification) return;
 
-      const status =
-        verification?.status ||
-        verification?.verificationStatus ||
-        verification?.verification_status;
+      const status = verification?.verification_status;
 
       if (status) {
         updateUser({ verification_status: status as VerificationStatus });
       }
-    } catch {
-      // belum ada verification / bukan agent / 401 / dll -> abaikan
-    }
+    } catch {}
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

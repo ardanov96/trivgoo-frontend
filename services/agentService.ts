@@ -1,5 +1,6 @@
 import { AgentSpecialization, AgentType } from '../types';
 import http from './http';
+import { mediaService } from './mediaService';
 
 export interface VerifyAgentPayload {
   type: AgentType;
@@ -27,33 +28,26 @@ export const agentService = {
       specialization,
     } = payload;
 
-    if (idDocument) {
-      const formData = new FormData();
-      formData.append('type', type);
-      formData.append('id_card_number', idCardNumber);
-      formData.append('tax_id', taxId);
-      if (companyName) formData.append('company_name', companyName);
-      formData.append('bank_name', bankName);
-      formData.append('bank_account_number', accountNumber);
-      formData.append('bank_account_holder', accountHolder);
-      formData.append('specialization', specialization);
-      formData.append('id_document', idDocument);
+    const uploadedUrl =
+      idDocument instanceof File
+        ? await mediaService.uploadOne(idDocument, 'agent-verification')
+        : null;
 
-      await http.post('/agent/verification', formData, {
-        headers: {},
-      });
-    } else {
-      await http.post('/agent/verification', {
-        type: type,
-        id_card_number: idCardNumber,
-        tax_id: taxId,
-        company_name: companyName,
-        bank_name: bankName,
-        bank_account_number: accountNumber,
-        bank_account_holder: accountHolder,
-        specialization: specialization,
-      });
-    }
+    const finalIdDocUrl = uploadedUrl;
+
+    if (!finalIdDocUrl) throw new Error('ID document is required');
+
+    await http.post('/agent/verification', {
+      type,
+      id_card_number: idCardNumber,
+      tax_id: taxId,
+      company_name: companyName ?? null,
+      bank_name: bankName,
+      bank_account_number: accountNumber,
+      bank_account_holder: accountHolder,
+      specialization,
+      id_document_url: finalIdDocUrl,
+    });
   },
 
   async getMyVerification() {
