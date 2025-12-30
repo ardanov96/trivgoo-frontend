@@ -76,8 +76,22 @@ const AgentProducts: React.FC = () => {
     )
       return;
 
-    await mockService.deleteProduct(id);
-    await loadData();
+    // optimistik: langsung remove dari UI
+    const prev = products;
+    setProducts((cur) => cur.filter((p) => p.id !== id));
+
+    try {
+      await agentProductService.deleteProduct(id);
+      showToast('Product deleted', 'success');
+
+      await loadData();
+    } catch (e: any) {
+      console.error(e);
+      showToast(e?.message || 'Failed to delete product', 'error');
+
+      // rollback kalau gagal
+      setProducts(prev);
+    }
   };
 
   const openFlashSaleModal = (product: Product, campaign?: FlashSaleCampaign) => {

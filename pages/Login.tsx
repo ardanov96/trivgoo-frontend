@@ -1,5 +1,5 @@
-import { ArrowLeft, Building2, Car, Palmtree } from 'lucide-react';
-import React, { useState } from 'react';
+import { ArrowLeft, Building2, Car, Eye, EyeOff, Palmtree } from 'lucide-react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useToast } from '../components/ToastContext';
@@ -7,121 +7,165 @@ import { agentService } from '../services/agentService';
 import { authService } from '../services/authService';
 import { AgentSpecialization, UserRole, VerificationStatus } from '../types';
 
+type FormState = {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  specialization: AgentSpecialization;
+};
+
+const initialForm: FormState = {
+  name: '',
+  email: '',
+  password: '',
+  role: UserRole.CUSTOMER,
+  specialization: AgentSpecialization.TOUR,
+};
+
+const inputClass =
+  'appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all';
+
 const Login: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole>(UserRole.CUSTOMER);
-  const [specialization, setSpecialization] = useState<AgentSpecialization>(
-    AgentSpecialization.TOUR,
-  );
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ✅ session auth: pakai login + updateUser + refreshMe
   const { login, updateUser, refreshMe } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleRedirectByRole = (targetRole: UserRole | string | undefined) => {
-    const r = (targetRole as UserRole) || UserRole.CUSTOMER;
+  const setField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
-    if (r === UserRole.ADMIN) {
-      navigate('/admin');
-    } else if (r === UserRole.AGENT) {
-      navigate('/agent');
-    } else {
-      const from = (location.state as any)?.from;
-      navigate(from || '/');
-    }
-  };
+  const handleRedirectByRole = useCallback(
+    (targetRole: UserRole | string | undefined) => {
+      const r = (targetRole as UserRole) || UserRole.CUSTOMER;
 
-  const syncVerificationStatusIfAny = async () => {
+      if (r === UserRole.ADMIN) {
+        navigate('/admin');
+      } else if (r === UserRole.AGENT) {
+        navigate('/agent');
+      } else {
+        const from = (location.state as any)?.from;
+        navigate(from || '/');
+      }
+    },
+    [navigate, location.state],
+  );
+
+  const syncVerificationStatusIfAny = useCallback(async () => {
     try {
       const verification = await agentService.getMyVerification();
       if (!verification) return;
 
       const status = verification?.verification_status;
-
       if (status) {
         updateUser({ verification_status: status as VerificationStatus });
       }
-    } catch {}
-  };
+    } catch {
+      // silent
+    }
+  }, [updateUser]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  const roleBtnClass = useCallback(
+    (active: boolean) =>
+      `cursor-pointer px-4 py-3 rounded-xl border text-center font-medium text-sm transition-all ${
+        active
+          ? 'border-primary-500 bg-primary-50 text-primary-700'
+          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+      }`,
+    [],
+  );
 
-    try {
-      // ===== REGISTER FLOW =====
-      if (isRegistering) {
-        const payload: any = {
-          name,
-          email,
-          password,
-          role,
-        };
+  const specBtnClass = useCallback(
+    (active: boolean) =>
+      `cursor-pointer p-2 rounded-xl border flex flex-col items-center justify-center text-center gap-1 transition-all ${
+        active
+          ? 'border-primary-500 bg-primary-50 text-primary-700'
+          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+      }`,
+    [],
+  );
 
-        if (role === UserRole.AGENT) {
-          payload.specialization = specialization;
+  const passwordInputClass = useMemo(() => `${inputClass} pr-12`, []);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
+      setLoading(true);
+
+      try {
+        // ===== REGISTER FLOW =====
+        if (isRegistering) {
+          const payload: any = {
+            name: form.name,
+            email: form.email,
+            password: form.password,
+            role: form.role,
+          };
+
+          if (form.role === UserRole.AGENT) {
+            payload.specialization = form.specialization;
+          }
+
+          await authService.register(payload);
+          await refreshMe();
+          await syncVerificationStatusIfAny();
+
+          showToast('Account created! Welcome.', 'success');
+          handleRedirectByRole(form.role);
+          return;
         }
 
-        // backend register sekarang set session + return { user: ... }
-        await authService.register(payload);
+        // ===== LOGIN FLOW =====
+        const result = await login(form.email, form.password);
+        if (!result.success) {
+          const msg = result.message || 'Invalid credentials.';
+          setError(msg);
+          showToast(msg, 'error');
+          return;
+        }
 
-        // ✅ ambil user terbaru dari session
-        await refreshMe();
-
-        // optional: sync verification status dari endpoint verification
         await syncVerificationStatusIfAny();
+        showToast('Welcome back!', 'success');
 
-        showToast('Account created! Welcome.', 'success');
-
-        // redirect berdasarkan role yg dipilih (atau nanti bisa ambil dari ctx user)
-        handleRedirectByRole(role);
-        return;
-      }
-
-      // ===== LOGIN FLOW =====
-      const result = await login(email, password);
-      if (!result.success) {
-        const msg = result.message || 'Invalid credentials.';
+        const backendRole = result.user?.role as UserRole | undefined;
+        handleRedirectByRole(backendRole);
+      } catch (err: any) {
+        console.error(err);
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          (isRegistering
+            ? 'Registration failed. Email might already be in use.'
+            : 'Invalid credentials.');
         setError(msg);
         showToast(msg, 'error');
-        return;
+      } finally {
+        setLoading(false);
       }
+    },
+    [
+      form,
+      isRegistering,
+      login,
+      refreshMe,
+      showToast,
+      syncVerificationStatusIfAny,
+      handleRedirectByRole,
+    ],
+  );
 
-      // optional: sync verification status dari endpoint verification (khusus agent)
-      await syncVerificationStatusIfAny();
-
-      showToast('Welcome back!', 'success');
-
-      const backendRole = result.user?.role as UserRole | undefined;
-      handleRedirectByRole(backendRole);
-    } catch (err: any) {
-      console.error(err);
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        (isRegistering
-          ? 'Registration failed. Email might already be in use.'
-          : 'Invalid credentials.');
-      setError(msg);
-      showToast(msg, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fillCredentials = (roleEmail: string) => {
-    setEmail(roleEmail);
-    setPassword(''); // biarin user isi password sendiri
+  const fillCredentials = useCallback((roleEmail: string) => {
+    setForm((prev) => ({ ...prev, email: roleEmail, password: '' }));
     setIsRegistering(false);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -161,6 +205,7 @@ const Login: React.FC = () => {
             >
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
             </Link>
+
             <h2 className="text-3xl font-serif font-bold text-gray-900">
               {isRegistering ? 'Create Account' : 'Welcome back'}
             </h2>
@@ -183,10 +228,11 @@ const Login: React.FC = () => {
                     name="name"
                     type="text"
                     required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                    value={form.name}
+                    onChange={(e) => setField('name', e.target.value)}
+                    className={inputClass}
                     placeholder="John Doe"
+                    autoComplete="name"
                   />
                 </div>
               </div>
@@ -202,10 +248,11 @@ const Login: React.FC = () => {
                   name="email"
                   type="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                  value={form.email}
+                  onChange={(e) => setField('email', e.target.value)}
+                  className={inputClass}
                   placeholder="you@example.com"
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -217,22 +264,18 @@ const Login: React.FC = () => {
                 </label>
                 <div className="mt-1 grid grid-cols-2 gap-3">
                   <div
-                    onClick={() => setRole(UserRole.CUSTOMER)}
-                    className={`cursor-pointer px-4 py-3 rounded-xl border text-center font-medium text-sm transition-all ${
-                      role === UserRole.CUSTOMER
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
+                    onClick={() => setField('role', UserRole.CUSTOMER)}
+                    className={roleBtnClass(form.role === UserRole.CUSTOMER)}
+                    role="button"
+                    tabIndex={0}
                   >
                     Traveler
                   </div>
                   <div
-                    onClick={() => setRole(UserRole.AGENT)}
-                    className={`cursor-pointer px-4 py-3 rounded-xl border text-center font-medium text-sm transition-all ${
-                      role === UserRole.AGENT
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
+                    onClick={() => setField('role', UserRole.AGENT)}
+                    className={roleBtnClass(form.role === UserRole.AGENT)}
+                    role="button"
+                    tabIndex={0}
                   >
                     Agent / Vendor
                   </div>
@@ -240,41 +283,37 @@ const Login: React.FC = () => {
               </div>
             )}
 
-            {isRegistering && role === UserRole.AGENT && (
+            {isRegistering && form.role === UserRole.AGENT && (
               <div className="animate-in fade-in slide-in-from-top-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   My Business Focus
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <div
-                    onClick={() => setSpecialization(AgentSpecialization.TOUR)}
-                    className={`cursor-pointer p-2 rounded-xl border flex flex-col items-center justify-center text-center gap-1 transition-all ${
-                      specialization === AgentSpecialization.TOUR
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                    }`}
+                    onClick={() => setField('specialization', AgentSpecialization.TOUR)}
+                    className={specBtnClass(form.specialization === AgentSpecialization.TOUR)}
+                    role="button"
+                    tabIndex={0}
                   >
                     <Palmtree className="w-5 h-5" />
                     <span className="text-[10px] font-bold">Tour</span>
                   </div>
+
                   <div
-                    onClick={() => setSpecialization(AgentSpecialization.STAY)}
-                    className={`cursor-pointer p-2 rounded-xl border flex flex-col items-center justify-center text-center gap-1 transition-all ${
-                      specialization === AgentSpecialization.STAY
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                    }`}
+                    onClick={() => setField('specialization', AgentSpecialization.STAY)}
+                    className={specBtnClass(form.specialization === AgentSpecialization.STAY)}
+                    role="button"
+                    tabIndex={0}
                   >
                     <Building2 className="w-5 h-5" />
                     <span className="text-[10px] font-bold">Stay</span>
                   </div>
+
                   <div
-                    onClick={() => setSpecialization(AgentSpecialization.TRANSPORT)}
-                    className={`cursor-pointer p-2 rounded-xl border flex flex-col items-center justify-center text-center gap-1 transition-all ${
-                      specialization === AgentSpecialization.TRANSPORT
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                    }`}
+                    onClick={() => setField('specialization', AgentSpecialization.TRANSPORT)}
+                    className={specBtnClass(form.specialization === AgentSpecialization.TRANSPORT)}
+                    role="button"
+                    tabIndex={0}
                   >
                     <Car className="w-5 h-5" />
                     <span className="text-[10px] font-bold">Trans</span>
@@ -288,26 +327,42 @@ const Login: React.FC = () => {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
+
                 {!isRegistering && (
-                  <a
-                    href="#"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // TODO: arahkan ke page forgot password kalau udah ada
+                      showToast('Forgot password flow belum dibuat.', 'info');
+                    }}
                     className="text-sm font-medium text-primary-600 hover:text-primary-500"
                   >
                     Forgot password?
-                  </a>
+                  </button>
                 )}
               </div>
-              <div className="mt-1">
+
+              <div className="mt-1 relative">
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                  value={form.password}
+                  onChange={(e) => setField('password', e.target.value)}
+                  className={passwordInputClass}
                   placeholder={isRegistering ? 'Create a password' : 'Enter your password'}
+                  autoComplete={isRegistering ? 'new-password' : 'current-password'}
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
@@ -337,15 +392,22 @@ const Login: React.FC = () => {
                   : 'Sign in'}
               </button>
             </div>
+
+            {/* contoh helper (kalau mau dipakai lagi nanti) */}
+            {/* <button type="button" onClick={() => fillCredentials("agent@demo.com")}>Use Demo</button> */}
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
               <button
+                type="button"
                 onClick={() => {
-                  setIsRegistering(!isRegistering);
+                  setIsRegistering((v) => !v);
                   setError('');
+                  setShowPassword(false);
+                  // optional: reset password aja biar aman
+                  setForm((prev) => ({ ...prev, password: '' }));
                 }}
                 className="font-bold text-primary-600 hover:text-primary-500 transition-colors"
               >

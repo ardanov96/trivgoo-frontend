@@ -100,47 +100,6 @@ import http, { unwrap } from './http';
 
 type ProductEnvelope<T> = ApiEnvelope<T>;
 
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=800&q=80';
-
-/**
- * Normalize images dari backend jadi string[] URL.
- * Support:
- * - images: ["url1", "url2"]
- * - images: [{ id, url, sort_order }, { image_url: "..." }]
- * - images_json: "[]" / "[{...}]" (string JSON)
- * - images_json: [...] (sudah parsed JSON)
- */
-function normalizeImages(input: any): string[] {
-  let value = input;
-
-  // kalau backend kirim string JSON
-  if (typeof value === 'string') {
-    const s = value.trim();
-    if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'))) {
-      try {
-        value = JSON.parse(s);
-      } catch {
-        // ignore parse error
-      }
-    }
-  }
-
-  const arr = Array.isArray(value) ? value : [];
-  if (arr.length === 0) return [];
-
-  // array string
-  if (typeof arr[0] === 'string') {
-    return arr.map((x) => String(x)).filter(Boolean);
-  }
-
-  // array object
-  if (typeof arr[0] === 'object' && arr[0] !== null) {
-    return arr.map((x: any) => x?.url || x?.image_url || x?.image || x?.path).filter(Boolean);
-  }
-
-  return [];
-}
 function normalizeProduct(data: AgentProduct): AgentProduct {
   return {
     id: data.id,
@@ -151,8 +110,10 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
     price: Number((data as any).price || 0),
     currency: (data as any).currency || '',
     location: (data as any).location || '',
+    image_url: data.image_url,
     image: data.image,
     images: data.images,
+    owner: data.owner,
     features: Array.isArray((data as any).features) ? (data as any).features : [],
     details: (data as any).details ?? undefined,
     daily_capacity: (data as any).daily_capacity ?? 10,
@@ -160,6 +121,7 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
     rating: (data as any).rating ? Number((data as any).rating) : 0,
     is_active: !!(data as any).is_active,
     created_at: (data as any).created_at,
+    updated_at: (data as any).updated_at,
   };
 }
 
@@ -197,6 +159,10 @@ export const agentProductService = {
       http.put<ProductEnvelope<AgentProduct>>(`/agent/products/${id}`, payload),
     );
     return normalizeProduct(raw);
+  },
+
+  async deleteProduct(id: number): Promise<void> {
+    await mapOne(http.delete<ProductEnvelope<any>>(`/agent/products/${id}/delete`));
   },
 
   async getMyProduct(id: number): Promise<AgentProduct> {

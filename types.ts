@@ -4,6 +4,71 @@ export enum UserRole {
   CUSTOMER = 'CUSTOMER',
 }
 
+export enum BookingStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  CANCELLED = 'cancelled',
+  COMPLETED = 'completed',
+}
+
+export enum PaymentStatus {
+  PENDING = 'pending',
+  PAID = 'paid',
+  FAILED = 'failed',
+}
+
+export enum PayoutStatus {
+  PENDING = 'pending',
+  PROCESSED = 'processed',
+  REJECTED = 'rejected',
+}
+
+export enum VerificationStatus {
+  UNVERIFIED = 'UNVERIFIED',
+  PENDING = 'PENDING',
+  VERIFIED = 'VERIFIED',
+  REJECTED = 'REJECTED',
+}
+
+export enum AgentType {
+  INDIVIDUAL = 'INDIVIDUAL',
+  CORPORATE = 'CORPORATE',
+}
+
+export enum AgentSpecialization {
+  TOUR = 'TOUR',
+  STAY = 'STAY',
+  TRANSPORT = 'TRANSPORT',
+}
+
+export enum TourCategory {
+  NATURE = 'Nature',
+  ADVENTURE = 'Adventure',
+  SPIRITUAL = 'Spiritual',
+  CULTURAL = 'Cultural',
+  CULINARY = 'Culinary',
+}
+
+export enum StayCategory {
+  HOTEL = 'Hotel',
+  VILLA = 'Villa',
+  HOMESTAY = 'Homestay',
+  RESORT = 'Resort',
+}
+
+export enum TransportCategory {
+  CAR_RENTAL = 'Car Rental',
+  AIRPORT_TRANSFER = 'Airport Transfer',
+  MOTORBIKE = 'Motorbike',
+}
+
+export type ApiEnvelope<T> = {
+  status: number;
+  error: boolean;
+  message: string;
+  data: T;
+};
+
 export type AuthUser = {
   id: number;
   name: string;
@@ -82,71 +147,6 @@ export interface RegisterPayload {
   password: string;
   role?: 'CUSTOMER' | 'AGENT' | 'ADMIN';
   specialization?: string;
-}
-
-export type ApiEnvelope<T> = {
-  status: number;
-  error: boolean;
-  message: string;
-  data: T;
-};
-
-export enum BookingStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  CANCELLED = 'cancelled',
-  COMPLETED = 'completed',
-}
-
-export enum PaymentStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  FAILED = 'failed',
-}
-
-export enum PayoutStatus {
-  PENDING = 'pending',
-  PROCESSED = 'processed',
-  REJECTED = 'rejected',
-}
-
-export enum VerificationStatus {
-  UNVERIFIED = 'UNVERIFIED',
-  PENDING = 'PENDING',
-  VERIFIED = 'VERIFIED',
-  REJECTED = 'REJECTED',
-}
-
-export enum AgentType {
-  INDIVIDUAL = 'INDIVIDUAL',
-  CORPORATE = 'CORPORATE',
-}
-
-export enum AgentSpecialization {
-  TOUR = 'TOUR',
-  STAY = 'STAY',
-  TRANSPORT = 'TRANSPORT',
-}
-
-export enum TourCategory {
-  NATURE = 'Nature',
-  ADVENTURE = 'Adventure',
-  SPIRITUAL = 'Spiritual',
-  CULTURAL = 'Cultural',
-  CULINARY = 'Culinary',
-}
-
-export enum StayCategory {
-  HOTEL = 'Hotel',
-  VILLA = 'Villa',
-  HOMESTAY = 'Homestay',
-  RESORT = 'Resort',
-}
-
-export enum TransportCategory {
-  CAR_RENTAL = 'Car Rental',
-  AIRPORT_TRANSFER = 'Airport Transfer',
-  MOTORBIKE = 'Motorbike',
 }
 
 export interface FlashSaleCampaign {
@@ -374,6 +374,55 @@ export interface ProductItineraryItem {
   accommodation: string;
 }
 
+// ADMIN AGENT PRODUCT
+
+export interface Paginated<TItem> {
+  meta: PaginationMeta;
+  data: TItem[];
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface OwnerSummary {
+  id: number;
+  name: string;
+  email: string;
+  avatar_url: string | null;
+}
+
+export interface ProductImage {
+  id: number;
+  url: string;
+  created_at: string;
+  sort_order: number;
+}
+
+export interface ItineraryItem {
+  day: number;
+  meals: string[];
+  title: string;
+  description: string;
+  accommodation: string;
+}
+
+export interface AdminProductDetails {
+  type: string;
+  duration: string;
+  groupSize: string;
+  itinerary: ItineraryItem[];
+  difficulty: string;
+  exclusions: string[];
+  inclusions: string[];
+  meetingPoint: string;
+  tourCategory: string;
+  ageRestriction: string;
+}
+
 export interface AgentProduct {
   id: number;
   owner_id: number;
@@ -384,17 +433,46 @@ export interface AgentProduct {
   currency: string;
   location: string;
 
-  image: string; // cover
-  images: AgentProductImage[]; // array object
+  image: string;
+  image_url: string;
+
+  images: ProductImage[];
+
+  features: string[];
+  details: ProductDetails;
+
+  daily_capacity: number;
+  rating: number;
+  is_active: boolean;
+
+  created_at: string;
+  updated_at: string;
+
+  owner: OwnerSummary;
+}
+
+export type ListAgentProductsResponse = ApiResponse<Paginated<AgentProduct>>;
+
+export interface AgentProduct {
+  id: number;
+  owner_id: number;
+  category_id: number;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  location: string;
+
+  image: string;
+  images: AgentProductImage[];
 
   features: string[];
   details: ProductDetails;
   daily_capacity: number;
   rating: number;
   is_active: boolean;
-  created_at: string; // "2025-12-23T06:35:56.000Z"
+  created_at: string;
 
-  // kalau endpoint lain kadang ada:
   blocked_dates?: string[];
 }
 
