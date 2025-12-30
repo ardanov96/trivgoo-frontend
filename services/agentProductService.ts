@@ -119,6 +119,8 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
       : [],
     details: (data as any).details ?? undefined,
     daily_capacity: (data as any).daily_capacity ?? 10,
+    lat: (data as any).lat,
+    lng: (data as any).lng,
     blocked_dates: Array.isArray((data as any).blocked_dates)
       ? (data as any).blocked_dates
       : [],

@@ -446,6 +446,8 @@ export interface AgentProduct {
   details: ProductDetails;
 
   daily_capacity: number;
+  lat: number;
+  lng: number;
   rating: number;
   is_active: boolean;
 

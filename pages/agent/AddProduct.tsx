@@ -86,8 +86,8 @@ const AgentAddProduct: React.FC = () => {
     price: "",
     currency: "USD",
     location: "",
-    lat: "",
-    lng: "",
+    lat: 0,
+    lng: 0,
     image: "",
     features: [""],
     dailyCapacity: 10,
@@ -218,8 +218,8 @@ const AgentAddProduct: React.FC = () => {
               features: product.features || [""],
               dailyCapacity: product.daily_capacity || 10,
               blockedDates: (product as any).blocked_dates || [],
-              lat: "",
-              lng: "",
+              lat: Number(product.lat),
+              lng: Number(product.lng),
             });
 
             const coverUrl =
