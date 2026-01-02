@@ -28,14 +28,22 @@ import {
   Utensils,
   X,
   Zap,
-} from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../AuthContext';
-import { useToast } from '../components/ToastContext';
-import { useWishlist } from '../components/WishlistContext';
-import { adminService } from '../services/adminService';
-import { CarDetails, Product, StayDetails, TourDetails, TransportCategory } from '../types';
+} from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../AuthContext";
+import { useToast } from "../components/ToastContext";
+import { useWishlist } from "../components/WishlistContext";
+import { adminService } from "../services/adminService";
+import {
+  CarDetails,
+  Product,
+  StayDetails,
+  TourDetails,
+  TransportCategory,
+} from "../types";
+
+type LatLng = { lat: number; lng: number };
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -48,29 +56,82 @@ const ProductDetail: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
+  // ✅ lat/lng state (dari product)
+  const [coords, setCoords] = useState<LatLng | null>(null);
+
   // Date States
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
 
   // Calendar UI State
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [calendarMode, setCalendarMode] = useState<'checkIn' | 'checkOut'>('checkIn');
+  const [calendarMode, setCalendarMode] = useState<"checkIn" | "checkOut">(
+    "checkIn"
+  );
   const [pickerDate, setPickerDate] = useState(new Date());
   const calendarRef = useRef<HTMLDivElement>(null);
   const bookingSectionRef = useRef<HTMLDivElement>(null);
 
   const [guests, setGuests] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Contact Details State
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
 
   // Lightbox State
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const toNum = (v: any): number | null => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const normalizeLatLngFromProduct = (p: any): LatLng | null => {
+    const lat = toNum(p?.lat);
+    const lng = toNum(p?.lng);
+
+    return { lat, lng };
+  };
+
+  const buildGoogleMapsUrl = (p: Product | null, c: LatLng | null) => {
+    // Prioritas: lat,lng kalau ada -> lebih akurat
+    if (c) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        `${c.lat},${c.lng}`
+      )}`;
+    }
+
+    // fallback: pakai text location
+    const q = (p as any)?.location || (p as any)?.name || "";
+    if (typeof q === "string" && q.trim()) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        q.trim()
+      )}`;
+    }
+
+    return "https://www.google.com/maps";
+  };
+
+  const buildAppleMapsUrl = (p: Product | null, c: LatLng | null) => {
+    // Apple Maps: ll=lat,lng, q=label
+    const label = (p as any)?.name || (p as any)?.location || "Destination";
+    if (c) {
+      return `https://maps.apple.com/?ll=${encodeURIComponent(
+        `${c.lat},${c.lng}`
+      )}&q=${encodeURIComponent(String(label))}`;
+    }
+
+    const q = (p as any)?.location || (p as any)?.name || "";
+    if (typeof q === "string" && q.trim()) {
+      return `https://maps.apple.com/?q=${encodeURIComponent(q.trim())}`;
+    }
+
+    return "https://maps.apple.com/";
+  };
 
   // ✅ Fetch product by ADMIN API: /admin/agents/products/:id
   useEffect(() => {
@@ -82,7 +143,7 @@ const ProductDetail: React.FC = () => {
       try {
         const pid = Number(id);
         if (!Number.isFinite(pid) || pid <= 0) {
-          showToast('Invalid product id', 'error');
+          showToast("Invalid product id", "error");
           return;
         }
 
@@ -91,20 +152,25 @@ const ProductDetail: React.FC = () => {
 
         setProduct(p);
 
+        // ✅ ambil coords dari product
+        const c = p ? normalizeLatLngFromProduct(p) : null;
+        setCoords(c);
+
         // ✅ related products sementara masih mock (comment jangan dihapus)
         // if (p) {
         //   mockService.getRelatedProducts(p.category_id, p.id).then(setRelatedProducts);
         // }
 
         // Reset states
-        setCheckIn('');
-        setCheckOut('');
+        setCheckIn("");
+        setCheckOut("");
         setGuests(1);
       } catch (e: any) {
         console.error(e);
-        showToast(e?.message || 'Failed to load product', 'error');
+        showToast(e?.message || "Failed to load product", "error");
         setProduct(null);
         setRelatedProducts([]);
+        setCoords(null);
       }
     })();
 
@@ -127,12 +193,15 @@ const ProductDetail: React.FC = () => {
   // Click outside to close calendar
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target as Node)
+      ) {
         setIsCalendarOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   if (!product) return <div className="p-20 text-center">Loading...</div>;
@@ -141,39 +210,45 @@ const ProductDetail: React.FC = () => {
   const details = product.details;
 
   // Type Guards
-  const isTour = (d: any): d is TourDetails => d?.type === 'tour';
-  const isStay = (d: any): d is StayDetails => d?.type === 'stay';
-  const isCar = (d: any): d is CarDetails => d?.type === 'car';
+  const isTour = (d: any): d is TourDetails => d?.type === "tour";
+  const isStay = (d: any): d is StayDetails => d?.type === "stay";
+  const isCar = (d: any): d is CarDetails => d?.type === "car";
 
   // Airport transfer behaves like a Tour (Single date)
   const isSingleDaySelection =
     isTour(details) ||
-    (isCar(details) && details.transportCategory === TransportCategory.AIRPORT_TRANSFER);
+    (isCar(details) &&
+      details.transportCategory === TransportCategory.AIRPORT_TRANSFER);
 
   // --- FLASH SALE LOGIC (kalau belum ada di API, aman karena optional) ---
   const activeFlashSale =
-    (product as any).flashSale && (product as any).flashSale.status === 'approved'
+    (product as any).flashSale &&
+    (product as any).flashSale.status === "approved"
       ? (product as any).flashSale
       : null;
-  const effectivePrice = activeFlashSale ? activeFlashSale.salePrice : product.price;
+  const effectivePrice = activeFlashSale
+    ? activeFlashSale.salePrice
+    : product.price;
 
   // --- LIGHTBOX LOGIC ---
   const heroImage = (product as any).image_url || product.image;
 
   const galleryImages =
     product.images && Array.isArray(product.images) && product.images.length > 0
-      ? product.images.map((x: any) => (typeof x === 'string' ? x : x?.url)).filter(Boolean)
+      ? product.images
+          .map((x: any) => (typeof x === "string" ? x : x?.url))
+          .filter(Boolean)
       : [heroImage, heroImage, heroImage, heroImage, heroImage].filter(Boolean);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setIsLightboxOpen(true);
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
   };
 
   const closeLightbox = () => {
     setIsLightboxOpen(false);
-    document.body.style.overflow = 'unset';
+    document.body.style.overflow = "unset";
   };
 
   const nextImage = (e: React.MouseEvent) => {
@@ -183,7 +258,9 @@ const ProductDetail: React.FC = () => {
 
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setLightboxIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+    setLightboxIndex(
+      (prev) => (prev - 1 + galleryImages.length) % galleryImages.length
+    );
   };
 
   // --- CALENDAR LOGIC ---
@@ -191,31 +268,37 @@ const ProductDetail: React.FC = () => {
   today.setHours(0, 0, 0, 0);
 
   const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
-  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
-  const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+  const getDaysInMonth = (year: number, month: number) =>
+    new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year: number, month: number) =>
+    new Date(year, month, 1).getDay();
 
   const handlePrevMonth = (e: React.MouseEvent) => {
     e.preventDefault();
-    setPickerDate(new Date(pickerDate.getFullYear(), pickerDate.getMonth() - 1, 1));
+    setPickerDate(
+      new Date(pickerDate.getFullYear(), pickerDate.getMonth() - 1, 1)
+    );
   };
 
   const handleNextMonth = (e: React.MouseEvent) => {
     e.preventDefault();
-    setPickerDate(new Date(pickerDate.getFullYear(), pickerDate.getMonth() + 1, 1));
+    setPickerDate(
+      new Date(pickerDate.getFullYear(), pickerDate.getMonth() + 1, 1)
+    );
   };
 
   const isDateBlocked = (dateStr: string) => {
@@ -225,25 +308,33 @@ const ProductDetail: React.FC = () => {
 
   const formatDateStr = (date: Date) => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
   const parseDateLocal = (dateStr: string) => {
     if (!dateStr) return new Date();
-    const [y, m, d] = dateStr.split('-').map(Number);
+    const [y, m, d] = dateStr.split("-").map(Number);
     return new Date(y, m - 1, d);
   };
 
   const formatDateDisplay = (dateStr: string) => {
-    if (!dateStr) return '';
+    if (!dateStr) return "";
     const date = parseDateLocal(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   const handleDateSelect = (day: number) => {
-    const selectedDate = new Date(pickerDate.getFullYear(), pickerDate.getMonth(), day);
+    const selectedDate = new Date(
+      pickerDate.getFullYear(),
+      pickerDate.getMonth(),
+      day
+    );
     const dateStr = formatDateStr(selectedDate);
 
     if (selectedDate < today) return;
@@ -252,33 +343,33 @@ const ProductDetail: React.FC = () => {
 
     if (isSingleDaySelection) {
       if (blocked) {
-        showToast('This date is fully booked or unavailable.', 'error');
+        showToast("This date is fully booked or unavailable.", "error");
         return;
       }
       setCheckIn(dateStr);
-      setCheckOut('');
+      setCheckOut("");
       setIsCalendarOpen(false);
       return;
     }
 
-    if (calendarMode === 'checkIn') {
+    if (calendarMode === "checkIn") {
       if (blocked) {
-        showToast('Check-in date is unavailable.', 'error');
+        showToast("Check-in date is unavailable.", "error");
         return;
       }
       setCheckIn(dateStr);
       if (checkOut && parseDateLocal(dateStr) >= parseDateLocal(checkOut)) {
-        setCheckOut('');
+        setCheckOut("");
       }
-      setCalendarMode('checkOut');
+      setCalendarMode("checkOut");
     } else {
       if (parseDateLocal(dateStr) <= parseDateLocal(checkIn)) {
         if (blocked) {
-          showToast('Check-in date is unavailable.', 'error');
+          showToast("Check-in date is unavailable.", "error");
           return;
         }
         setCheckIn(dateStr);
-        setCheckOut('');
+        setCheckOut("");
         return;
       }
 
@@ -295,7 +386,7 @@ const ProductDetail: React.FC = () => {
       }
 
       if (!ok) {
-        showToast('Selected dates include unavailable nights.', 'error');
+        showToast("Selected dates include unavailable nights.", "error");
         return;
       }
 
@@ -325,7 +416,7 @@ const ProductDetail: React.FC = () => {
       let disabled = isPast;
       if (!disabled) {
         if (isSingleDaySelection && blocked) disabled = true;
-        else if (calendarMode === 'checkIn' && blocked) disabled = true;
+        else if (calendarMode === "checkIn" && blocked) disabled = true;
       }
 
       let selected = false;
@@ -355,27 +446,31 @@ const ProductDetail: React.FC = () => {
           className={`h-9 w-9 text-xs font-bold rounded-full flex items-center justify-center transition-all relative
               ${
                 disabled
-                  ? 'text-gray-300 cursor-not-allowed bg-gray-50'
+                  ? "text-gray-300 cursor-not-allowed bg-gray-50"
                   : selected
-                  ? 'bg-primary-600 text-white shadow-md z-10'
+                  ? "bg-primary-600 text-white shadow-md z-10"
                   : inRange
-                  ? 'bg-primary-50 text-primary-700 rounded-none'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-primary-600'
+                  ? "bg-primary-50 text-primary-700 rounded-none"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-primary-600"
               }
-              ${showBlockedStyle ? 'bg-orange-50 text-orange-400 ring-1 ring-orange-200' : ''}
+              ${
+                showBlockedStyle
+                  ? "bg-orange-50 text-orange-400 ring-1 ring-orange-200"
+                  : ""
+              }
             `}
           title={
             blocked
-              ? calendarMode === 'checkOut' && !isSingleDaySelection
-                ? 'Available for Checkout'
-                : 'Fully Booked'
+              ? calendarMode === "checkOut" && !isSingleDaySelection
+                ? "Available for Checkout"
+                : "Fully Booked"
               : isPast
-              ? 'Past Date'
-              : 'Available'
+              ? "Past Date"
+              : "Available"
           }
         >
           {day}
-        </button>,
+        </button>
       );
     }
 
@@ -408,35 +503,53 @@ const ProductDetail: React.FC = () => {
     ? effectivePrice * guests
     : effectivePrice * unitsNeeded * duration;
 
-  const priceUnitLabel = isTour(details) ? 'person' : isStay(details) ? 'night' : 'day';
-  const itemLabel = isTour(details) ? 'Guest' : isCar(details) ? 'Passenger' : 'Guest';
-  const unitLabel = isCar(details) ? 'Car' : isStay(details) ? 'Unit' : 'Ticket';
+  const priceUnitLabel = isTour(details)
+    ? "person"
+    : isStay(details)
+    ? "night"
+    : "day";
+  const itemLabel = isTour(details)
+    ? "Guest"
+    : isCar(details)
+    ? "Passenger"
+    : "Guest";
+  const unitLabel = isCar(details)
+    ? "Car"
+    : isStay(details)
+    ? "Unit"
+    : "Ticket";
 
   const handleBookNow = (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
 
     if (!checkIn) {
       if (bookingSectionRef.current) {
-        bookingSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        bookingSectionRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
         setIsCalendarOpen(true);
-        setCalendarMode('checkIn');
+        setCalendarMode("checkIn");
       }
-      showToast('Please select a date first.', 'info');
+      showToast("Please select a date first.", "info");
       return;
     }
 
     if (!user) {
-      showToast('Please login to continue.', 'info');
-      navigate('/login', { state: { from: location } });
+      showToast("Please login to continue.", "info");
+      navigate("/login", { state: { from: location } });
       return;
     }
 
     if (!isSingleDaySelection && !checkOut) {
-      showToast('Please select an end date.', 'error');
+      showToast("Please select an end date.", "error");
       if (bookingSectionRef.current) {
-        bookingSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        bookingSectionRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
         setIsCalendarOpen(true);
-        setCalendarMode('checkOut');
+        setCalendarMode("checkOut");
       }
       return;
     }
@@ -448,7 +561,7 @@ const ProductDetail: React.FC = () => {
       price: effectivePrice,
     };
 
-    navigate('/payment', {
+    navigate("/payment", {
       state: {
         product: productForPayment,
         quantity: isTour(details) ? guests : unitsNeeded,
@@ -475,7 +588,15 @@ const ProductDetail: React.FC = () => {
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    showToast('Link copied to clipboard!');
+    showToast("Link copied to clipboard!");
+  };
+
+  // ✅ Open Maps (pakai lat,lng kalau ada)
+  const handleOpenMaps = () => {
+    const gmaps = buildGoogleMapsUrl(product, coords);
+    // kalau mau iOS friendly, bisa pakai apple maps:
+    // const apple = buildAppleMapsUrl(product, coords);
+    window.open(gmaps, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -550,10 +671,10 @@ const ProductDetail: React.FC = () => {
             <button
               onClick={handleToggleLike}
               className={`bg-white/20 backdrop-blur-md hover:bg-white text-white hover:text-red-500 p-3 rounded-full transition-all ${
-                isLiked ? 'bg-white text-red-500' : ''
+                isLiked ? "bg-white text-red-500" : ""
               }`}
             >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
             </button>
             <button
               onClick={(e) => {
@@ -571,26 +692,34 @@ const ProductDetail: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             {/* Breadcrumbs */}
             <div className="hidden md:flex items-center text-white/70 text-sm mb-4 space-x-2">
-              <Link to="/" className="hover:text-white transition-colors flex items-center">
+              <Link
+                to="/"
+                className="hover:text-white transition-colors flex items-center"
+              >
                 <Home className="w-3 h-3 mr-1" /> Home
               </Link>
               <ChevronRight className="w-3 h-3" />
-              <Link to="/explore" className="hover:text-white transition-colors">
+              <Link
+                to="/explore"
+                className="hover:text-white transition-colors"
+              >
                 Explore
               </Link>
               <ChevronRight className="w-3 h-3" />
-              <span className="text-white font-medium truncate max-w-[200px]">{product.name}</span>
+              <span className="text-white font-medium truncate max-w-[200px]">
+                {product.name}
+              </span>
             </div>
 
             <div className="flex items-center gap-3 mb-4">
               <div className="inline-flex items-center px-3 py-1 rounded-lg bg-primary-600 text-white text-xs font-bold uppercase tracking-wider">
                 {isTour(details)
-                  ? 'Tour Package'
+                  ? "Tour Package"
                   : isStay(details)
-                  ? 'Luxury Stay'
+                  ? "Luxury Stay"
                   : isCar(details)
-                  ? 'Vehicle Rental'
-                  : 'Experience'}
+                  ? "Vehicle Rental"
+                  : "Experience"}
               </div>
               {activeFlashSale && (
                 <div className="inline-flex items-center px-3 py-1 rounded-lg bg-red-600 text-white text-xs font-bold uppercase tracking-wider animate-pulse">
@@ -633,22 +762,22 @@ const ProductDetail: React.FC = () => {
             <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100 mb-8">
               <div className="flex space-x-6 border-b border-gray-100 mb-6 overflow-x-auto no-scrollbar">
                 <button
-                  onClick={() => setActiveTab('overview')}
+                  onClick={() => setActiveTab("overview")}
                   className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                    activeTab === 'overview'
-                      ? 'text-primary-600 border-b-2 border-primary-600'
-                      : 'text-gray-400 hover:text-gray-600'
+                    activeTab === "overview"
+                      ? "text-primary-600 border-b-2 border-primary-600"
+                      : "text-gray-400 hover:text-gray-600"
                   }`}
                 >
                   Overview
                 </button>
                 {isTour(details) && (
                   <button
-                    onClick={() => setActiveTab('itinerary')}
+                    onClick={() => setActiveTab("itinerary")}
                     className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                      activeTab === 'itinerary'
-                        ? 'text-primary-600 border-b-2 border-primary-600'
-                        : 'text-gray-400 hover:text-gray-600'
+                      activeTab === "itinerary"
+                        ? "text-primary-600 border-b-2 border-primary-600"
+                        : "text-gray-400 hover:text-gray-600"
                     }`}
                   >
                     Itinerary
@@ -656,31 +785,33 @@ const ProductDetail: React.FC = () => {
                 )}
 
                 <button
-                  onClick={() => setActiveTab('gallery')}
+                  onClick={() => setActiveTab("gallery")}
                   className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                    activeTab === 'gallery'
-                      ? 'text-primary-600 border-b-2 border-primary-600'
-                      : 'text-gray-400 hover:text-gray-600'
+                    activeTab === "gallery"
+                      ? "text-primary-600 border-b-2 border-primary-600"
+                      : "text-gray-400 hover:text-gray-600"
                   }`}
                 >
                   Gallery
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('reviews')}
+                  onClick={() => setActiveTab("reviews")}
                   className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                    activeTab === 'reviews'
-                      ? 'text-primary-600 border-b-2 border-primary-600'
-                      : 'text-gray-400 hover:text-gray-600'
+                    activeTab === "reviews"
+                      ? "text-primary-600 border-b-2 border-primary-600"
+                      : "text-gray-400 hover:text-gray-600"
                   }`}
                 >
                   Reviews
                 </button>
               </div>
 
-              {activeTab === 'overview' && (
+              {activeTab === "overview" && (
                 <div className="animate-in fade-in">
-                  <p className="text-gray-600 leading-loose text-lg mb-8">{product.description}</p>
+                  <p className="text-gray-600 leading-loose text-lg mb-8">
+                    {product.description}
+                  </p>
 
                   <h3 className="text-lg font-bold mb-6 flex items-center text-gray-900">
                     <span className="w-1 h-6 bg-primary-500 rounded-full mr-3"></span>
@@ -703,7 +834,8 @@ const ProductDetail: React.FC = () => {
                   {/* Updated Location Map Section */}
                   <div className="mt-10 pt-8 border-t border-gray-100">
                     <h3 className="text-lg font-bold mb-6 flex items-center text-gray-900">
-                      <MapPin className="w-5 h-5 mr-2 text-primary-500" /> Location & Surroundings
+                      <MapPin className="w-5 h-5 mr-2 text-primary-500" />{" "}
+                      Location & Surroundings
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="md:col-span-2 relative rounded-2xl overflow-hidden h-64 border border-gray-200 group cursor-pointer shadow-sm">
@@ -721,13 +853,39 @@ const ProductDetail: React.FC = () => {
                             </span>
                           </div>
                         </div>
+
+                        {/* ✅ tombol open maps: now include lat,lng */}
                         <div className="absolute bottom-4 right-4">
-                          <button className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-md flex items-center hover:bg-gray-50 border border-gray-100">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenMaps();
+                            }}
+                            className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-md flex items-center hover:bg-gray-50 border border-gray-100"
+                            title={
+                              coords
+                                ? `Open Maps (${coords.lat.toFixed(
+                                    6
+                                  )}, ${coords.lng.toFixed(6)})`
+                                : "Open Maps"
+                            }
+                          >
                             <Navigation className="w-3 h-3 mr-2" />
                             Open Maps
                           </button>
                         </div>
+
+                        {/* ✅ tampil kecil lat/lng di card map */}
+                        <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-mono text-gray-700 border border-gray-100 shadow-sm">
+                          {coords
+                            ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(
+                                6
+                              )}`
+                            : "lat/lng: -"}
+                        </div>
                       </div>
+
                       <div className="space-y-3">
                         <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wide">
                           Nearby Highlights
@@ -737,8 +895,12 @@ const ProductDetail: React.FC = () => {
                             <Utensils className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-gray-900">Local Cuisine</p>
-                            <p className="text-[10px] text-gray-500">5 mins walk</p>
+                            <p className="text-xs font-bold text-gray-900">
+                              Local Cuisine
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              5 mins walk
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -746,8 +908,12 @@ const ProductDetail: React.FC = () => {
                             <Car className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-gray-900">Airport Access</p>
-                            <p className="text-[10px] text-gray-500">45 mins drive</p>
+                            <p className="text-xs font-bold text-gray-900">
+                              Airport Access
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              45 mins drive
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -755,26 +921,47 @@ const ProductDetail: React.FC = () => {
                             <Mountain className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-gray-900">Scenic Spot</p>
-                            <p className="text-[10px] text-gray-500">10 mins drive</p>
+                            <p className="text-xs font-bold text-gray-900">
+                              Scenic Spot
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              10 mins drive
+                            </p>
                           </div>
                         </div>
+
+                        {/* ✅ optional: tombol Apple Maps */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = buildAppleMapsUrl(product, coords);
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          }}
+                          className="w-full mt-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center"
+                          title="Open in Apple Maps"
+                        >
+                          <Navigation className="w-3 h-3 mr-2" />
+                          Open Apple Maps
+                        </button>
                       </div>
                     </div>
                   </div>
 
-                  {details && 'rules' in details && (details as any).rules && (
+                  {details && "rules" in details && (details as any).rules && (
                     <>
                       <h3 className="text-lg font-bold mb-4 flex items-center text-gray-900 mt-8">
-                        <Info className="w-5 h-5 mr-2 text-primary-500" /> Important Info
+                        <Info className="w-5 h-5 mr-2 text-primary-500" />{" "}
+                        Important Info
                       </h3>
                       <ul className="space-y-2 text-gray-600">
-                        {(details as any).rules.map((rule: string, idx: number) => (
-                          <li key={idx} className="flex items-start">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                            {rule}
-                          </li>
-                        ))}
+                        {(details as any).rules.map(
+                          (rule: string, idx: number) => (
+                            <li key={idx} className="flex items-start">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                              {rule}
+                            </li>
+                          )
+                        )}
                       </ul>
                     </>
                   )}
@@ -782,10 +969,11 @@ const ProductDetail: React.FC = () => {
               )}
 
               {/* GALLERY TAB CONTENT */}
-              {activeTab === 'gallery' && (
+              {activeTab === "gallery" && (
                 <div className="animate-in fade-in">
                   <h3 className="text-lg font-bold mb-6 flex items-center text-gray-900">
-                    <Image className="w-5 h-5 mr-2 text-primary-500" /> Photo Gallery
+                    <Image className="w-5 h-5 mr-2 text-primary-500" /> Photo
+                    Gallery
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {galleryImages.map((img, index) => (
@@ -793,7 +981,7 @@ const ProductDetail: React.FC = () => {
                         key={index}
                         onClick={() => openLightbox(index)}
                         className={`relative rounded-2xl overflow-hidden group shadow-sm cursor-pointer ${
-                          index === 0 ? 'md:col-span-2 md:h-80' : 'h-48'
+                          index === 0 ? "md:col-span-2 md:h-80" : "h-48"
                         }`}
                       >
                         <img
@@ -814,12 +1002,14 @@ const ProductDetail: React.FC = () => {
               )}
 
               {/* REVIEWS TAB CONTENT */}
-              {activeTab === 'reviews' && (
+              {activeTab === "reviews" && (
                 <div className="animate-in fade-in">
                   <h3 className="text-lg font-bold mb-6 flex items-center text-gray-900">
-                    <Star className="w-5 h-5 mr-2 text-primary-500 fill-current" /> Customer Reviews
+                    <Star className="w-5 h-5 mr-2 text-primary-500 fill-current" />{" "}
+                    Customer Reviews
                   </h3>
-                  {!(product as any).reviews || (product as any).reviews.length === 0 ? (
+                  {!(product as any).reviews ||
+                  (product as any).reviews.length === 0 ? (
                     <div className="text-center py-10 bg-gray-50 rounded-2xl">
                       <p className="text-gray-500">
                         No reviews yet. Be the first to review this adventure!
@@ -835,13 +1025,15 @@ const ProductDetail: React.FC = () => {
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center">
                               <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mr-3">
-                                {review.userName?.charAt?.(0) || 'U'}
+                                {review.userName?.charAt?.(0) || "U"}
                               </div>
                               <div>
                                 <h4 className="font-bold text-gray-900 text-sm">
                                   {review.userName}
                                 </h4>
-                                <span className="text-xs text-gray-400">{review.date}</span>
+                                <span className="text-xs text-gray-400">
+                                  {review.date}
+                                </span>
                               </div>
                             </div>
                             <div className="flex bg-amber-50 px-2 py-1 rounded-lg">
@@ -850,14 +1042,16 @@ const ProductDetail: React.FC = () => {
                                   key={i}
                                   className={`w-3 h-3 ${
                                     i < review.rating
-                                      ? 'fill-amber-400 text-amber-400'
-                                      : 'text-gray-300'
+                                      ? "fill-amber-400 text-amber-400"
+                                      : "text-gray-300"
                                   }`}
                                 />
                               ))}
                             </div>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>
+                          <p className="text-gray-600 text-sm leading-relaxed">
+                            {review.comment}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -866,7 +1060,7 @@ const ProductDetail: React.FC = () => {
               )}
 
               {/* TOUR ITINERARY */}
-              {activeTab === 'itinerary' && isTour(details) && (
+              {activeTab === "itinerary" && isTour(details) && (
                 <div className="space-y-8 animate-in fade-in">
                   {details.itinerary.map((day) => (
                     <div
@@ -877,7 +1071,9 @@ const ProductDetail: React.FC = () => {
                       <h4 className="text-lg font-bold text-gray-900 mb-2">
                         Day {day.day}: {day.title}
                       </h4>
-                      <p className="text-gray-600 mb-4 leading-relaxed">{day.description}</p>
+                      <p className="text-gray-600 mb-4 leading-relaxed">
+                        {day.description}
+                      </p>
 
                       <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-3 border border-gray-100">
                         {day.accommodation && (
@@ -889,7 +1085,9 @@ const ProductDetail: React.FC = () => {
                               <span className="text-xs font-bold text-gray-400 uppercase block">
                                 Accommodation
                               </span>
-                              <span className="font-medium">{day.accommodation}</span>
+                              <span className="font-medium">
+                                {day.accommodation}
+                              </span>
                             </div>
                           </div>
                         )}
@@ -902,7 +1100,9 @@ const ProductDetail: React.FC = () => {
                               <span className="text-xs font-bold text-gray-400 uppercase block">
                                 Meals Included
                               </span>
-                              <span className="font-medium">{day.meals.join(', ')}</span>
+                              <span className="font-medium">
+                                {day.meals.join(", ")}
+                              </span>
                             </div>
                           </div>
                         )}
@@ -968,7 +1168,11 @@ const ProductDetail: React.FC = () => {
           </div>
 
           {/* Booking Card - Sticky */}
-          <div className="lg:col-span-1" id="booking-section" ref={bookingSectionRef}>
+          <div
+            className="lg:col-span-1"
+            id="booking-section"
+            ref={bookingSectionRef}
+          >
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 sticky top-28 relative overflow-hidden">
               {activeFlashSale && (
                 <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-center py-1 text-xs font-bold uppercase tracking-wider animate-pulse">
@@ -989,7 +1193,7 @@ const ProductDetail: React.FC = () => {
                     )}
                     <div
                       className={`text-3xl font-bold ${
-                        activeFlashSale ? 'text-red-600' : 'text-gray-900'
+                        activeFlashSale ? "text-red-600" : "text-gray-900"
                       }`}
                     >
                       {product.currency} {effectivePrice}
@@ -1007,12 +1211,12 @@ const ProductDetail: React.FC = () => {
                 {/* CALENDAR SECTION */}
                 <div className="relative" ref={calendarRef}>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                    {isSingleDaySelection ? 'Select Date' : 'Select Dates'}
+                    {isSingleDaySelection ? "Select Date" : "Select Dates"}
                   </label>
                   <div
                     onClick={() => {
                       setIsCalendarOpen(true);
-                      setCalendarMode('checkIn');
+                      setCalendarMode("checkIn");
                     }}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl flex items-center justify-between cursor-pointer hover:bg-gray-50 bg-white"
                   >
@@ -1023,12 +1227,12 @@ const ProductDetail: React.FC = () => {
                           formatDateDisplay(checkIn)
                         ) : (
                           `${formatDateDisplay(checkIn)} — ${
-                            checkOut ? formatDateDisplay(checkOut) : 'End Date'
+                            checkOut ? formatDateDisplay(checkOut) : "End Date"
                           }`
                         )
                       ) : (
                         <span className="text-gray-400">
-                          Select {isSingleDaySelection ? 'Date' : 'Dates'}
+                          Select {isSingleDaySelection ? "Date" : "Dates"}
                         </span>
                       )}
                     </div>
@@ -1039,11 +1243,11 @@ const ProductDetail: React.FC = () => {
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-5 z-50 border border-gray-100 animate-in fade-in slide-in-from-top-2">
                       <div className="flex justify-center gap-3 mb-4 pb-3 border-b border-gray-100">
                         <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase">
-                          <span className="w-2 h-2 rounded-full bg-primary-600 mr-1.5"></span>{' '}
+                          <span className="w-2 h-2 rounded-full bg-primary-600 mr-1.5"></span>{" "}
                           Selected
                         </div>
                         <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase">
-                          <span className="w-2 h-2 rounded-full bg-orange-400 mr-1.5"></span>{' '}
+                          <span className="w-2 h-2 rounded-full bg-orange-400 mr-1.5"></span>{" "}
                           Full/Busy
                         </div>
                       </div>
@@ -1056,7 +1260,8 @@ const ProductDetail: React.FC = () => {
                           <ChevronLeft className="w-4 h-4" />
                         </button>
                         <h4 className="text-sm font-bold text-gray-900">
-                          {months[pickerDate.getMonth()]} {pickerDate.getFullYear()}
+                          {months[pickerDate.getMonth()]}{" "}
+                          {pickerDate.getFullYear()}
                         </h4>
                         <button
                           onClick={handleNextMonth}
@@ -1067,8 +1272,11 @@ const ProductDetail: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-7 gap-1 text-center mb-1">
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                          <div key={i} className="text-[10px] font-bold text-gray-400">
+                        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                          <div
+                            key={i}
+                            className="text-[10px] font-bold text-gray-400"
+                          >
                             {d}
                           </div>
                         ))}
@@ -1092,7 +1300,7 @@ const ProductDetail: React.FC = () => {
                 {checkIn && checkOut && !isSingleDaySelection && (
                   <div className="p-3 bg-primary-50 rounded-xl text-center">
                     <span className="text-xs font-bold text-primary-700">
-                      {duration} {isStay(details) ? 'Nights' : 'Days'} Selected
+                      {duration} {isStay(details) ? "Nights" : "Days"} Selected
                     </span>
                   </div>
                 )}
@@ -1100,7 +1308,7 @@ const ProductDetail: React.FC = () => {
                 {/* Guests/Units Input */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                    {itemLabel}s{' '}
+                    {itemLabel}s{" "}
                     {unitsNeeded > 1 && !isTour(details) && (
                       <span className="text-orange-500 ml-1">
                         ({unitsNeeded} {unitLabel}s required)
@@ -1115,12 +1323,14 @@ const ProductDetail: React.FC = () => {
                       max={isTour(details) ? 20 : 30}
                       className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent font-medium bg-gray-50 focus:bg-white transition-all text-sm"
                       value={guests}
-                      onChange={(e) => setGuests(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) =>
+                        setGuests(Math.max(1, parseInt(e.target.value) || 1))
+                      }
                     />
                   </div>
                   {!isTour(details) && (
                     <p className="text-[10px] text-gray-400 mt-1.5 ml-1">
-                      Max capacity per {unitLabel.toLowerCase()}: {capacity}{' '}
+                      Max capacity per {unitLabel.toLowerCase()}: {capacity}{" "}
                       {itemLabel.toLowerCase()}s
                     </p>
                   )}
@@ -1173,13 +1383,14 @@ const ProductDetail: React.FC = () => {
                   <div className="flex justify-between text-sm text-gray-600 mb-3">
                     {isTour(details) ? (
                       <span>
-                        {product.currency} {effectivePrice} x {guests} {itemLabel.toLowerCase()}s
+                        {product.currency} {effectivePrice} x {guests}{" "}
+                        {itemLabel.toLowerCase()}s
                       </span>
                     ) : (
                       <span>
-                        {product.currency} {effectivePrice} x {unitsNeeded}{' '}
-                        {unitLabel.toLowerCase()}(s) x {duration}{' '}
-                        {isStay(details) ? 'night' : 'day'}(s)
+                        {product.currency} {effectivePrice} x {unitsNeeded}{" "}
+                        {unitLabel.toLowerCase()}(s) x {duration}{" "}
+                        {isStay(details) ? "night" : "day"}(s)
                       </span>
                     )}
                     <span className="font-medium">
@@ -1234,7 +1445,7 @@ const ProductDetail: React.FC = () => {
           onClick={(e) => handleBookNow(e)}
           className="bg-gray-900 active:bg-gray-800 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg shadow-gray-900/20 active:scale-95 transition-all transform"
         >
-          {checkIn ? 'Reserve' : 'Check Availability'}
+          {checkIn ? "Reserve" : "Check Availability"}
         </button>
       </div>
     </div>

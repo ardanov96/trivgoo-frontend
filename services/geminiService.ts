@@ -1,31 +1,36 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Product } from "../types";
 
-const apiKey = process.env.API_KEY || ''; 
+const apiKey = "";
 
 export const generateTripPlan = async (
-  userStory: string, 
+  userStory: string,
   availableProducts: Product[]
 ): Promise<{ itinerary: string; recommendedProductIds: number[] }> => {
   if (!apiKey) {
-    return { 
-      itinerary: "API Key is missing. Please configure the environment variable.", 
-      recommendedProductIds: [] 
+    return {
+      itinerary:
+        "API Key is missing. Please configure the environment variable.",
+      recommendedProductIds: [],
     };
   }
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    
+
     // Simplify product data to save tokens, only sending necessary fields for matching
-    const productContext = availableProducts.map(p => ({
+    const productContext = availableProducts.map((p) => ({
       id: p.id,
       name: p.name,
       description: p.description,
       price: p.price,
       location: p.location,
-      category: p.categoryId === 1 ? 'Tour' : p.categoryId === 2 ? 'Stay' : 'Transport'
+      category:
+        p.category_id === 1
+          ? "Tour"
+          : p.category_id === 2
+          ? "Stay"
+          : "Transport",
     }));
 
     const prompt = `
@@ -49,12 +54,12 @@ export const generateTripPlan = async (
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: prompt,
     });
 
     const fullText = response.text || "";
-    
+
     // Parse the response to separate text and IDs
     let itinerary = fullText;
     let recommendedProductIds: number[] = [];
@@ -62,7 +67,7 @@ export const generateTripPlan = async (
     const splitMarker = "[[RECOMMENDED_IDS]]:";
     if (fullText.includes(splitMarker)) {
       const parts = fullText.split(splitMarker);
-      itinerary = parts[0].replace('---', '').trim(); // content before marker
+      itinerary = parts[0].replace("---", "").trim(); // content before marker
       try {
         const jsonStr = parts[1].trim();
         recommendedProductIds = JSON.parse(jsonStr);
@@ -72,12 +77,12 @@ export const generateTripPlan = async (
     }
 
     return { itinerary, recommendedProductIds };
-
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return { 
-      itinerary: "An error occurred while communicating with the AI. Please try again later.", 
-      recommendedProductIds: [] 
+    return {
+      itinerary:
+        "An error occurred while communicating with the AI. Please try again later.",
+      recommendedProductIds: [],
     };
   }
 };
