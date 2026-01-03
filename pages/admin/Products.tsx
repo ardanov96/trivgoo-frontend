@@ -1,70 +1,76 @@
-import { Calendar, CheckCircle, Eye, Package, Plus, Search, Tag, XCircle, Zap } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useToast } from '../../components/ToastContext';
-import { adminService } from '../../services/adminService';
-import { AgentProduct, FlashSaleCampaign } from '../../types';
-
-// import { mockService } from "../../services/mockService"; // ✅ tetap boleh, tapi kalau belum dipakai biarin comment aja
+// pages/admin/AdminProducts.tsx
+import {
+  Calendar,
+  CheckCircle,
+  Eye,
+  Package,
+  Plus,
+  Search,
+  Tag,
+  XCircle,
+  Zap,
+} from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useToast } from "../../components/ToastContext";
+import {
+  adminService,
+  Campaign,
+  CampaignStatus,
+} from "../../services/adminService";
+import { AgentProduct } from "../../types";
 
 const AdminProducts: React.FC = () => {
   const { showToast } = useToast();
 
-  // ✅ sesuai API response
   const [products, setProducts] = useState<AgentProduct[]>([]);
-  const [campaigns, setCampaigns] = useState<FlashSaleCampaign[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'all' | 'flash_sale' | 'campaigns'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<
+    "all" | "flash_sale" | "campaigns"
+  >("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  // pagination
+  // pagination products
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
-  // optional: filter owner_id
+  // pagination campaigns
+  const [campaignPage, setCampaignPage] = useState(1);
+  const [campaignTotalPages, setCampaignTotalPages] = useState(1);
+
   const [ownerId] = useState<number | undefined>(undefined);
 
-  // Campaign Form State
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [newCampaign, setNewCampaign] = useState({
-    name: '',
-    description: '',
-    startDate: '',
-    endDate: '',
+    name: "",
+    description: "",
+    startDate: "",
+    endDate: "",
     minDiscount: 10,
-    adminFeePercentage: 5,
-    image: '',
+    agentFeePercentage: 5,
+    status: "ACTIVE" as CampaignStatus,
   });
 
-  const fetchData = async () => {
+  const fetchProducts = async (opts?: {
+    pageOverride?: number;
+    qOverride?: string;
+  }) => {
     setIsLoading(true);
-
-    // const [prodData, campaignData] = await Promise.all([
-    //   mockService.getProducts(),
-    //   mockService.getCampaigns(),
-    // ]);
-    // setProducts(prodData);
-    // setCampaigns(campaignData);
-
     try {
-      // ✅ API: /admin/agents/products?owner_id&q&page&limit
       const res = await adminService.listAgentProducts({
         owner_id: ownerId,
-        q: searchQuery,
-        page,
+        q: opts?.qOverride ?? searchQuery,
+        page: opts?.pageOverride ?? page,
         limit,
       });
 
       setProducts(res.data?.data || []);
       setTotalPages(res.data?.meta?.total_pages ?? 1);
-
-      // campaign masih mock (belum ada endpoint)
-      // const campaignData = await mockService.getCampaigns();
-      // setCampaigns(campaignData);
     } catch (e: any) {
-      showToast(e?.message || 'Failed to load products', 'error');
+      showToast(e?.message || "Failed to load products", "error");
       setProducts([]);
       setTotalPages(1);
     } finally {
@@ -72,128 +78,146 @@ const AdminProducts: React.FC = () => {
     }
   };
 
+  const fetchCampaigns = async (opts?: {
+    pageOverride?: number;
+    qOverride?: string;
+  }) => {
+    setIsLoading(true);
+    try {
+      const res = await adminService.listCampaigns({
+        q: opts?.qOverride ?? searchQuery,
+        page: opts?.pageOverride ?? campaignPage,
+        limit,
+      });
+
+      // ✅ FIX: res.data adalah { meta, data }
+      setCampaigns(res.data?.data || []);
+      setCampaignTotalPages(res.data?.meta?.total_pages ?? 1);
+    } catch (e: any) {
+      showToast(e?.message || "Failed to load campaigns", "error");
+      setCampaigns([]);
+      setCampaignTotalPages(1);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchData = async () => {
+    if (activeTab === "campaigns") return fetchCampaigns();
+    return fetchProducts();
+  };
+
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, activeTab]);
+  }, [activeTab, page, campaignPage]);
 
-  // debounce search biar ga spam request
   useEffect(() => {
-    if (activeTab === 'campaigns') return;
-
     const t = setTimeout(() => {
-      setPage(1);
-      // fetchData akan pakai page state terbaru,
-      // jadi kita panggil setelah setPage(1) dengan sedikit delay:
-      // paling aman: panggil langsung API untuk page=1
-      (async () => {
-        setIsLoading(true);
-        try {
-          const res = await adminService.listAgentProducts({
-            owner_id: ownerId,
-            q: searchQuery,
-            page: 1,
-            limit,
-          });
-          setProducts(res.data?.data || []);
-          setTotalPages(res.data?.meta?.total_pages ?? 1);
-        } catch (e: any) {
-          showToast(e?.message || 'Failed to load products', 'error');
-          setProducts([]);
-          setTotalPages(1);
-        } finally {
-          setIsLoading(false);
-        }
-      })();
+      if (activeTab === "campaigns") {
+        setCampaignPage(1);
+        fetchCampaigns({ pageOverride: 1, qOverride: searchQuery });
+      } else {
+        setPage(1);
+        fetchProducts({ pageOverride: 1, qOverride: searchQuery });
+      }
     }, 350);
 
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, activeTab]);
 
-  const handleFlashSaleAction = async (id: number, action: 'approve' | 'reject') => {
-    // if (action === 'approve') {
-    //   // Default to 24 hours from now for demo if not linked to campaign,
-    //   // else use campaign end date
-    //   const product = products.find((p) => p.id === id);
-    //   let endTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    //   if (product?.flashSale?.campaignId) {
-    //     const campaign = campaigns.find((c) => c.id === product.flashSale?.campaignId);
-    //     if (campaign) endTime = campaign.endDate + 'T23:59:59';
-    //   }
-    //   await mockService.approveFlashSale(id, endTime);
-    //   showToast('Flash sale approved successfully!');
-    // } else {
-    //   //   await mockService.rejectFlashSale(id);
-    //   showToast('Flash sale rejected.', 'info');
-    // }
-    // fetchData();
-
+  const handleFlashSaleAction = async (
+    id: number,
+    action: "approve" | "reject"
+  ) => {
     showToast(
       `Flash sale ${action} not implemented yet for product #${id}`,
-      action === 'approve' ? 'success' : 'info',
+      action === "approve" ? "success" : "info"
     );
   };
 
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // await mockService.addCampaign({
-    //   ...newCampaign,
-    //   isActive: true,
-    //   image:
-    //     newCampaign.image ||
-    //     'https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&w=1200&q=80',
-    // });
-    // showToast('Campaign created successfully!', 'success');
-    // setShowCampaignModal(false);
-    // setNewCampaign({
-    //   name: '',
-    //   description: '',
-    //   startDate: '',
-    //   endDate: '',
-    //   minDiscount: 10,
-    //   adminFeePercentage: 5,
-    //   image: '',
-    // });
+    try {
+      await adminService.createCampaign({
+        name: newCampaign.name.trim(),
+        description: newCampaign.description?.trim() || null,
+        start_date: newCampaign.startDate,
+        end_date: newCampaign.endDate,
+        min_discount_percent: Number(newCampaign.minDiscount || 0),
+        agent_fee_percent: Number(newCampaign.agentFeePercentage || 0),
+        status: newCampaign.status || "DRAFT",
+      });
 
-    showToast('Campaign creation not implemented yet', 'info');
-    setShowCampaignModal(false);
+      showToast("Campaign created successfully!", "success");
 
-    fetchData();
+      setShowCampaignModal(false);
+      setNewCampaign({
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        minDiscount: 10,
+        agentFeePercentage: 5,
+        status: "ACTIVE",
+      });
+
+      setActiveTab("campaigns");
+      setCampaignPage(1);
+      await fetchCampaigns({ pageOverride: 1, qOverride: searchQuery });
+    } catch (e: any) {
+      showToast(e?.message || "Failed to create campaign", "error");
+    }
   };
 
   const filteredProducts = useMemo(() => {
-    // const matchesSearch =
-    //   p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    //   (p.ownerName || '').toLowerCase().includes(searchQuery.toLowerCase());
-    // if (activeTab === 'flash_sale') {
-    //   return matchesSearch && p.flashSale && p.flashSale.status === 'pending';
-    // }
-    // return matchesSearch;
-
     // ✅ API belum ada flashSale, jadi kalau flash_sale tab -> kosong
-    if (activeTab === 'flash_sale') return [];
+    if (activeTab === "flash_sale") return [];
     return products;
   }, [products, activeTab]);
 
+  const statusBadge = (status?: CampaignStatus) => {
+    const s = (status || "DRAFT").toUpperCase() as CampaignStatus;
+    if (s === "ACTIVE") return "bg-green-500 text-white";
+    if (s === "ENDED") return "bg-gray-500 text-white";
+    if (s === "CANCELLED") return "bg-red-500 text-white";
+    return "bg-yellow-500 text-white";
+  };
+
   return (
     <div className="space-y-6">
+      {/* header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Product & Campaigns</h2>
+          <h2 className="text-2xl font-bold text-gray-800">
+            Product & Campaigns
+          </h2>
           <p className="text-gray-500 text-sm">
             Manage listings, approve promos, and organize events.
           </p>
         </div>
 
-        {activeTab === 'campaigns' ? (
-          <button
-            onClick={() => setShowCampaignModal(true)}
-            className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg font-bold shadow-md hover:bg-gray-800 transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-2" /> Create Campaign
-          </button>
+        {activeTab === "campaigns" ? (
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search campaigns..."
+                className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 w-64"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={() => setShowCampaignModal(true)}
+              className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg font-bold shadow-md hover:bg-gray-800 transition-colors"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Create Campaign
+            </button>
+          </div>
         ) : (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -208,15 +232,16 @@ const AdminProducts: React.FC = () => {
         )}
       </div>
 
+      {/* tabs + body */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="border-b border-gray-100 px-6 pt-6">
           <div className="flex space-x-8 overflow-x-auto">
             <button
-              onClick={() => setActiveTab('all')}
+              onClick={() => setActiveTab("all")}
               className={`pb-4 text-sm font-bold transition-all border-b-2 flex items-center whitespace-nowrap ${
-                activeTab === 'all'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-800'
+                activeTab === "all"
+                  ? "border-primary-600 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
               <Package className="w-4 h-4 mr-2" />
@@ -224,11 +249,11 @@ const AdminProducts: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('flash_sale')}
+              onClick={() => setActiveTab("flash_sale")}
               className={`pb-4 text-sm font-bold transition-all border-b-2 flex items-center whitespace-nowrap ${
-                activeTab === 'flash_sale'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-800'
+                activeTab === "flash_sale"
+                  ? "border-orange-500 text-orange-600"
+                  : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
               <Zap className="w-4 h-4 mr-2" />
@@ -243,11 +268,11 @@ const AdminProducts: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('campaigns')}
+              onClick={() => setActiveTab("campaigns")}
               className={`pb-4 text-sm font-bold transition-all border-b-2 flex items-center whitespace-nowrap ${
-                activeTab === 'campaigns'
-                  ? 'border-purple-500 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-800'
+                activeTab === "campaigns"
+                  ? "border-purple-500 text-purple-600"
+                  : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
               <Tag className="w-4 h-4 mr-2" />
@@ -256,62 +281,106 @@ const AdminProducts: React.FC = () => {
           </div>
         </div>
 
-        {activeTab === 'campaigns' ? (
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {campaigns.map((campaign) => (
-              <div
-                key={campaign.id}
-                className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow flex flex-col group"
-              >
-                <div className="h-40 relative overflow-hidden">
-                  <img
-                    src={campaign.image}
-                    alt={campaign.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div
-                    className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${
-                      campaign.isActive ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
-                    }`}
-                  >
-                    {campaign.isActive ? 'Active' : 'Inactive'}
-                  </div>
+        {/* campaigns tab */}
+        {activeTab === "campaigns" ? (
+          <>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {isLoading ? (
+                <div className="col-span-full py-12 text-center text-gray-500">
+                  Loading...
                 </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{campaign.name}</h3>
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">{campaign.description}</p>
-
-                  <div className="flex items-center gap-4 text-xs font-medium text-gray-600 mb-4">
-                    <div className="flex items-center bg-gray-50 px-2 py-1 rounded">
-                      <Calendar className="w-3 h-3 mr-1" /> {campaign.startDate} -{' '}
-                      {campaign.endDate}
+              ) : (
+                campaigns.map((c) => (
+                  <div
+                    key={c.id}
+                    className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow flex flex-col"
+                  >
+                    <div className="p-5 border-b border-gray-100 flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {c.name}
+                        </h3>
+                        <p className="text-gray-500 text-sm line-clamp-2 mt-1">
+                          {c.description || "-"}
+                        </p>
+                      </div>
+                      <div
+                        className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${statusBadge(
+                          c.status
+                        )}`}
+                      >
+                        {c.status}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center text-sm">
-                    <div>
-                      <p className="text-gray-400 text-xs uppercase font-bold">Incentives</p>
-                      <div className="flex gap-2 mt-1">
-                        <span className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded font-bold">
-                          -{campaign.minDiscount}% Price
-                        </span>
-                        <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded font-bold">
-                          {campaign.adminFeePercentage}% Fee
-                        </span>
+                    <div className="p-5 flex-1 flex flex-col">
+                      <div className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-4">
+                        <div className="flex items-center bg-gray-50 px-2 py-1 rounded">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {c.start_date} - {c.end_date}
+                        </div>
+                        <div className="flex items-center bg-gray-50 px-2 py-1 rounded">
+                          <span className="text-gray-500">Products:</span>
+                          <span className="ml-1 font-bold text-gray-700">
+                            {c.product_count ?? 0}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto pt-4 border-t border-gray-100 text-sm">
+                        <p className="text-gray-400 text-xs uppercase font-bold">
+                          Incentives
+                        </p>
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          <span className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded font-bold">
+                            -{Number(c.min_discount_percent || 0)}% Price
+                          </span>
+                          <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded font-bold">
+                            {Number(c.agent_fee_percent || 0)}% Fee
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                ))
+              )}
 
-            {campaigns.length === 0 && (
-              <div className="col-span-full py-12 text-center text-gray-500">
-                No campaigns found. Create one to engage agents!
+              {!isLoading && campaigns.length === 0 && (
+                <div className="col-span-full py-12 text-center text-gray-500">
+                  No campaigns found. Create one to engage agents!
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+              <div className="text-xs text-gray-500">
+                Page{" "}
+                <span className="font-bold text-gray-700">{campaignPage}</span>{" "}
+                /{" "}
+                <span className="font-bold text-gray-700">
+                  {campaignTotalPages}
+                </span>
               </div>
-            )}
-          </div>
+              <div className="flex gap-2">
+                <button
+                  disabled={campaignPage <= 1 || isLoading}
+                  onClick={() => setCampaignPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 text-sm font-bold rounded-lg border border-gray-200 disabled:opacity-50 hover:bg-gray-50"
+                >
+                  Prev
+                </button>
+                <button
+                  disabled={campaignPage >= campaignTotalPages || isLoading}
+                  onClick={() => setCampaignPage((p) => p + 1)}
+                  className="px-3 py-1.5 text-sm font-bold rounded-lg border border-gray-200 disabled:opacity-50 hover:bg-gray-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
         ) : (
+          // ✅ PRODUCTS TAB: balik full existing table kamu (tidak diubah)
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">
               <thead className="bg-gray-50">
@@ -328,7 +397,7 @@ const AdminProducts: React.FC = () => {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                     Price
                   </th>
-                  {activeTab === 'flash_sale' && (
+                  {activeTab === "flash_sale" && (
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Promo Offer
                     </th>
@@ -343,7 +412,7 @@ const AdminProducts: React.FC = () => {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={activeTab === 'flash_sale' ? 6 : 5}
+                      colSpan={activeTab === "flash_sale" ? 6 : 5}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       Loading...
@@ -352,7 +421,7 @@ const AdminProducts: React.FC = () => {
                 ) : filteredProducts.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={activeTab === 'flash_sale' ? 6 : 5}
+                      colSpan={activeTab === "flash_sale" ? 6 : 5}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       No products found.
@@ -360,11 +429,17 @@ const AdminProducts: React.FC = () => {
                   </tr>
                 ) : (
                   filteredProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={product.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <img
-                            src={product.image_url || product.image}
+                            src={
+                              (product as any).image_url ||
+                              (product as any).image
+                            }
                             className="w-10 h-10 rounded-lg object-cover mr-3 bg-gray-100"
                             alt=""
                           />
@@ -372,26 +447,30 @@ const AdminProducts: React.FC = () => {
                             <div className="text-sm font-bold text-gray-900 line-clamp-1">
                               {product.name}
                             </div>
-                            <div className="text-xs text-gray-500">ID: #{product.id}</div>
+                            <div className="text-xs text-gray-500">
+                              ID: #{product.id}
+                            </div>
                           </div>
                         </div>
                       </td>
 
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {product.owner?.name || 'Unknown'}
+                        {(product as any).owner?.name || "Unknown"}
                       </td>
 
                       <td className="px-6 py-4">
                         <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold">
-                          {(product.details?.type || '-').toUpperCase()}
+                          {(
+                            ((product as any).details?.type || "-") as string
+                          ).toUpperCase()}
                         </span>
                       </td>
 
                       <td className="px-6 py-4 text-sm font-bold text-gray-900">
-                        {product.currency} {product.price}
+                        {(product as any).currency} {(product as any).price}
                       </td>
 
-                      {activeTab === 'flash_sale' && (
+                      {activeTab === "flash_sale" && (
                         <td className="px-6 py-4 text-gray-400 text-sm">-</td>
                       )}
 
@@ -405,17 +484,21 @@ const AdminProducts: React.FC = () => {
                             <Eye className="w-5 h-5" />
                           </Link>
 
-                          {activeTab === 'flash_sale' && (
+                          {activeTab === "flash_sale" && (
                             <>
                               <button
-                                onClick={() => handleFlashSaleAction(product.id, 'approve')}
+                                onClick={() =>
+                                  handleFlashSaleAction(product.id, "approve")
+                                }
                                 className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
                                 title="Approve Promo"
                               >
                                 <CheckCircle className="w-5 h-5" />
                               </button>
                               <button
-                                onClick={() => handleFlashSaleAction(product.id, 'reject')}
+                                onClick={() =>
+                                  handleFlashSaleAction(product.id, "reject")
+                                }
                                 className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
                                 title="Reject"
                               >
@@ -431,10 +514,10 @@ const AdminProducts: React.FC = () => {
               </tbody>
             </table>
 
-            {/* pagination */}
+            {/* pagination products */}
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
               <div className="text-xs text-gray-500">
-                Page <span className="font-bold text-gray-700">{page}</span> /{' '}
+                Page <span className="font-bold text-gray-700">{page}</span> /{" "}
                 <span className="font-bold text-gray-700">{totalPages}</span>
               </div>
               <div className="flex gap-2">
@@ -463,7 +546,9 @@ const AdminProducts: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-8">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Create New Campaign</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Create New Campaign
+              </h3>
               <button
                 onClick={() => setShowCampaignModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -474,46 +559,69 @@ const AdminProducts: React.FC = () => {
 
             <form onSubmit={handleCreateCampaign} className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Campaign Name</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Campaign Name
+                </label>
                 <input
                   type="text"
                   required
                   className="w-full px-4 py-2 border rounded-xl"
                   value={newCampaign.name}
-                  onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })}
-                  placeholder="e.g. Christmas Sale"
+                  onChange={(e) =>
+                    setNewCampaign({ ...newCampaign, name: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Description
+                </label>
                 <textarea
                   className="w-full px-4 py-2 border rounded-xl h-24 resize-none"
                   value={newCampaign.description}
-                  onChange={(e) => setNewCampaign({ ...newCampaign, description: e.target.value })}
-                  placeholder="Describe the event..."
+                  onChange={(e) =>
+                    setNewCampaign({
+                      ...newCampaign,
+                      description: e.target.value,
+                    })
+                  }
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Start Date</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">
+                    Start Date
+                  </label>
                   <input
                     type="date"
                     required
                     className="w-full px-4 py-2 border rounded-xl"
                     value={newCampaign.startDate}
-                    onChange={(e) => setNewCampaign({ ...newCampaign, startDate: e.target.value })}
+                    onChange={(e) =>
+                      setNewCampaign({
+                        ...newCampaign,
+                        startDate: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">
+                    End Date
+                  </label>
                   <input
                     type="date"
                     required
                     className="w-full px-4 py-2 border rounded-xl"
                     value={newCampaign.endDate}
-                    onChange={(e) => setNewCampaign({ ...newCampaign, endDate: e.target.value })}
+                    onChange={(e) =>
+                      setNewCampaign({
+                        ...newCampaign,
+                        endDate: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -525,13 +633,16 @@ const AdminProducts: React.FC = () => {
                   </label>
                   <input
                     type="number"
-                    required
-                    min="1"
+                    min="0"
                     max="100"
+                    required
                     className="w-full px-4 py-2 border rounded-xl"
                     value={newCampaign.minDiscount}
                     onChange={(e) =>
-                      setNewCampaign({ ...newCampaign, minDiscount: parseInt(e.target.value) })
+                      setNewCampaign({
+                        ...newCampaign,
+                        minDiscount: Number(e.target.value),
+                      })
                     }
                   />
                 </div>
@@ -541,15 +652,15 @@ const AdminProducts: React.FC = () => {
                   </label>
                   <input
                     type="number"
-                    required
                     min="0"
                     max="100"
+                    required
                     className="w-full px-4 py-2 border rounded-xl"
-                    value={newCampaign.adminFeePercentage}
+                    value={newCampaign.agentFeePercentage}
                     onChange={(e) =>
                       setNewCampaign({
                         ...newCampaign,
-                        adminFeePercentage: parseInt(e.target.value),
+                        agentFeePercentage: Number(e.target.value),
                       })
                     }
                   />
@@ -557,6 +668,27 @@ const AdminProducts: React.FC = () => {
                     Normal fee is 11%. Lower this to incentivize agents.
                   </p>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  className="w-full px-4 py-2 border rounded-xl"
+                  value={newCampaign.status}
+                  onChange={(e) =>
+                    setNewCampaign({
+                      ...newCampaign,
+                      status: e.target.value as CampaignStatus,
+                    })
+                  }
+                >
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="ENDED">ENDED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
               </div>
 
               <button

@@ -1,10 +1,10 @@
-import { Heart, LogOut, Menu, Sparkles, X } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../AuthContext';
-import { useWishlist } from '../components/WishlistContext';
-import { authService } from '../services/authService';
-import { UserRole } from '../types';
+import { Heart, LogOut, Menu, Sparkles, X } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthContext";
+import { useWishlist } from "../components/WishlistContext";
+import { authService } from "../services/authService";
+import { UserRole } from "../types";
 
 const PublicLayout: React.FC = () => {
   const { user, logout, updateUser } = useAuth();
@@ -18,8 +18,8 @@ const PublicLayout: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -48,33 +48,36 @@ const PublicLayout: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
   const navigateToDashboard = () => {
-    if (user?.role === UserRole.ADMIN) navigate('/admin');
-    if (user?.role === UserRole.AGENT) navigate('/agent');
-    if (user?.role === UserRole.CUSTOMER) navigate('/my-bookings');
+    if (user?.role === UserRole.ADMIN) navigate("/admin");
+    if (user?.role === UserRole.AGENT) navigate("/agent");
+    if (user?.role === UserRole.CUSTOMER) navigate("/my-bookings");
   };
 
-  const isHome = location.pathname === '/';
+  const isHome = location.pathname === "/";
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-gray-50">
       <nav
         className={`fixed top-0 w-full z-50 transition-all duration-300 ease-in-out border-b ${
           scrolled || !isHome
-            ? 'bg-white/95 backdrop-blur-md border-gray-100 shadow-sm py-3'
-            : 'bg-transparent border-transparent py-5'
+            ? "bg-white/95 backdrop-blur-md border-gray-100 shadow-sm py-3"
+            : "bg-transparent border-transparent py-5"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-12">
             <div className="flex items-center">
-              <Link to="/" className="flex-shrink-0 flex items-center group relative z-10">
+              <Link
+                to="/"
+                className="flex-shrink-0 flex items-center group relative z-10"
+              >
                 <span
                   className={`text-2xl md:text-3xl font-serif font-bold tracking-tighter transition-colors ${
-                    scrolled || !isHome ? 'text-primary-800' : 'text-white'
+                    scrolled || !isHome ? "text-primary-800" : "text-white"
                   }`}
                 >
                   trivgoo<span className="text-accent-500">.</span>
@@ -82,12 +85,14 @@ const PublicLayout: React.FC = () => {
               </Link>
 
               <div className="hidden md:ml-12 md:flex md:space-x-8">
-                {['Home', 'Explore'].map((item) => (
+                {["Home", "Explore"].map((item) => (
                   <Link
                     key={item}
-                    to={item === 'Home' ? '/' : `/${item.toLowerCase()}`}
+                    to={item === "Home" ? "/" : `/${item.toLowerCase()}`}
                     className={`inline-flex items-center text-sm font-medium transition-colors hover:text-accent-500 ${
-                      scrolled || !isHome ? 'text-gray-600' : 'text-white/90 hover:text-white'
+                      scrolled || !isHome
+                        ? "text-gray-600"
+                        : "text-white/90 hover:text-white"
                     }`}
                   >
                     {item}
@@ -98,8 +103,8 @@ const PublicLayout: React.FC = () => {
                   to="/ai-planner"
                   className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
                     scrolled || !isHome
-                      ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 ring-1 ring-primary-100'
-                      : 'bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 border border-white/30'
+                      ? "bg-primary-50 text-primary-700 hover:bg-primary-100 ring-1 ring-primary-100"
+                      : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 border border-white/30"
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" />
@@ -114,8 +119,8 @@ const PublicLayout: React.FC = () => {
                 to="/wishlist"
                 className={`p-2 rounded-full transition-colors relative group ${
                   scrolled || !isHome
-                    ? 'text-gray-600 hover:bg-gray-100'
-                    : 'text-white/90 hover:bg-white/20'
+                    ? "text-gray-600 hover:bg-gray-100"
+                    : "text-white/90 hover:bg-white/20"
                 }`}
                 title="Wishlist"
               >
@@ -131,13 +136,13 @@ const PublicLayout: React.FC = () => {
                     onClick={navigateToDashboard}
                     className={`flex items-center text-sm font-medium transition-colors group ${
                       scrolled || !isHome
-                        ? 'text-gray-700 hover:text-primary-600'
-                        : 'text-white hover:text-primary-200'
+                        ? "text-gray-700 hover:text-primary-600"
+                        : "text-white hover:text-primary-200"
                     }`}
                   >
                     <img
                       className="h-9 w-9 rounded-full border-2 border-white shadow-sm mr-2 object-cover group-hover:border-primary-200 transition-colors"
-                      src={user.avatar}
+                      src={user.avatar || "/avatar.png"}
                       alt=""
                     />
                     <span>{user.name}</span>
@@ -147,8 +152,8 @@ const PublicLayout: React.FC = () => {
                     onClick={handleLogout}
                     className={`p-2 rounded-full transition-colors ${
                       scrolled || !isHome
-                        ? 'text-gray-400 hover:text-red-500 hover:bg-red-50'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                        ? "text-gray-400 hover:text-red-500 hover:bg-red-50"
+                        : "text-white/70 hover:text-white hover:bg-white/10"
                     }`}
                   >
                     <LogOut className="w-5 h-5" />
@@ -160,8 +165,8 @@ const PublicLayout: React.FC = () => {
                     to="/login"
                     className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
                       scrolled || !isHome
-                        ? 'text-gray-600 hover:text-primary-600'
-                        : 'text-white hover:text-primary-100'
+                        ? "text-gray-600 hover:text-primary-600"
+                        : "text-white hover:text-primary-100"
                     }`}
                   >
                     Login
@@ -180,7 +185,9 @@ const PublicLayout: React.FC = () => {
             <div className="-mr-2 flex items-center md:hidden">
               <Link
                 to="/wishlist"
-                className={`mr-4 p-2 ${scrolled || !isHome ? 'text-gray-600' : 'text-white'}`}
+                className={`mr-4 p-2 ${
+                  scrolled || !isHome ? "text-gray-600" : "text-white"
+                }`}
               >
                 <Heart className="w-6 h-6" />
               </Link>
@@ -189,11 +196,15 @@ const PublicLayout: React.FC = () => {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className={`inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition-colors ${
                   scrolled || !isHome
-                    ? 'text-gray-500 hover:bg-gray-100'
-                    : 'text-white hover:bg-white/20'
+                    ? "text-gray-500 hover:bg-gray-100"
+                    : "text-white hover:bg-white/20"
                 }`}
               >
-                {isMenuOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+                {isMenuOpen ? (
+                  <X className="block h-6 w-6" />
+                ) : (
+                  <Menu className="block h-6 w-6" />
+                )}
               </button>
             </div>
           </div>
@@ -259,12 +270,16 @@ const PublicLayout: React.FC = () => {
                   <div className="flex items-center px-4 py-2">
                     <img
                       className="h-10 w-10 rounded-full object-cover"
-                      src={user.avatar || '/default-avatar.png'}
+                      src={user.avatar || "/default-avatar.png"}
                       alt=""
                     />
                     <div className="ml-3">
-                      <div className="text-base font-medium text-gray-800">{user.name}</div>
-                      <div className="text-sm font-medium text-gray-500">{user.email}</div>
+                      <div className="text-base font-medium text-gray-800">
+                        {user.name}
+                      </div>
+                      <div className="text-sm font-medium text-gray-500">
+                        {user.email}
+                      </div>
                     </div>
                   </div>
                   <button
@@ -295,8 +310,8 @@ const PublicLayout: React.FC = () => {
                 trivgoo<span className="text-primary-500">.</span>
               </span>
               <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                Curating the world's most breathtaking adventures and luxury stays. Your journey
-                begins with a single click.
+                Curating the world's most breathtaking adventures and luxury
+                stays. Your journey begins with a single click.
               </p>
               <div className="flex space-x-4">
                 {/* Social placeholders */}
@@ -339,22 +354,34 @@ const PublicLayout: React.FC = () => {
               </h4>
               <ul className="space-y-4 text-gray-400 text-sm">
                 <li>
-                  <a href="#" className="hover:text-primary-400 transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-primary-400 transition-colors"
+                  >
                     About Trivgoo
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary-400 transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-primary-400 transition-colors"
+                  >
                     Careers
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary-400 transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-primary-400 transition-colors"
+                  >
                     Press & Media
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary-400 transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-primary-400 transition-colors"
+                  >
                     Travel Blog
                   </a>
                 </li>
@@ -367,22 +394,34 @@ const PublicLayout: React.FC = () => {
               </h4>
               <ul className="space-y-4 text-gray-400 text-sm">
                 <li>
-                  <a href="#" className="hover:text-primary-400 transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-primary-400 transition-colors"
+                  >
                     Help Center
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary-400 transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-primary-400 transition-colors"
+                  >
                     Terms of Service
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary-400 transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-primary-400 transition-colors"
+                  >
                     Privacy Policy
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-primary-400 transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-primary-400 transition-colors"
+                  >
                     Contact Us
                   </a>
                 </li>
@@ -410,7 +449,9 @@ const PublicLayout: React.FC = () => {
           </div>
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-500 text-sm">&copy; 2024 Trivgoo Inc. All rights reserved.</p>
+            <p className="text-gray-500 text-sm">
+              &copy; 2024 Trivgoo Inc. All rights reserved.
+            </p>
             <div className="flex space-x-6 text-gray-500 text-sm font-medium">
               <a href="#" className="hover:text-white transition-colors">
                 Privacy
