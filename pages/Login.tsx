@@ -1,5 +1,5 @@
 import { ArrowLeft, Building2, Car, Eye, EyeOff, Palmtree } from 'lucide-react';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect} from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useToast } from '../components/ToastContext';
@@ -37,6 +37,15 @@ const Login: React.FC = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const state = location.state as { mode?: string };
+    if (state?.mode === 'register') {
+      setIsRegistering(true);
+    } else {
+      setIsRegistering(false);
+    }
+  }, [location.state]);
 
   const setField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
