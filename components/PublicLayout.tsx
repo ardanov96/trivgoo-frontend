@@ -172,8 +172,7 @@ const PublicLayout: React.FC = () => {
                     Login
                   </Link>
                   <Link
-                    to="/login"
-                    state={{ mode: 'register' }}
+                    to="/register"
                     className="bg-accent-500 text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-accent-500/20 hover:bg-accent-600 hover:shadow-accent-600/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
                   >
                     Sign Up
@@ -385,6 +384,14 @@ const PublicLayout: React.FC = () => {
                   >
                     Travel Blog
                   </a>
+                </li>
+                <li>
+                  <Link
+                    to="/register/agent"
+                    className="hover:text-primary-400 transition-colors"
+                  >
+                    Become an Agent 
+                  </Link>
                 </li>
               </ul>
             </div>

@@ -1,0 +1,182 @@
+import { ArrowLeft, Eye, EyeOff, Building2, Car, Palmtree } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext'; // Sesuaikan path jika folder berbeda
+import { useToast } from '../components/ToastContext';
+import { authService } from '../services/authService';
+import { agentService } from '../services/agentService';
+import { AgentSpecialization, UserRole, VerificationStatus } from '../types';
+
+const inputClass = 'appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all';
+
+const RegisterAgent: React.FC = () => {
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: UserRole.AGENT, // Kunci ke AGENT
+    specialization: AgentSpecialization.TOUR, // Default spesialisasi
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const { refreshMe, updateUser } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+
+  const setField = useCallback((key: string, value: any) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await authService.register(form);
+      await refreshMe();
+
+      // Sinkronisasi status verifikasi awal untuk Agent
+      const v = await agentService.getMyVerification();
+      if (v) {
+        updateUser({ verification_status: v.verification_status as VerificationStatus });
+      }
+
+      showToast('Agent account created! Let’s verify your business.', 'success');
+      navigate('/agent'); // Redirect ke dashboard agent
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Registration failed.';
+      setError(msg);
+      showToast(msg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const specBtnClass = (active: boolean) =>
+    `cursor-pointer p-3 rounded-xl border flex flex-col items-center justify-center text-center gap-2 transition-all ${
+      active ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+    }`;
+
+  return (
+    <div className="min-h-screen flex bg-white pt-16 md:pt-20">
+      {/* Left Side - Visual */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-primary-900">
+        <img 
+          src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1500&q=80" 
+          alt="Business Partnership" 
+          className="absolute inset-0 w-full h-full object-cover opacity-50" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary-900 to-transparent"></div>
+        <div className="relative z-10 w-full flex flex-col justify-between p-12 text-white">
+          <span className="text-3xl font-serif font-bold tracking-tighter">trivgoo.</span>
+          <div>
+            <h2 className="text-4xl font-serif font-bold mb-6">Grow your business with us.</h2>
+            <p className="text-lg text-primary-100 max-w-md">Reach millions of travelers and manage your bookings with our advanced partner tools.</p>
+          </div>
+          <div className="text-primary-200 text-sm">&copy; 2024 Trivgoo Inc.</div>
+        </div>
+      </div>
+
+      {/* Right Side - Form */}
+      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24">
+        <div className="mx-auto w-full max-w-sm lg:w-96">
+          <div className="mb-10">
+            <Link to="/login" className="text-gray-400 hover:text-gray-600 flex items-center mb-6 transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
+            </Link>
+            <h2 className="text-3xl font-serif font-bold text-gray-900">Become an Agent</h2>
+            <p className="mt-2 text-sm text-gray-600">Register your agency or service provider account.</p>
+          </div>
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Business / Full Name</label>
+              <input 
+                placeholder="e.g. Bali Paradise Tour" 
+                className={inputClass} 
+                required 
+                value={form.name} 
+                onChange={e => setField('name', e.target.value)} 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Business Email</label>
+              <input 
+                placeholder="agency@example.com" 
+                type="email" 
+                className={inputClass} 
+                required 
+                value={form.email} 
+                onChange={e => setField('email', e.target.value)} 
+              />
+            </div>
+
+            {/* Specialization Selection - Wajib untuk Agent */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">My Business Focus</label>
+              <div className="grid grid-cols-3 gap-3">
+                <div onClick={() => setField('specialization', AgentSpecialization.TOUR)} className={specBtnClass(form.specialization === AgentSpecialization.TOUR)} role="button">
+                  <Palmtree className="w-6 h-6" />
+                  <span className="text-xs font-bold">Tour</span>
+                </div>
+                <div onClick={() => setField('specialization', AgentSpecialization.STAY)} className={specBtnClass(form.specialization === AgentSpecialization.STAY)} role="button">
+                  <Building2 className="w-6 h-6" />
+                  <span className="text-xs font-bold">Stay</span>
+                </div>
+                <div onClick={() => setField('specialization', AgentSpecialization.TRANSPORT)} className={specBtnClass(form.specialization === AgentSpecialization.TRANSPORT)} role="button">
+                  <Car className="w-6 h-6" />
+                  <span className="text-xs font-bold">Trans</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div className="relative">
+                <input 
+                  type={showPassword ? 'text' : 'password'} 
+                  placeholder="Create a strong password" 
+                  className={`${inputClass} pr-12`} 
+                  required 
+                  value={form.password} 
+                  onChange={e => setField('password', e.target.value)} 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)} 
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-lg bg-red-50 p-4">
+                <div className="text-sm text-red-700">{error}</div>
+              </div>
+            )}
+            
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-primary-500/30 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 transition-all transform hover:-translate-y-0.5"
+            >
+              {loading ? 'Processing...' : 'Register as Agent'}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Already have a partner account? <Link to="/login" className="font-bold text-primary-600 hover:text-primary-500">Sign in</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RegisterAgent;

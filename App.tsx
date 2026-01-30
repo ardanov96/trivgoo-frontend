@@ -32,6 +32,8 @@ import AgentDashboard from './pages/agent/Dashboard';
 import AgentProducts from './pages/agent/products/MyProducts';
 import AgentVerification from './pages/agent/Verification';
 import CustomerBookings from './pages/customer/Bookings';
+import Register from './pages/Register';
+import RegisterAgent from './pages/RegisterAgent';
 
 // Route Guards
 interface ProtectedRouteProps {
@@ -60,6 +62,15 @@ const ScrollToTop = () => {
   return null;
 };
 
+const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) return null;
+  if (user) return <Navigate to="/" replace />; // Lempar ke home jika sudah login
+  
+  return <>{children}</>;
+};
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -70,6 +81,8 @@ const AppRoutes = () => {
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/ai-planner" element={<AITripPlanner />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/register/agent" element={<PublicOnlyRoute><RegisterAgent /></PublicOnlyRoute>} />
         <Route path="/wishlist" element={<Wishlist />} />
 
         {/* Customer Protected Route - Nested in Public Layout for consistency */}
