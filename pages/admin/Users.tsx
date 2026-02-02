@@ -1,6 +1,6 @@
 // src/pages/admin/UsersManagement.tsx
 
-import { CheckCircle, ShieldAlert, UserCheck, User as UserIcon, XCircle } from 'lucide-react';
+import { CheckCircle, ShieldAlert, UserCheck, User as UserIcon, XCircle, Eye } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { adminService } from '../../services/adminService';
 import { AgentListItem, ApiResponse, CustomerListItem, VerificationStatus } from '../../types';
@@ -17,11 +17,23 @@ function unwrapArray<T>(res: unknown): T[] {
 }
 
 const UsersManagement: React.FC = () => {
+  const DetailBlock = ({ label, value, isEnum = false }: { label: string, value?: any, isEnum?: boolean }) => (
+    <div className="space-y-1">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
+      <p className="text-sm font-semibold text-gray-800">
+        {isEnum ? (value?.replace('_', ' ') || '-') : (value || '-')}
+      </p>
+    </div>
+  );
+
   const [agents, setAgents] = useState<AgentListItem[]>([]);
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [activeTab, setActiveTab] = useState<'agents' | 'customers'>('agents');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [selectedAgent, setSelectedAgent] = useState<AgentListItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // ✅ per-user loading untuk tombol approve/reject
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
@@ -34,6 +46,11 @@ const UsersManagement: React.FC = () => {
       mountedRef.current = false;
     };
   }, []);
+
+  const handleViewDetail = (agent: AgentListItem) => {
+    setSelectedAgent(agent);
+    setIsModalOpen(true);
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -258,6 +275,14 @@ const UsersManagement: React.FC = () => {
                       <td className="px-6 py-4">{getVerificationBadge(status)}</td>
 
                       <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => handleViewDetail(u)}
+                          className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                          title="View Verification Data"
+                          type="button"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
                         {isPending ? (
                           <div className="flex justify-end gap-2">
                             <button
@@ -334,6 +359,116 @@ const UsersManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* MODAL DETAIL VERIFIKASI */}
+      {isModalOpen && selectedAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="text-xl font-bold text-gray-800">Verification Details</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <div className="p-8 overflow-y-auto space-y-6">
+              {/* Identitas Dasar */}
+              <div className="grid grid-cols-2 gap-6">
+                <DetailBlock label="Agent Type" value={selectedAgent.verification?.agent_type} isEnum />
+                <DetailBlock label="Specialization" value={selectedAgent.verification?.specialization || selectedAgent.specialization} isEnum />
+                
+                <DetailBlock 
+                  label={selectedAgent.verification?.agent_type === 'CORPORATE' ? "NIB Number" : "ID Card Number"} 
+                  value={selectedAgent.verification?.id_card_number} 
+                />
+
+                <DetailBlock 
+                  label={selectedAgent.verification?.agent_type === 'CORPORATE' ? "Corporate Tax ID (NPWP)" : "Tax ID (NPWP)"} 
+                  value={selectedAgent.verification?.tax_id} 
+                />
+
+                <DetailBlock label="Company Name" value={selectedAgent.verification?.company_name} />
+              </div>
+
+              <hr className="border-gray-100" />
+
+              {/* Informasi Bank */}
+              <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <h4 className="text-blue-800 font-bold text-sm mb-4 flex items-center">
+                  {/* <CreditCard className="w-4 h-4 mr-2" /> Bank Account Information */}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <DetailBlock label="Bank Name" value={selectedAgent.verification?.bank_name} />
+                  <DetailBlock label="Account Number" value={selectedAgent.verification?.bank_account_number} />
+                  <DetailBlock label="Account Holder" value={selectedAgent.verification?.bank_account_holder} />
+                </div>
+              </div>
+
+              {/* Dokumen Lampiran */}
+              {selectedAgent.verification?.id_document_url && (
+              <div>
+                {/* Keterangan Label Dinamis */}
+                <p className="text-xs text-gray-400 font-bold uppercase mb-3">
+                  {selectedAgent.verification?.agent_type === 'CORPORATE' 
+                    ? 'NIB Document Preview' 
+                    : 'ID Document Preview'}
+                </p>
+                
+                {selectedAgent.verification.id_document_url.toLowerCase().endsWith('.pdf') ? (
+                  /* UI KHUSUS PDF */
+                  <div className="flex flex-col items-center justify-center p-8 bg-red-50 border-2 border-dashed border-red-200 rounded-xl">
+                    <div className="bg-red-500 p-4 rounded-full mb-4 shadow-lg shadow-red-200">
+                      {/* Icon Dokumen Putih */}
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-red-700 font-bold mb-2">Corporate NIB Document (PDF)</p>
+                    <p className="text-red-500/70 text-[10px] mb-4 uppercase tracking-widest">Click below to view or download</p>
+                    
+                    <a 
+                      href={selectedAgent.verification.id_document_url} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      download // Menyarankan browser untuk mendownload saat diklik
+                      className="flex items-center gap-2 px-6 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all shadow-md active:scale-95"
+                    >
+                      <Eye className="w-4 h-4" /> Open / Download PDF
+                    </a>
+                  </div>
+                ) : (
+                  /* UI UNTUK GAMBAR (KTP/INDIVIDUAL) */
+                  <a 
+                    href={selectedAgent.verification.id_document_url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="group relative block rounded-xl overflow-hidden border-2 border-gray-100 hover:border-primary-500 transition-all"
+                  >
+                    <img 
+                      src={selectedAgent.verification.id_document_url} 
+                      className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                      alt="Verification Document" 
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <span className="text-white font-bold flex items-center gap-2">
+                        <Eye className="w-5 h-5" /> View Full Image
+                      </span>
+                    </div>
+                  </a>
+                )}
+              </div>
+            )}
+            </div>
+
+            <div className="p-6 border-t bg-gray-50 flex justify-end">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-6 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-100 transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

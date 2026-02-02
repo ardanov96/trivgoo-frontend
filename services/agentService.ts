@@ -3,7 +3,7 @@ import http from './http';
 import { mediaService } from './mediaService';
 
 export interface VerifyAgentPayload {
-  type: AgentType;
+  agent_type: AgentType;
   idCardNumber: string;
   taxId: string;
   companyName?: string;
@@ -18,7 +18,7 @@ export const agentService = {
   async submitVerification(payload: VerifyAgentPayload): Promise<void> {
     const {
       idDocument,
-      type,
+      agent_type,
       idCardNumber,
       taxId,
       companyName,
@@ -28,17 +28,28 @@ export const agentService = {
       specialization,
     } = payload;
 
-    const uploadedUrl =
-      idDocument instanceof File
-        ? await mediaService.uploadOne(idDocument, 'agent-verification')
-        : null;
+    if (idDocument instanceof File) {
+      const fileType = idDocument.type;
+
+      if (agent_type === 'INDIVIDUAL') {
+        if (!fileType.startsWith('image/')) {
+          throw new Error('Only images allowed for Individual type');
+        }
+      } else if (agent_type === 'CORPORATE') {
+        if (fileType !== 'application/pdf') {
+          throw new Error('Only PDF allowed for Corporate type');
+        }
+      }
+    }
+
+    const uploadedUrl = await mediaService.uploadOne(idDocument, 'agent-verification');
 
     const finalIdDocUrl = uploadedUrl;
 
-    if (!finalIdDocUrl) throw new Error('ID document is required');
+    if (!finalIdDocUrl) throw new Error('Failed to upload document');
 
     await http.post('/agent/verification', {
-      type,
+      agent_type,
       id_card_number: idCardNumber,
       tax_id: taxId,
       company_name: companyName ?? null,

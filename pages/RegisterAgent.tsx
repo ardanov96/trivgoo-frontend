@@ -95,7 +95,7 @@ const RegisterAgent: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700">Business / Full Name</label>
               <input 
-                placeholder="e.g. Bali Paradise Tour" 
+                placeholder="e.g. Nusantara Wisata Tour" 
                 className={inputClass} 
                 required 
                 value={form.name} 
