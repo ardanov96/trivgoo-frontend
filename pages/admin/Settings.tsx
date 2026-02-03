@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '../../components/ToastContext';
+import Swal from 'sweetalert2';
 import { Save, Globe, DollarSign, Shield, Bell, Lock, Power, RefreshCw, Smartphone } from 'lucide-react';
 
 const AdminSettings: React.FC = () => {
   const { showToast } = useToast();
+  const API_URL = "http://localhost:4000";
   const [activeTab, setActiveTab] = useState<'general' | 'finance' | 'security'>('general');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -20,13 +22,118 @@ const AdminSettings: React.FC = () => {
   const [require2FA, setRequire2FA] = useState(true);
   const [sessionTimeout, setSessionTimeout] = useState(30);
 
-  const handleSave = () => {
-    setIsSaving(true);
-    // Simulate API call
-    setTimeout(() => {
+  useEffect(() => {
+    fetch(`${API_URL}/api/settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setSiteName(data.site_name);
+          setSupportEmail(data.support_email);
+          setMaintenanceMode(data.maintenance_mode);
+          setCommissionRate(data.commission_rate);
+          setCurrency(data.currency);
+          setPayoutSchedule(data.payout_schedule);
+          setRequire2FA(data.require_2fa);
+          setSessionTimeout(data.session_timeout);
+        }
+      });
+  }, []);
+
+  const handleClearCache = async () => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "This might log out active users or slow down the system temporarily.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#111827', 
+      cancelButtonColor: '#ef4444', 
+      confirmButtonText: 'Yes, clear it!',
+      customClass: {
+        popup: 'rounded-2xl', 
+        confirmButton: 'rounded-xl',
+        cancelButton: 'rounded-xl'
+      }
+    });
+
+    if (result.isConfirmed) {
+      // Tampilkan loading saat proses fetch berlangsung
+      Swal.fire({
+        title: 'Processing...',
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        allowOutsideClick: false,
+        showConfirmButton: false,
+      });
+
+      try {
+        const response = await fetch(`${API_URL}/api/settings/clear-cache`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.ok) {
+          Swal.fire({
+            title: 'Cleared!',
+            text: 'System cache has been successfully cleared.',
+            icon: 'success',
+            confirmButtonColor: '#111827',
+            customClass: {
+              popup: 'rounded-2xl',
+              confirmButton: 'rounded-xl'
+            }
+          });
+        } else {
+          throw new Error('Failed to clear');
+        }
+      } catch (error) {
+        Swal.fire({
+          title: 'Error',
+          text: 'Could not connect to the server',
+          icon: 'error',
+          confirmButtonColor: '#111827',
+          customClass: {
+            popup: 'rounded-2xl'
+          }
+        });
+      }
+    }
+  };
+
+  const handleSave = async () => {
+  setIsSaving(true);
+    try {
+      const payload = {
+        siteName, supportEmail, maintenanceMode, 
+        commissionRate, currency, payoutSchedule, 
+        require2FA, sessionTimeout
+      };
+      
+      console.log("Mengirim payload:", payload);
+
+      const response = await fetch(`${API_URL}/api/settings`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        showToast('Settings updated successfully!', 'success');
+      } else {
+        console.error("Server Error:", result);
+        showToast(`Error: ${result.message || 'Server error'}`, 'error');
+      }
+    } catch (error) {
+      console.error("Fetch Error:", error);
+      showToast('Cannot connect to server', 'error');
+    } finally {
       setIsSaving(false);
-      showToast('Settings updated successfully!', 'success');
-    }, 800);
+    }
   };
 
   return (
@@ -216,7 +323,9 @@ const AdminSettings: React.FC = () => {
 
                <div className="mt-8 pt-6 border-t border-gray-100">
                   <h4 className="text-sm font-bold text-red-600 mb-4 uppercase tracking-wide">Danger Zone</h4>
-                  <button className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors">
+                  <button 
+                    onClick={handleClearCache}
+                    className="px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors">
                      Clear System Cache
                   </button>
                </div>

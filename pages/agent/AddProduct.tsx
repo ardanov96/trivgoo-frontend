@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import Swal from 'sweetalert2';
 import {
   GoogleMap,
   LoadScript,
@@ -147,14 +148,15 @@ const AgentAddProduct: React.FC = () => {
   });
 
   useEffect(() => {
-    return () => {
-      if (coverState?.kind === "file") URL.revokeObjectURL(coverState.preview);
-      for (const item of galleryItems) {
-        if (item.kind === "file") URL.revokeObjectURL(item.preview);
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (formData.name || formData.description) {
+        e.preventDefault();
+        e.returnValue = '';
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [formData]);
 
   const isTour = user?.specialization === AgentSpecialization.TOUR;
   const isStay = user?.specialization === AgentSpecialization.STAY;
@@ -631,57 +633,105 @@ const AgentAddProduct: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent | any) => {
-    e.preventDefault();
-    if (!user) return;
+  e.preventDefault();
+  if (!user) return;
 
-    setIsSubmitting(true);
-
-    try {
-      const details = buildDetails();
-      const categoryId = getCategoryId();
-
-      const { coverUrl: existingCoverUrl, galleryUrls: existingGalleryUrls } =
-        collectExistingUrls();
-
-      const { uploadedCoverUrl, uploadedGalleryUrls } =
-        await uploadPendingMedia();
-
-      const finalCoverUrl = uploadedCoverUrl || existingCoverUrl;
-      const finalGalleryUrls = uniq([
-        ...existingGalleryUrls,
-        ...(uploadedGalleryUrls || []),
-      ]);
-
-      const payload: AgentProductPayload = {
-        category_id: categoryId,
-        name: formData.name,
-        description: formData.description,
-        price: Number(formData.price),
-        currency: formData.currency,
-        location: formData.location,
-        image_url: finalCoverUrl,
-        images: finalGalleryUrls,
-        features: formData.features.filter((f) => f.trim() !== ""),
-        details,
-        daily_capacity: Number(formData.dailyCapacity),
-        blocked_dates: formData.blockedDates,
-        lat: markerPos.lat,
-        lng: markerPos.lng,
-      };
-
-      if (isEditMode && id) {
-        await agentProductService.updateProduct(Number(id), payload);
-      } else {
-        await agentProductService.createProduct(payload);
-      }
-
-      navigate("/agent/products");
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
+  // 1. Konfirmasi sebelum simpan
+  const confirmResult = await Swal.fire({
+    title: isEditMode ? 'Update Product?' : 'Create Product?',
+    text: "Make sure all details are correct.",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#0f172a', // primary-900
+    confirmButtonText: 'Yes, Save it!',
+    customClass: {
+      popup: 'rounded-3xl',
+      confirmButton: 'rounded-xl px-6 py-2.5',
+      cancelButton: 'rounded-xl px-6 py-2.5'
     }
-  };
+  });
+
+  if (!confirmResult.isConfirmed) return;
+
+  setIsSubmitting(true);
+  
+  // 2. Tampilkan Loading (Sangat penting karena ada proses upload media)
+  Swal.fire({
+    title: 'Uploading & Saving...',
+    html: 'Please wait while we process your media files.',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    },
+    customClass: {
+      popup: 'rounded-3xl'
+    }
+  });
+
+  try {
+    const details = buildDetails();
+    const categoryId = getCategoryId();
+    const { coverUrl: existingCoverUrl, galleryUrls: existingGalleryUrls } = collectExistingUrls();
+    const { uploadedCoverUrl, uploadedGalleryUrls } = await uploadPendingMedia();
+
+    const finalCoverUrl = uploadedCoverUrl || existingCoverUrl;
+    const finalGalleryUrls = uniq([
+      ...existingGalleryUrls,
+      ...(uploadedGalleryUrls || []),
+    ]);
+
+    const payload: AgentProductPayload = {
+      category_id: categoryId,
+      name: formData.name,
+      description: formData.description,
+      price: Number(formData.price),
+      currency: formData.currency,
+      location: formData.location,
+      image_url: finalCoverUrl,
+      images: finalGalleryUrls,
+      features: formData.features.filter((f) => f.trim() !== ""),
+      details,
+      daily_capacity: Number(formData.dailyCapacity),
+      blocked_dates: formData.blockedDates,
+      lat: markerPos?.lat || 0,
+      lng: markerPos?.lng || 0,
+    };
+
+    if (isEditMode && id) {
+      await agentProductService.updateProduct(Number(id), payload);
+    } else {
+      await agentProductService.createProduct(payload);
+    }
+
+    // 3. Notifikasi Sukses
+    await Swal.fire({
+      title: 'Success!',
+      text: `Your product has been ${isEditMode ? 'updated' : 'created'} successfully.`,
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false,
+      customClass: {
+        popup: 'rounded-3xl'
+      }
+    });
+
+    navigate("/agent/products");
+  } catch (error) {
+    console.error(error);
+    Swal.fire({
+      title: 'Error!',
+      text: 'Something went wrong while saving the product.',
+      icon: 'error',
+      confirmButtonColor: '#0f172a',
+      customClass: {
+        popup: 'rounded-3xl',
+        confirmButton: 'rounded-xl'
+      }
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="max-w-6xl mx-auto pb-20">

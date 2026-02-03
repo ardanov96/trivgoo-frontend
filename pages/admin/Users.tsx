@@ -4,6 +4,7 @@ import { CheckCircle, ShieldAlert, UserCheck, User as UserIcon, XCircle, Eye } f
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { adminService } from '../../services/adminService';
 import { AgentListItem, ApiResponse, CustomerListItem, VerificationStatus } from '../../types';
+import Swal from 'sweetalert2';
 
 function unwrapArray<T>(res: unknown): T[] {
   // support kalau service return langsung array
@@ -46,6 +47,26 @@ const UsersManagement: React.FC = () => {
       mountedRef.current = false;
     };
   }, []);
+
+  const confirmAction = (id: number | string, action: 'approve' | 'reject') => {
+  const isApprove = action === 'approve';
+  
+  Swal.fire({
+    title: isApprove ? 'Approve Agent?' : 'Reject Agent?',
+    text: `Are you sure you want to ${action} this agent?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: isApprove ? '#10B981' : '#EF4444',
+    cancelButtonColor: '#6B7280',
+    confirmButtonText: isApprove ? 'Yes, approve!' : 'Yes, reject!',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true
+  }).then((result) => {
+    if (result.isConfirmed) {
+      handleVerify(Number(id), action); // Pastikan handleVerify juga menerima number
+    }
+  });
+};
 
   const handleViewDetail = (agent: AgentListItem) => {
     setSelectedAgent(agent);
@@ -284,9 +305,9 @@ const UsersManagement: React.FC = () => {
                           <Eye className="w-5 h-5" />
                         </button>
                         {isPending ? (
-                          <div className="flex justify-end gap-2">
+                          <>
                             <button
-                              onClick={() => handleVerify(u.id, 'approve')}
+                              onClick={() => confirmAction(u.id, 'approve')}
                               className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                               title="Approve"
                               type="button"
@@ -294,8 +315,9 @@ const UsersManagement: React.FC = () => {
                             >
                               <CheckCircle className="w-5 h-5" />
                             </button>
+                            
                             <button
-                              onClick={() => handleVerify(u.id, 'reject')}
+                              onClick={() => confirmAction(u.id, 'reject')}
                               className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                               title="Reject"
                               type="button"
@@ -303,7 +325,7 @@ const UsersManagement: React.FC = () => {
                             >
                               <XCircle className="w-5 h-5" />
                             </button>
-                          </div>
+                          </>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
