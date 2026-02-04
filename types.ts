@@ -262,7 +262,8 @@ export interface Product {
   // images
   image: string; // cover (images[0] || fallback)
   images: ProductImage[]; // relasi product_images
-
+  image_url?: string;
+  
   // meta
   rating: number;
   is_active: boolean;

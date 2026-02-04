@@ -101,6 +101,7 @@ import http, { unwrap } from "./http";
 type ProductEnvelope<T> = ApiEnvelope<T>;
 
 function normalizeProduct(data: AgentProduct): AgentProduct {
+  const finalImage = data.image_url || data.image || '';
   return {
     id: data.id,
     owner_id: data.owner_id,
@@ -110,8 +111,8 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
     price: Number((data as any).price || 0),
     currency: (data as any).currency || "",
     location: (data as any).location || "",
-    image_url: data.image_url,
-    image: data.image,
+    image_url: finalImage,
+    image: finalImage,
     images: data.images,
     owner: data.owner,
     features: Array.isArray((data as any).features)
@@ -158,6 +159,20 @@ function extractUploadedUrls(payload: any): string[] {
 }
 
 export const agentProductService = {
+  async getAllProducts(): Promise<AgentProduct[]> {
+    const rows = await mapOne(
+      http.get<ProductEnvelope<AgentProduct[]>>("/products") // Tanpa prefix /agent
+    );
+    return rows.map(normalizeProduct);
+  },
+
+  async getCategories(): Promise<any[]> {
+    const rows = await mapOne(
+      http.get<ProductEnvelope<any[]>>("/categories")
+    );
+    return rows;
+  },
+
   async createProduct(payload: AgentProductPayload): Promise<AgentProduct> {
     const raw = await mapOne(
       http.post<ProductEnvelope<AgentProduct>>("/agent/products", payload)

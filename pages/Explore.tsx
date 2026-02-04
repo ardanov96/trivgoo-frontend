@@ -1,9 +1,10 @@
 import { ArrowRight, ArrowUpDown, Calendar, Heart, MapPin, Search, Star, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-// import { mockService } from '../services/mockService';
 import { useWishlist } from '../components/WishlistContext';
 import { Category, Product, StayCategory, TourCategory, TransportCategory } from '../types';
+import { mockService } from '@/services/mockService';
+import { agentProductService } from '../services/agentProductService';
 
 const Explore: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -24,23 +25,21 @@ const Explore: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      // const [prods, cats] = await Promise.all([
-      //   mockService.getProducts(),
-      //   mockService.getCategories(),
-      // ]);
-      // setProducts(prods);
-      // setCategories(cats);
-
-      // Auto-select category if passed in params (optional enhancement)
-      // const catParam = searchParams.get('category');
-      // if (catParam) {
-      //   const foundCat = cats.find((c) => c.slug === catParam);
-      //   if (foundCat) setSelectedCategory(foundCat.id);
-      // }
-
-      setIsLoading(false);
+      // setIsLoading(false);
+        setIsLoading(true);
+      try {
+        // Buka komentar ini:
+        const [prods, cats] = await Promise.all([
+          agentProductService.getAllProducts(),
+          agentProductService.getCategories(),
+        ]);
+        setProducts(prods);
+        setCategories(cats);
+      } catch (error) {
+        console.error("Failed to load data", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadData();
   }, []);
@@ -90,43 +89,33 @@ const Explore: React.FC = () => {
   // --- MAIN FILTER LOGIC ---
   const filteredProducts = products
     .filter((p) => {
-      // 1. Main Category Filter
-      // const matchCat = selectedCategory ? p.categoryId === selectedCategory : true;
+    // 1. Search Query (Deklarasikan di awal agar bisa dipakai di log)
+    const query = searchQuery.toLowerCase();
+    const matchSearch =
+      p.name.toLowerCase().includes(query) || 
+      (p.location || "").toLowerCase().includes(query);
 
-      // 2. Sub Category Filter (Deep Filtering)
-      let matchSubCat = true;
-      if (selectedCategory && selectedSubCategory && p.details) {
-        if (selectedCategory === 1 && p.details.type === 'tour') {
-          matchSubCat = p.details.tourCategory === selectedSubCategory;
-        } else if (selectedCategory === 2 && p.details.type === 'stay') {
-          matchSubCat = p.details.stayCategory === selectedSubCategory;
-        } else if (selectedCategory === 4 && p.details.type === 'car') {
-          matchSubCat = p.details.transportCategory === selectedSubCategory;
-        }
-      }
+    // 2. Main Category Filter
+    const matchCat = selectedCategory ? Number(p.category_id) === Number(selectedCategory) : true;
 
-      // 3. Search Query
-      const query = searchQuery.toLowerCase();
-      const matchSearch =
-        p.name.toLowerCase().includes(query) || p.location.toLowerCase().includes(query);
+    // 3. Sub Category Filter
+    let matchSubCat = true;
+    if (selectedCategory && selectedSubCategory && p.details) {
+      const detailsValues = Object.values(p.details).map(v => String(v).toLowerCase());
+      matchSubCat = detailsValues.includes(selectedSubCategory.toLowerCase());
+    }
 
-      // 4. Availability Filter
-      // let isAvailable = true;
-      // if (dateQuery && p.blockedDates) {
-      //   if (p.blockedDates.includes(dateQuery)) {
-      //     isAvailable = false;
-      //   }
-      // }
-      // if (p.isActive === false) isAvailable = false;
+    // DEBUG LOG - Sekarang matchSearch sudah terdefinisi
+    console.log('Checking Product:', p.name, { matchCat, matchSubCat, matchSearch });
 
-      // return matchCat && matchSubCat && matchSearch && isAvailable;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'price_asc') return a.price - b.price;
-      if (sortBy === 'price_desc') return b.price - a.price;
-      if (sortBy === 'rating') return b.rating - a.rating;
-      return 0;
-    });
+    return matchCat && matchSubCat && matchSearch;
+  })
+  .sort((a, b) => {
+    if (sortBy === 'price_asc') return a.price - b.price;
+    if (sortBy === 'price_desc') return b.price - a.price;
+    if (sortBy === 'rating') return b.rating - a.rating;
+    return 0;
+  });
 
   // Skeleton Loader Component
   const SkeletonCard = () => (
@@ -318,19 +307,10 @@ const Explore: React.FC = () => {
                     to={`/product/${product.id}`}
                     className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative"
                   >
-                    {/* Unavailable Overlay */}
-                    {/* {(!product.isActive ||
-                      (dateQuery && product.blockedDates?.includes(dateQuery))) && (
-                      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex items-center justify-center">
-                        <div className="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-xl">
-                          Unavailable
-                        </div>
-                      </div>
-                    )} */}
 
                     <div className="aspect-[4/3] relative overflow-hidden">
                       <img
-                        src={product.image}
+                        src={product.image_url || product.image}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />

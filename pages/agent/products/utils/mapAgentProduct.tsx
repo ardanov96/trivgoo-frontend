@@ -16,14 +16,14 @@ export type ApiAgentProductRow = {
   price: number | string;
   currency: string;
   location: string;
-  image?: string; // BE kamu pakai ini
-  image_url?: string; // jaga-jaga kalau berubah
+  image?: string; 
+  image_url?: string; 
   daily_capacity?: number;
   rating?: number | string;
   is_active?: boolean | 0 | 1;
   created_at?: string;
 
-  // optional kalau nanti BE sudah lengkap
+ 
   images?: string[];
   features?: string[];
   details?: any;
@@ -35,10 +35,10 @@ const DEFAULT_IMAGE =
 
 export function mapApiAgentProductToProduct(row: ApiAgentProductRow): Product {
   return {
-    // ---- core fields yang pasti dipakai ProductCard
+    // ---- core fields (Gunakan snake_case sesuai interface Product)
     id: row.id,
-    ownerId: row.owner_id,
-    categoryId: row.category_id,
+    owner_id: row.owner_id,
+    category_id: row.category_id,
     name: row.name,
     description: row.description,
     price: Number(row.price),
@@ -46,17 +46,26 @@ export function mapApiAgentProductToProduct(row: ApiAgentProductRow): Product {
     location: row.location,
     image: row.image || row.image_url || DEFAULT_IMAGE,
 
-    // ---- optional fields (buat page lain)
-    images: Array.isArray(row.images) ? row.images : [],
+    // ---- images
+    images: Array.isArray(row.images) 
+      ? row.images.map((url, index) => ({ id: index, url })) 
+      : [],
+
+    // ---- optional business data
     features: Array.isArray(row.features) ? row.features : [],
     details: row.details ?? null,
-    dailyCapacity: typeof row.daily_capacity === 'number' ? row.daily_capacity : 10,
-    rating: row.rating ? Number(row.rating) : 0,
-    isActive: !!row.is_active,
-    createdAt: row.created_at,
+    daily_capacity: typeof row.daily_capacity === 'number' ? row.daily_capacity : 10,
+    
+    // blocked_dates tersetor ke objek Product
+    blocked_dates: Array.isArray(row.blocked_dates) ? row.blocked_dates : [],
 
-    // ---- field yang biasanya ada di mock Product biar UI aman
-    flashSale: null,
+    // ---- meta
+    rating: row.rating ? Number(row.rating) : 0,
+    is_active: !!row.is_active,
+    created_at: row.created_at,
+
+    // ---- campaign & reviews
+    flashSale: undefined,
     reviews: [],
   } as Product;
 }
