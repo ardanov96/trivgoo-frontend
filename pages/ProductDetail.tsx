@@ -34,7 +34,8 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { useToast } from "../components/ToastContext";
 import { useWishlist } from "../components/WishlistContext";
-import { adminService } from "../services/adminService";
+// import { adminService } from "../services/adminService";
+import { agentProductService } from "../services/agentProductService";
 import {
   CarDetails,
   Product,
@@ -147,19 +148,17 @@ const ProductDetail: React.FC = () => {
           return;
         }
 
-        const res = await adminService.getAgentProductDetail(pid);
-        const p = res?.data || null;
+        // const res = await adminService.getAgentProductDetail(pid);
+        
+        // const p = res?.data || null;
+
+        const p = await agentProductService.getProductById(pid);
 
         setProduct(p);
 
         // ✅ ambil coords dari product
         const c = p ? normalizeLatLngFromProduct(p) : null;
         setCoords(c);
-
-        // ✅ related products sementara masih mock (comment jangan dihapus)
-        // if (p) {
-        //   mockService.getRelatedProducts(p.category_id, p.id).then(setRelatedProducts);
-        // }
 
         // Reset states
         setCheckIn("");
@@ -174,13 +173,6 @@ const ProductDetail: React.FC = () => {
       }
     })();
 
-    // ✅ mockService detail tetap ada tapi di-comment (jangan dihapus)
-    // mockService.getProductById(Number(id)).then((p) => {
-    //   setProduct(p);
-    //   if (p) {
-    //     mockService.getRelatedProducts(p.category_id, p.id).then(setRelatedProducts);
-    //   }
-    // });
   }, [id, showToast]);
 
   useEffect(() => {
@@ -818,17 +810,27 @@ const ProductDetail: React.FC = () => {
                     Key Features
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 mb-8">
-                    {(product.features || []).map((feature, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center mr-3 flex-shrink-0">
-                          <Check className="w-4 h-4 text-primary-600" />
-                        </div>
-                        <span className="font-medium">{feature}</span>
-                      </div>
-                    ))}
+                    {/* Gunakan Optional Chaining dan pastikan data adalah array */}
+                    {Array.isArray(product?.features) && product.features.length > 0 ? (
+                      product.features
+                        .filter((item) => item && item.trim() !== "") // Menghapus string kosong atau null
+                        .map((feature, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center mr-3 flex-shrink-0">
+                              <Check className="w-4 h-4 text-primary-600" />
+                            </div>
+                            <span className="font-medium text-sm md:text-base">{feature}</span>
+                          </div>
+                        ))
+                    ) : (
+                      /* Tampilan jika data kosong agar tidak blank */
+                      <p className="text-gray-400 italic text-sm col-span-2 ml-4">
+                        No features listed for this product.
+                      </p>
+                    )}
                   </div>
 
                   {/* Updated Location Map Section */}
@@ -864,10 +866,9 @@ const ProductDetail: React.FC = () => {
                             }}
                             className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-md flex items-center hover:bg-gray-50 border border-gray-100"
                             title={
-                              coords
-                                ? `Open Maps (${coords.lat.toFixed(
-                                    6
-                                  )}, ${coords.lng.toFixed(6)})`
+                              // Pengecekan lebih ketat: pastikan lat & lng adalah angka
+                              typeof coords?.lat === 'number' && typeof coords?.lng === 'number'
+                                ? `Open Maps (${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)})`
                                 : "Open Maps"
                             }
                           >
@@ -878,10 +879,8 @@ const ProductDetail: React.FC = () => {
 
                         {/* ✅ tampil kecil lat/lng di card map */}
                         <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-mono text-gray-700 border border-gray-100 shadow-sm">
-                          {coords
-                            ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(
-                                6
-                              )}`
+                          {typeof coords?.lat === 'number' && typeof coords?.lng === 'number'
+                            ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`
                             : "lat/lng: -"}
                         </div>
                       </div>

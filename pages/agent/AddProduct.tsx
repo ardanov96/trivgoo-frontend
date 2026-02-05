@@ -85,7 +85,7 @@ const AgentAddProduct: React.FC = () => {
     name: "",
     description: "",
     price: "",
-    currency: "USD",
+    currency: "IDR",
     location: "",
     lat: 0,
     lng: 0,
@@ -1394,13 +1394,13 @@ const AgentAddProduct: React.FC = () => {
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-900 font-bold">
-                    $
+                    Rp. 
                   </span>
                   <input
                     type="number"
                     name="price"
                     required
-                    className="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white font-bold text-lg"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white font-bold text-lg"
                     placeholder="0.00"
                     value={formData.price}
                     onChange={handleChange}

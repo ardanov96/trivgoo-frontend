@@ -358,9 +358,12 @@ const Explore: React.FC = () => {
                             {product.currency} {product.price}
                           </p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300">
+                        <Link 
+                          to={`/product/${product.id}`}
+                          className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300"
+                        >
                           <ArrowRight className="w-5 h-5" />
-                        </div>
+                        </Link>
                       </div>
                     </div>
                   </Link>
