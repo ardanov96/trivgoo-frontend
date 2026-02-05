@@ -23,7 +23,7 @@ function normalize_user(api_user: any): AuthUser {
   return {
     id: api_user.id,
     name: api_user.name,
-    avatar: api_user.avatar,
+    avatar: api_user.profile_photo,
     email: api_user.email,
     role: api_user.role as UserRole,
     specialization: api_user.specialization as AgentSpecialization,

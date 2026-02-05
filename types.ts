@@ -209,6 +209,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  profile_photo?: string | null;
   avatar?: string;
   balance?: number;
 

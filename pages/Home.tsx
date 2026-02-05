@@ -23,8 +23,8 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// import { mockService } from '../services/mockService';
 import { Category, FlashSaleCampaign, Product } from '../types';
+import { useAuth } from '../AuthContext';
 
 const POPULAR_DESTINATIONS = [
   'Bali, Indonesia',
@@ -133,6 +133,10 @@ const Home: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [flashSaleProducts, setFlashSaleProducts] = useState<Product[]>([]);
 
+  // Login Session Visibility
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+
   // Campaign State
   const [activeCampaign, setActiveCampaign] = useState<FlashSaleCampaign | null>(null);
 
@@ -162,32 +166,6 @@ const Home: React.FC = () => {
   const flashSaleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // const cats = await mockService.getCategories();
-      // const prods = await mockService.getProducts();
-      // const campaigns = await mockService.getCampaigns();
-      // setCategories(cats);
-      // setFeaturedProducts(prods.slice(0, 3));
-      // 1. Determine Active Campaign
-      // const today = new Date().toISOString().split('T')[0];
-      // const currentCampaign = campaigns.find(
-      //   (c) => c.isActive && c.startDate <= today && c.endDate >= today,
-      // );
-      // setActiveCampaign(currentCampaign || null);
-      // 2. Filter for products that have an active flash sale
-      // let flashSales = prods.filter((p) => p.flashSale && p.flashSale.status === 'approved');
-      // 3. If Campaign Active, Sort Campaign Products to First
-      // if (currentCampaign) {
-      //   flashSales = flashSales.sort((a, b) => {
-      //     const aInCampaign = a.flashSale?.campaignId === currentCampaign.id ? 1 : 0;
-      //     const bInCampaign = b.flashSale?.campaignId === currentCampaign.id ? 1 : 0;
-      //     return bInCampaign - aInCampaign; // Descending (1 comes first)
-      //   });
-      // }
-      // setFlashSaleProducts(flashSales);
-    };
-    fetchData();
-
     function handleClickOutside(event: MouseEvent) {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
         setIsDatePickerOpen(false);
@@ -197,6 +175,7 @@ const Home: React.FC = () => {
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -1246,12 +1225,14 @@ const Home: React.FC = () => {
             >
               Start Exploring
             </Link>
-            <Link
-              to="/login"
-              className="px-10 py-4 bg-primary-700 text-white rounded-full font-bold text-lg border border-primary-500 hover:bg-primary-800 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:scale-95"
-            >
-              Sign Up Now
-            </Link>
+            {!isLoggedIn && (
+              <Link
+                to="/login"
+                className="px-10 py-4 bg-primary-700 text-white rounded-full font-bold text-lg border border-primary-500 hover:bg-primary-800 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:scale-95"
+              >
+                Sign Up Now
+              </Link>
+            )}
           </div>
         </div>
       </div>

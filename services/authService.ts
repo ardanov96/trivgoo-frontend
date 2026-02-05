@@ -4,6 +4,7 @@ import http, { unwrap } from './http';
 type LoginData = { user: User };
 type RegisterData = { user: User };
 type MeData = { user: User };
+type UpdateProfileData = { user: User };
 
 export const authService = {
   async login(payload: LoginPayload): Promise<User> {
@@ -24,8 +25,19 @@ export const authService = {
     return data.user;
   },
 
+  async updateProfile(payload: FormData): Promise<User> {
+    const res = await http.patch<ApiEnvelope<UpdateProfileData>>('/auth/update-profile', payload, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    const data = unwrap(res.data);
+    return data.user;
+  },
+
   async logout(): Promise<void> {
     const res = await http.post<ApiEnvelope<null>>('/auth/logout');
     unwrap(res.data);
   },
+  
 };

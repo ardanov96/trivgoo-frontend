@@ -5,6 +5,7 @@ import { mockService } from '../../services/mockService';
 import { Booking, BookingStatus } from '../../types';
 import { Calendar, Edit2, Package, History, ChevronRight, TrendingUp, Award, Wallet, Camera, Shield, QrCode, MessageSquare, MessageCircle, Star, X, CreditCard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '@/services/authService';
 
 const getStatusColor = (status: BookingStatus) => {
   switch (status) {
@@ -75,11 +76,13 @@ const MobileBookingCard: React.FC<MobileBookingCardProps> = ({ booking, onPay, o
 );
 
 const CustomerBookings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  // User Profile
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
 
@@ -92,6 +95,51 @@ const CustomerBookings: React.FC = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file)); // Buat preview sementara
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setIsSaving(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('name', profileName);
+      formData.append('email', profileEmail);
+      if (selectedFile) {
+        formData.append('profile_photo', selectedFile);
+      }
+
+      // 1. Kirim ke API melalui authService
+      const updatedUser = await authService.updateProfile(formData);
+
+      // 2. Update Global State agar foto di Navbar & Home berubah otomatis
+      updateUser({
+        name: updatedUser.name,
+        email: updatedUser.email,
+        avatar: updatedUser.profile_photo // Sesuaikan key dari backend
+      });
+
+      setIsEditingProfile(false);
+      setPreviewUrl(null);
+      alert('Profile updated successfully!');
+    } catch (error: any) {
+      alert('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -295,10 +343,26 @@ const CustomerBookings: React.FC = () => {
             <div className="bg-white rounded-3xl shadow-soft border border-gray-100 p-6 md:p-8 sticky top-28">
               <div className="flex flex-col items-center text-center mb-8">
                 <div className="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white shadow-xl overflow-hidden mb-5 relative group">
-                   <img src={user?.avatar || 'https://via.placeholder.com/150'} alt="Profile" className="w-full h-full object-cover" />
-                   <div className="absolute inset-0 bg-black/20 hidden group-hover:flex items-center justify-center cursor-pointer transition-all">
-                      <Camera className="text-white w-6 h-6" />
-                   </div>
+                   <img 
+                      src={previewUrl || user?.avatar || 'https://via.placeholder.com/150'}
+                      alt="Profile" 
+                      className="w-full h-full object-cover" 
+                    />
+                   {isEditingProfile && (
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer transition-all"
+                      >
+                        <Camera className="text-white w-6 h-6" />
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          onChange={handleFileChange} 
+                          className="hidden" 
+                          accept="image/*" 
+                        />
+                      </div>
+                    )}
                 </div>
                 {isEditingProfile ? (
                    <div className="w-full space-y-3 animate-in fade-in slide-in-from-top-2">
@@ -317,8 +381,9 @@ const CustomerBookings: React.FC = () => {
                         placeholder="Email"
                       />
                       <div className="flex gap-2 justify-center pt-2">
-                        <button onClick={() => setIsEditingProfile(false)} className="px-4 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-600 transition-colors">Cancel</button>
-                        <button onClick={() => setIsEditingProfile(false)} className="px-4 py-2 text-xs bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-bold transition-colors">Save</button>
+                        <button onClick={() => { setIsEditingProfile(false); setPreviewUrl(null); }} className="px-4 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-600 transition-colors">Cancel</button>
+                        <button disabled={isSaving} onClick={handleSaveProfile} className="px-4 py-2 text-xs bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-bold transition-colors disabled:opacity-50">Save</button>
+                        
                       </div>
                    </div>
                 ) : (
