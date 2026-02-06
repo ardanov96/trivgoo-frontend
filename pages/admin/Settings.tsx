@@ -6,7 +6,8 @@ import { Save, Globe, DollarSign, Shield, Bell, Lock, Power, RefreshCw, Smartpho
 
 const AdminSettings: React.FC = () => {
   const { showToast } = useToast();
-  const API_URL = "http://localhost:4000";
+  // const API_URL = "http://localhost:4000";
+  const API_URL = process.env.REACT_APP_API_URL || (import.meta as any).env?.VITE_API_URL || "http://192.168.1.99:4000";
   const [activeTab, setActiveTab] = useState<'general' | 'finance' | 'security'>('general');
   const [isSaving, setIsSaving] = useState(false);
 

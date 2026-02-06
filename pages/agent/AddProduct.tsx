@@ -16,16 +16,27 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Swal from 'sweetalert2';
-import {
-  GoogleMap,
-  LoadScript,
-  Marker,
-  Autocomplete,
-} from "@react-google-maps/api";
 
 import { useAuth } from "../../AuthContext";
 import { agentProductService } from "../../services/agentProductService";
 import { mediaService } from "../../services/mediaService";
+
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix Marker Icon Leaflet
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
 import {
   AgentProduct,
   AgentProductPayload,
@@ -54,21 +65,26 @@ const uniq = (arr: string[]) => Array.from(new Set(arr.filter(Boolean)));
 
 const MEDIA_PURPOSE = "agent-products";
 
-/**
- * NOTE:
- * - Kalau project Vite: idealnya pakai import.meta.env.VITE_GOOGLE_MAPS_API_KEY
- * - Kalau kamu inject via vite define (process.env.*), ini tetap bisa.
- */
-const GOOGLE_MAPS_API_KEY =
-  (process.env as any).GOOGLE_MAPS_API_KEY ||
-  (process.env as any).VITE_GOOGLE_MAPS_API_KEY ||
-  "";
-
-const GMAPS_LIBRARIES: "places"[] = ["places"];
-
 type LatLng = { lat: number; lng: number };
+const DEFAULT_CENTER: LatLng = { lat: -8.409518, lng: 115.188919 }; 
 
-const DEFAULT_CENTER: LatLng = { lat: -8.409518, lng: 115.188919 }; // Bali-ish
+// --- MAP HELPER COMPONENTS ---
+function MapUpdater({ center }: { center: { lat: number; lng: number } }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([center.lat, center.lng], map.getZoom());
+  }, [center, map]);
+  return null;
+}
+
+function MapClickHandler({ onClick }: { onClick: (pos: LatLng) => void }) {
+  useMapEvents({
+    click(e) {
+      onClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+  return null;
+}
 
 const AgentAddProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -95,15 +111,9 @@ const AgentAddProduct: React.FC = () => {
     blockedDates: [] as string[],
   });
 
-  // ====== GMAPS state ======
-  const [mapsReady, setMapsReady] = useState(false);
+  // ====== LEAFLET state ======
   const [mapCenter, setMapCenter] = useState<LatLng>(DEFAULT_CENTER);
   const [markerPos, setMarkerPos] = useState<LatLng | null>(null);
-
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-
-  const didInitialGeocodeRef = useRef(false);
 
   const [coverState, setCoverState] = useState<CoverState>(null);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
@@ -224,6 +234,13 @@ const AgentAddProduct: React.FC = () => {
               lng: Number(product.lng),
             });
 
+            // Set marker position from product data
+            if (product.lat && product.lng) {
+              const pos = { lat: Number(product.lat), lng: Number(product.lng) };
+              setMarkerPos(pos);
+              setMapCenter(pos);
+            }
+
             const coverUrl =
               (product as any).image || (product as any).image_url || "";
             setCoverState(coverUrl ? { kind: "url", url: coverUrl } : null);
@@ -280,80 +297,37 @@ const AgentAddProduct: React.FC = () => {
     }
   }, [id, user, navigate]);
 
-  // ====== GMAPS helpers ======
-  const setMarkerAndCenter = (pos: LatLng, zoom = 15) => {
-    setMarkerPos(pos);
-    setMapCenter(pos);
-    if (mapRef.current) {
-      mapRef.current.panTo(pos);
-      mapRef.current.setZoom(zoom);
+  // --- GEOLOCATION LOGIC (NOMINATIM) ---
+  const searchAddress = async (query: string) => {
+    if (!query.trim()) return;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
+      );
+      const data = await res.json();
+      if (data.length > 0) {
+        const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        setMarkerPos(pos);
+        setMapCenter(pos);
+        setFormData(prev => ({ ...prev, location: data[0].display_name }));
+      }
+    } catch (err) {
+      console.error("Search error", err);
     }
   };
 
-  const geocodeAddressToLatLng = async (address: string) => {
-    if (!mapsReady || !address?.trim() || !(window as any).google?.maps) return;
-
-    const geocoder = new google.maps.Geocoder();
-    const res = await geocoder.geocode({ address });
-    const first = res.results?.[0];
-    if (!first?.geometry?.location) return;
-
-    const loc = first.geometry.location;
-    const pos = { lat: loc.lat(), lng: loc.lng() };
-
-    setMarkerAndCenter(pos, 15);
-
-    const formatted = first.formatted_address || address;
-    setFormData((prev) => ({ ...prev, location: formatted }));
-  };
-
-  const reverseGeocodeLatLngToAddress = async (pos: LatLng) => {
-    if (!mapsReady || !(window as any).google?.maps) return;
-
-    const geocoder = new google.maps.Geocoder();
-    const res = await geocoder.geocode({ location: pos });
-    const first = res.results?.[0];
-    const formatted = first?.formatted_address;
-    if (formatted) setFormData((prev) => ({ ...prev, location: formatted }));
-  };
-
-  // Initial geocode (edit mode): ketika lokasi sudah keisi dari API, map otomatis ngikut
-  useEffect(() => {
-    if (!mapsReady) return;
-    if (didInitialGeocodeRef.current) return;
-    if (!formData.location?.trim()) return;
-
-    didInitialGeocodeRef.current = true;
-    geocodeAddressToLatLng(formData.location).catch(console.error);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapsReady, formData.location]);
-
-  const onAutocompleteLoad = (ac: google.maps.places.Autocomplete) => {
-    autocompleteRef.current = ac;
-  };
-
-  const onPlaceChanged = () => {
-    const ac = autocompleteRef.current;
-    if (!ac) return;
-
-    const place = ac.getPlace();
-    const formatted = place?.formatted_address || place?.name || "";
-    const loc = place?.geometry?.location;
-
-    if (formatted) setFormData((prev) => ({ ...prev, location: formatted }));
-
-    // ✅ INI KUNCI: marker + center ngikut autocomplete
-    if (loc) {
-      const pos = { lat: loc.lat(), lng: loc.lng() };
-      setMarkerAndCenter(pos, 15);
-    } else if (formatted) {
-      // fallback kalau geometry gak ada
-      geocodeAddressToLatLng(formatted).catch(console.error);
+  const reverseGeocode = async (pos: LatLng) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`
+      );
+      const data = await res.json();
+      if (data.display_name) {
+        setFormData(prev => ({ ...prev, location: data.display_name }));
+      }
+    } catch (err) {
+      console.error("Reverse geocode error", err);
     }
-  };
-
-  const onMapLoad = (map: google.maps.Map) => {
-    mapRef.current = map;
   };
 
   if (user?.verification_status !== VerificationStatus.VERIFIED) {
@@ -633,105 +607,105 @@ const AgentAddProduct: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent | any) => {
-  e.preventDefault();
-  if (!user) return;
+    e.preventDefault();
+    if (!user) return;
 
-  // 1. Konfirmasi sebelum simpan
-  const confirmResult = await Swal.fire({
-    title: isEditMode ? 'Update Product?' : 'Create Product?',
-    text: "Make sure all details are correct.",
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#0f172a', // primary-900
-    confirmButtonText: 'Yes, Save it!',
-    customClass: {
-      popup: 'rounded-3xl',
-      confirmButton: 'rounded-xl px-6 py-2.5',
-      cancelButton: 'rounded-xl px-6 py-2.5'
-    }
-  });
+    // 1. Konfirmasi sebelum simpan
+    const confirmResult = await Swal.fire({
+      title: isEditMode ? 'Update Product?' : 'Create Product?',
+      text: "Make sure all details are correct.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0f172a',
+      confirmButtonText: 'Yes, Save it!',
+      customClass: {
+        popup: 'rounded-3xl',
+        confirmButton: 'rounded-xl px-6 py-2.5',
+        cancelButton: 'rounded-xl px-6 py-2.5'
+      }
+    });
 
-  if (!confirmResult.isConfirmed) return;
+    if (!confirmResult.isConfirmed) return;
 
-  setIsSubmitting(true);
-  
-  // 2. Tampilkan Loading (Sangat penting karena ada proses upload media)
-  Swal.fire({
-    title: 'Uploading & Saving...',
-    html: 'Please wait while we process your media files.',
-    allowOutsideClick: false,
-    didOpen: () => {
-      Swal.showLoading();
-    },
-    customClass: {
-      popup: 'rounded-3xl'
-    }
-  });
-
-  try {
-    const details = buildDetails();
-    const categoryId = getCategoryId();
-    const { coverUrl: existingCoverUrl, galleryUrls: existingGalleryUrls } = collectExistingUrls();
-    const { uploadedCoverUrl, uploadedGalleryUrls } = await uploadPendingMedia();
-
-    const finalCoverUrl = uploadedCoverUrl || existingCoverUrl;
-    const finalGalleryUrls = uniq([
-      ...existingGalleryUrls,
-      ...(uploadedGalleryUrls || []),
-    ]);
-
-    const payload: AgentProductPayload = {
-      category_id: categoryId,
-      name: formData.name,
-      description: formData.description,
-      price: Number(formData.price),
-      currency: formData.currency,
-      location: formData.location,
-      image_url: finalCoverUrl,
-      images: finalGalleryUrls,
-      features: formData.features.filter((f) => f.trim() !== ""),
-      details,
-      daily_capacity: Number(formData.dailyCapacity),
-      blocked_dates: formData.blockedDates,
-      lat: markerPos?.lat || 0,
-      lng: markerPos?.lng || 0,
-    };
-
-    if (isEditMode && id) {
-      await agentProductService.updateProduct(Number(id), payload);
-    } else {
-      await agentProductService.createProduct(payload);
-    }
-
-    // 3. Notifikasi Sukses
-    await Swal.fire({
-      title: 'Success!',
-      text: `Your product has been ${isEditMode ? 'updated' : 'created'} successfully.`,
-      icon: 'success',
-      timer: 2000,
-      showConfirmButton: false,
+    setIsSubmitting(true);
+    
+    // 2. Tampilkan Loading
+    Swal.fire({
+      title: 'Uploading & Saving...',
+      html: 'Please wait while we process your media files.',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
       customClass: {
         popup: 'rounded-3xl'
       }
     });
 
-    navigate("/agent/products");
-  } catch (error) {
-    console.error(error);
-    Swal.fire({
-      title: 'Error!',
-      text: 'Something went wrong while saving the product.',
-      icon: 'error',
-      confirmButtonColor: '#0f172a',
-      customClass: {
-        popup: 'rounded-3xl',
-        confirmButton: 'rounded-xl'
+    try {
+      const details = buildDetails();
+      const categoryId = getCategoryId();
+      const { coverUrl: existingCoverUrl, galleryUrls: existingGalleryUrls } = collectExistingUrls();
+      const { uploadedCoverUrl, uploadedGalleryUrls } = await uploadPendingMedia();
+
+      const finalCoverUrl = uploadedCoverUrl || existingCoverUrl;
+      const finalGalleryUrls = uniq([
+        ...existingGalleryUrls,
+        ...(uploadedGalleryUrls || []),
+      ]);
+
+      const payload: AgentProductPayload = {
+        category_id: categoryId,
+        name: formData.name,
+        description: formData.description,
+        price: Number(formData.price),
+        currency: formData.currency,
+        location: formData.location,
+        image_url: finalCoverUrl,
+        images: finalGalleryUrls,
+        features: formData.features.filter((f) => f.trim() !== ""),
+        details,
+        daily_capacity: Number(formData.dailyCapacity),
+        blocked_dates: formData.blockedDates,
+        lat: markerPos?.lat || 0,
+        lng: markerPos?.lng || 0,
+      };
+
+      if (isEditMode && id) {
+        await agentProductService.updateProduct(Number(id), payload);
+      } else {
+        await agentProductService.createProduct(payload);
       }
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+
+      // 3. Notifikasi Sukses
+      await Swal.fire({
+        title: 'Success!',
+        text: `Your product has been ${isEditMode ? 'updated' : 'created'} successfully.`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        customClass: {
+          popup: 'rounded-3xl'
+        }
+      });
+
+      navigate("/agent/products");
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Something went wrong while saving the product.',
+        icon: 'error',
+        confirmButtonColor: '#0f172a',
+        customClass: {
+          popup: 'rounded-3xl',
+          confirmButton: 'rounded-xl'
+        }
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto pb-20">
@@ -806,129 +780,93 @@ const AgentAddProduct: React.FC = () => {
                 />
               </div>
 
-              {/* ====== LOCATION + GMAPS ====== */}
+              {/* ====== LOCATION + LEAFLET ====== */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                   Location
                 </label>
 
-                {!GOOGLE_MAPS_API_KEY ? (
-                  <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">
-                    GOOGLE_MAPS_API_KEY belum ada. Isi env dulu ya.
+                <div className="space-y-3">
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 z-10" />
+                    <input
+                      type="text"
+                      name="location"
+                      required
+                      className="w-full pl-10 pr-28 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
+                      placeholder="Search location..."
+                      value={formData.location}
+                      onChange={handleChange}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          searchAddress(formData.location);
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => searchAddress(formData.location)}
+                      className="absolute right-2 top-2 px-3 py-2 rounded-lg bg-white border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50"
+                    >
+                      Search
+                    </button>
                   </div>
-                ) : (
-                  <LoadScript
-                    googleMapsApiKey={GOOGLE_MAPS_API_KEY}
-                    libraries={GMAPS_LIBRARIES}
-                    onLoad={() => setMapsReady(true)}
-                  >
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
 
-                        <Autocomplete
-                          onLoad={onAutocompleteLoad}
-                          onPlaceChanged={onPlaceChanged}
-                        >
-                          <input
-                            type="text"
-                            name="location"
-                            required
-                            className="w-full pl-10 pr-28 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white"
-                            placeholder="Cari lokasi ..."
-                            value={formData.location}
-                            onChange={(e) => {
-                              handleChange(e);
-                              // kalau user ketik manual, izinkan geocode manual via tombol Set
-                              // (biar initial geocode edit mode gak nge-trigger ulang)
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
+                    <div className="h-64 w-full relative">
+                      <MapContainer
+                        center={[mapCenter.lat, mapCenter.lng]}
+                        zoom={markerPos ? 15 : 11}
+                        style={{ width: "100%", height: "100%" }}
+                        scrollWheelZoom={true}
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        
+                        <MapUpdater center={mapCenter} />
+                        
+                        <MapClickHandler 
+                          onClick={async (pos) => {
+                            setMarkerPos(pos);
+                            setMapCenter(pos);
+                            await reverseGeocode(pos);
+                          }}
+                        />
+                        
+                        {markerPos && (
+                          <Marker 
+                            position={[markerPos.lat, markerPos.lng]}
+                            draggable={true}
+                            eventHandlers={{
+                              dragend: async (e) => {
+                                const marker = e.target;
+                                const pos = marker.getLatLng();
+                                const newPos = { lat: pos.lat, lng: pos.lng };
+                                setMarkerPos(newPos);
+                                setMapCenter(newPos);
+                                await reverseGeocode(newPos);
+                              }
                             }}
                           />
-                        </Autocomplete>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            geocodeAddressToLatLng(formData.location).catch(
-                              console.error
-                            )
-                          }
-                          className="absolute right-2 top-2 px-3 py-2 rounded-lg bg-white border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50"
-                        >
-                          Set
-                        </button>
-                      </div>
-
-                      <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
-                        <div className="h-64 w-full">
-                          <GoogleMap
-                            onLoad={onMapLoad}
-                            mapContainerStyle={{
-                              width: "100%",
-                              height: "100%",
-                            }}
-                            center={markerPos || mapCenter}
-                            zoom={markerPos ? 15 : 11}
-                            options={{
-                              fullscreenControl: false,
-                              streetViewControl: false,
-                              mapTypeControl: false,
-                            }}
-                            onClick={(e) => {
-                              const lat = e.latLng?.lat();
-                              const lng = e.latLng?.lng();
-                              if (
-                                typeof lat !== "number" ||
-                                typeof lng !== "number"
-                              )
-                                return;
-                              const pos = { lat, lng };
-                              setMarkerAndCenter(pos, 15);
-                              reverseGeocodeLatLngToAddress(pos).catch(
-                                console.error
-                              );
-                            }}
-                          >
-                            {/* ✅ Marker muncul hanya kalau sudah ada posisi */}
-                            {markerPos ? (
-                              <Marker
-                                position={markerPos}
-                                draggable
-                                onDragEnd={(e) => {
-                                  const lat = e.latLng?.lat();
-                                  const lng = e.latLng?.lng();
-                                  if (
-                                    typeof lat !== "number" ||
-                                    typeof lng !== "number"
-                                  )
-                                    return;
-                                  const pos = { lat, lng };
-                                  setMarkerAndCenter(pos, 15);
-                                  reverseGeocodeLatLngToAddress(pos).catch(
-                                    console.error
-                                  );
-                                }}
-                              />
-                            ) : null}
-                          </GoogleMap>
-                        </div>
-
-                        <div className="px-4 py-3 text-[11px] text-gray-500 flex items-center justify-between">
-                          <span>
-                            Pilih Autocomplete → marker muncul. Klik map / drag
-                            marker juga bisa.
-                          </span>
-                          <span className="font-mono">
-                            {markerPos
-                              ? `${markerPos.lat.toFixed(
-                                  6
-                                )}, ${markerPos.lng.toFixed(6)}`
-                              : "-"}
-                          </span>
-                        </div>
-                      </div>
+                        )}
+                      </MapContainer>
                     </div>
-                  </LoadScript>
-                )}
+
+                    <div className="px-4 py-3 text-[11px] text-gray-500 flex items-center justify-between">
+                      <span>
+                        Search location or click map to set marker. Drag marker to adjust position.
+                      </span>
+                      <span className="font-mono">
+                        {markerPos
+                          ? `${markerPos.lat.toFixed(6)}, ${markerPos.lng.toFixed(6)}`
+                          : "-"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -1603,7 +1541,7 @@ const AgentAddProduct: React.FC = () => {
             </div>
 
             <div className="mt-6 text-[11px] text-gray-400">
-              * Cover/Gallery akan di-upload saat kamu klik Save.
+              * Cover/Gallery will be uploaded when you click Save.
             </div>
           </div>
         </div>

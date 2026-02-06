@@ -13,15 +13,18 @@
     "@react-google-maps/api": "^2.20.8",
     "axios": "^1.13.2",
     "dotenv": "^17.2.3",
+    "leaflet": "^1.9.4",
     "lucide-react": "0.344.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "react-leaflet": "^4.2.1",
     "react-markdown": "9.0.1",
     "react-router-dom": "6.22.3",
     "recharts": "2.12.7",
     "sweetalert2": "^11.26.18"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.7",
     "@vitejs/plugin-react": "^5.0.0",

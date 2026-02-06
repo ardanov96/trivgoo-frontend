@@ -28,56 +28,58 @@ import { useAuth } from '../AuthContext';
 
 const POPULAR_DESTINATIONS = [
   'Bali, Indonesia',
-  'Kyoto, Japan',
-  'Santorini, Greece',
-  'Paris, France',
   'Raja Ampat, Indonesia',
-  'Swiss Alps, Switzerland',
+  'Yogyakarta, Indonesia',
+  'Labuan Bajo, Indonesia',
+
   'Tokyo, Japan',
-  'Rome, Italy',
-  'New York, USA',
+  'Seoul, South Korea',
+  'Bangkok, Thailand',
+  'Singapore, Singapore',
+  'Kyoto, Japan',
+  'Hong Kong, China',
 ];
 
 const DESTINATION_STORIES = [
   {
     name: 'Bali',
-    image:
-      'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=300&q=80',
   },
   {
-    name: 'Japan',
-    image:
-      'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=300&q=80',
+    name: 'Raja Ampat',
+    image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf?auto=format&fit=crop&w=300&q=80',
   },
   {
-    name: 'Paris',
-    image:
-      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=300&q=80',
+    name: 'Yogyakarta',
+    image: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?auto=format&fit=crop&w=300&q=80',
   },
   {
-    name: 'Swiss',
-    image:
-      'https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=300&q=80',
+  name: 'Labuan Bajo',
+  image: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=300&q=80',
+},
+  {
+    name: 'Tokyo',
+    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=300&q=80',
   },
   {
-    name: 'Italy',
-    image:
-      'https://images.unsplash.com/photo-1529260830199-42c42dda5f30?auto=format&fit=crop&w=300&q=80',
+    name: 'Seoul',
+    image: 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=300&q=80',
   },
   {
-    name: 'Greece',
-    image:
-      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=300&q=80',
+    name: 'Bangkok',
+    image: 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=300&q=80',
   },
   {
-    name: 'New York',
-    image:
-      'https://images.unsplash.com/photo-1496442226666-8d4a0e62e6e9?auto=format&fit=crop&w=300&q=80',
+    name: 'Singapore',
+    image: 'https://images.unsplash.com/photo-1565967511849-76a60a516170?auto=format&fit=crop&w=300&q=80',
   },
   {
-    name: 'London',
-    image:
-      'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=300&q=80',
+    name: 'Kyoto',
+    image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Hong Kong',
+    image: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=300&q=80',
   },
 ];
 
@@ -372,10 +374,13 @@ const Home: React.FC = () => {
       <div className="relative min-h-[100dvh] md:h-[90vh] flex items-center justify-center px-4 pt-28 md:pt-0 pb-12">
         {/* Background Image - Isolated z-0 and overflow handling */}
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <img
+          <video
             className="w-full h-full object-cover"
-            src="https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
-            alt="Tropical Paradise"
+            src="/videos/video-bg.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
           />
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/60 via-gray-900/20 to-gray-900/70"></div>
         </div>
@@ -393,7 +398,7 @@ const Home: React.FC = () => {
             <span className="animate-pulse text-teal-200">|</span>
           </h1>
           <p className="mt-4 md:mt-6 max-w-2xl text-base md:text-xl text-gray-100 mx-auto font-light leading-relaxed mb-8 md:mb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200 px-2">
-            Curated tours, luxury villas, and unforgettable experiences designed just for you.
+            Travel Indonesia and Asia effortlessly with curated tours, quality stays, and complete transportation solutions.
           </p>
 
           {/* SEARCH WIDGET CONTAINER - VERY HIGH Z-INDEX to prevent clipping */}
