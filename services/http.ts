@@ -4,7 +4,7 @@ import axios from "axios";
 const getBaseURL = () => {
   const envURL = process.env.REACT_APP_API_URL || (import.meta as any).env?.VITE_API_URL;
   // Gunakan fallback manual jika env tidak terbaca
-  return `${envURL || "http://192.168.1.99:4000"}/api/v1`; 
+  return `${envURL || "http://192.168.1.101:4000"}/api/v1`; 
 };
 
 const http = axios.create({
