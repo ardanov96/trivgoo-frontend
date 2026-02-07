@@ -93,6 +93,7 @@ const AgentAddProduct: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(false);
 
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
@@ -208,6 +209,10 @@ const AgentAddProduct: React.FC = () => {
       }
       if (user.specialization === AgentSpecialization.TRANSPORT) {
         setSelectedSubCategory(TransportCategory.CAR_RENTAL);
+      }
+      if (!markerPos) {
+        setMarkerPos(DEFAULT_CENTER);
+        setMapCenter(DEFAULT_CENTER);
       }
     }
 
@@ -610,6 +615,20 @@ const AgentAddProduct: React.FC = () => {
     e.preventDefault();
     if (!user) return;
 
+    if (!markerPos) {
+      await Swal.fire({
+        title: 'Location Required',
+        text: 'Please set location marker on the map',
+        icon: 'warning',
+        confirmButtonColor: '#0f172a',
+        customClass: {
+          popup: 'rounded-3xl',
+          confirmButton: 'rounded-xl'
+        }
+      });
+      return;
+    }
+
     // 1. Konfirmasi sebelum simpan
     const confirmResult = await Swal.fire({
       title: isEditMode ? 'Update Product?' : 'Create Product?',
@@ -667,8 +686,8 @@ const AgentAddProduct: React.FC = () => {
         details,
         daily_capacity: Number(formData.dailyCapacity),
         blocked_dates: formData.blockedDates,
-        lat: markerPos?.lat || 0,
-        lng: markerPos?.lng || 0,
+        lat: markerPos.lat,  
+        lng: markerPos.lng,
       };
 
       if (isEditMode && id) {
@@ -677,7 +696,7 @@ const AgentAddProduct: React.FC = () => {
         await agentProductService.createProduct(payload);
       }
 
-      // 3. Notifikasi Sukses
+      //Notifikasi Sukses
       await Swal.fire({
         title: 'Success!',
         text: `Your product has been ${isEditMode ? 'updated' : 'created'} successfully.`,
@@ -816,6 +835,7 @@ const AgentAddProduct: React.FC = () => {
                   <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
                     <div className="h-64 w-full relative">
                       <MapContainer
+                        key={`${mapCenter.lat}-${mapCenter.lng}`}
                         center={[mapCenter.lat, mapCenter.lng]}
                         zoom={markerPos ? 15 : 11}
                         style={{ width: "100%", height: "100%" }}
@@ -865,6 +885,20 @@ const AgentAddProduct: React.FC = () => {
                           : "-"}
                       </span>
                     </div>
+                  </div>
+
+                  <div className={`px-4 py-3 text-xs flex items-center justify-between ${
+                    markerPos 
+                      ? 'bg-green-50 text-green-700 border-t border-green-200' 
+                      : 'bg-red-50 text-red-600 border-t border-red-200'
+                  }`}>
+                    <span className="font-bold flex items-center">
+                      {markerPos ? (
+                        <>✓ Location marked</>
+                      ) : (
+                        <>⚠️ Click map to set location</>
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>

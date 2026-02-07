@@ -1,20 +1,11 @@
 import { ApiEnvelope } from "@/types";
 import axios from "axios";
 
-const getBaseURL = () => {
-  const envURL = process.env.REACT_APP_API_URL || (import.meta as any).env?.VITE_API_URL;
-  // Gunakan fallback manual jika env tidak terbaca
-  return `${envURL || "http://192.168.1.101:4000"}/api/v1`; 
-};
-
 const http = axios.create({
-  // baseURL: "http://localhost:4000/api/v1",
-  // withCredentials: true,
-  // headers: { Accept: "application/json" },
-
-  baseURL: getBaseURL(), 
+  baseURL: "http://localhost:4000/api/v1",
   withCredentials: true,
   headers: { Accept: "application/json" },
+
 });
 
 http.interceptors.request.use((config) => {
