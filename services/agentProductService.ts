@@ -1,10 +1,31 @@
-import type { AgentProduct, AgentProductPayload, ApiEnvelope } from "../types";
+import type { AgentProduct, AgentProductPayload, ApiEnvelope, Category } from "../types";
 import http, { unwrap } from "./http";
 
 type ProductEnvelope<T> = ApiEnvelope<T>;
 
+function normalizeCategory(data: any): Category {
+  return {
+    id: data.id,
+    name: data.name,
+    slug: data.slug,
+    description: data.description || undefined,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
+}
+
 function normalizeProduct(data: AgentProduct): AgentProduct {
+  // Backend bisa mengirim image_url, image, atau images array
   const finalImage = data.image_url || data.image || '';
+  
+  // Jika ada images array, ambil yang pertama sebagai fallback
+  let imageUrl = finalImage;
+  if (!imageUrl && data.images && Array.isArray(data.images) && data.images.length > 0) {
+    // images bisa berupa array of strings atau array of objects
+    const firstImage = data.images[0];
+    imageUrl = typeof firstImage === 'string' ? firstImage : (firstImage?.url || firstImage?.image_url || '');
+  }
+  
   return {
     id: data.id,
     owner_id: data.owner_id,
@@ -12,19 +33,27 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
     name: data.name,
     description: data.description,
     price: Number((data as any).price || 0),
-    currency: (data as any).currency || "",
+    currency: (data as any).currency || "USD",
     location: (data as any).location || "",
-    image_url: finalImage,
-    image: finalImage,
-    images: data.images,
-    owner: data.owner,
+    lat: (data as any).lat ? Number((data as any).lat) : undefined,
+    lng: (data as any).lng ? Number((data as any).lng) : undefined,
+    image_url: imageUrl,
+    image: imageUrl,
+    images: Array.isArray(data.images) 
+      ? data.images.map(img => {
+          if (typeof img === 'string') return img;
+          if (typeof img === 'object' && img !== null) {
+            return img.url || img.image_url || '';
+          }
+          return '';
+        }).filter(Boolean)
+      : [],
+    owner: data.owner || undefined,
     features: Array.isArray((data as any).features)
       ? (data as any).features
       : [],
     details: (data as any).details ?? undefined,
     daily_capacity: (data as any).daily_capacity ?? 10,
-    lat: (data as any).lat,
-    lng: (data as any).lng,
     blocked_dates: Array.isArray((data as any).blocked_dates)
       ? (data as any).blocked_dates
       : [],
@@ -64,16 +93,16 @@ function extractUploadedUrls(payload: any): string[] {
 export const agentProductService = {
   async getAllProducts(): Promise<AgentProduct[]> {
     const rows = await mapOne(
-      http.get<ProductEnvelope<AgentProduct[]>>("/products") // Tanpa prefix /agent
+      http.get<ProductEnvelope<AgentProduct[]>>("/products")
     );
     return rows.map(normalizeProduct);
   },
 
-  async getCategories(): Promise<any[]> {
+  async getCategories(): Promise<Category[]> {
     const rows = await mapOne(
       http.get<ProductEnvelope<any[]>>("/categories")
     );
-    return rows;
+    return rows.map(normalizeCategory);
   },
 
   async createProduct(payload: AgentProductPayload): Promise<AgentProduct> {
@@ -99,14 +128,12 @@ export const agentProductService = {
     );
   },
 
-async getProductById(id: number): Promise<AgentProduct> {
-  // Coba hapus prefix /v1 jika baseURL axios kamu sudah /api/v1
-  // Atau tambahkan jika baseURL-nya hanya /api
-  const raw = await mapOne(
-    http.get<ProductEnvelope<AgentProduct>>(`/products/${id}`) 
-  );
-  return normalizeProduct(raw);
-},
+  async getProductById(id: number): Promise<AgentProduct> {
+    const raw = await mapOne(
+      http.get<ProductEnvelope<AgentProduct>>(`/products/${id}`) 
+    );
+    return normalizeProduct(raw);
+  },
 
   async getMyProduct(id: number): Promise<AgentProduct> {
     const raw = await mapOne(

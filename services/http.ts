@@ -1,8 +1,10 @@
 import { ApiEnvelope } from "@/types";
 import axios from "axios";
 
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
 const http = axios.create({
-  baseURL: "http://localhost:4000/api/v1",
+  baseURL: `${apiBase}/api/v1`,
   withCredentials: true,
   headers: { Accept: "application/json" },
 
