@@ -2,7 +2,7 @@ import { ArrowRight, ArrowUpDown, Calendar, Heart, MapPin, Search, Star, X } fro
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWishlist } from '../components/WishlistContext';
-import { Category, Product } from '../types';
+import { Category, Product, StayCategory, TourCategory, TransportCategory } from '../types';
 import { mockService } from '@/services/mockService';
 import { agentProductService } from '../services/agentProductService';
 
@@ -25,8 +25,10 @@ const Explore: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
+      // setIsLoading(false);
+        setIsLoading(true);
       try {
+        // Buka komentar ini:
         const [prods, cats] = await Promise.all([
           agentProductService.getAllProducts(),
           agentProductService.getCategories(),
@@ -70,24 +72,16 @@ const Explore: React.FC = () => {
     toggleWishlist(product);
   };
 
-  // --- SUB-CATEGORY LOGIC (Dinamis dari database) ---
+  // --- SUB-CATEGORY LOGIC ---
   const getSubCategories = () => {
     if (!selectedCategory) return [];
 
-    // Ekstrak unique sub-categories dari products yang ada di category ini
-    const productsInCategory = products.filter(p => Number(p.category_id) === Number(selectedCategory));
-    const subCats = new Set<string>();
-    
-    productsInCategory.forEach(product => {
-      if (product.details) {
-        // Cari field yang berisi "Category" dalam details
-        if (product.details.tourCategory) subCats.add(product.details.tourCategory);
-        if (product.details.stayCategory) subCats.add(product.details.stayCategory);
-        if (product.details.transportCategory) subCats.add(product.details.transportCategory);
-      }
-    });
+    // ID 1 = Tours, 2 = Stays, 4 = Transport (Based on mockService data)
+    if (selectedCategory === 1) return Object.values(TourCategory);
+    if (selectedCategory === 2) return Object.values(StayCategory);
+    if (selectedCategory === 4) return Object.values(TransportCategory);
 
-    return Array.from(subCats);
+    return [];
   };
 
   const subCategories = getSubCategories();
@@ -95,7 +89,7 @@ const Explore: React.FC = () => {
   // --- MAIN FILTER LOGIC ---
   const filteredProducts = products
     .filter((p) => {
-    // 1. Search Query
+    // 1. Search Query (Deklarasikan di awal agar bisa dipakai di log)
     const query = searchQuery.toLowerCase();
     const matchSearch =
       p.name.toLowerCase().includes(query) || 
@@ -111,7 +105,7 @@ const Explore: React.FC = () => {
       matchSubCat = detailsValues.includes(selectedSubCategory.toLowerCase());
     }
 
-    // DEBUG LOG
+    // DEBUG LOG - Sekarang matchSearch sudah terdefinisi
     console.log('Checking Product:', p.name, { matchCat, matchSubCat, matchSearch });
 
     return matchCat && matchSubCat && matchSearch;
@@ -155,7 +149,7 @@ const Explore: React.FC = () => {
           <p className="text-gray-500">Discover unique experiences and hidden gems.</p>
         </div>
 
-        {/* Search and Filter Container */}
+        {/* Search and Filter Container - REMOVED STICKY */}
         <div className="bg-white p-4 md:p-6 rounded-3xl shadow-soft border border-gray-100 mb-10 relative">
           <div className="flex flex-col gap-6">
             {/* Top Row: Search & Sort */}
@@ -218,7 +212,7 @@ const Explore: React.FC = () => {
                 </div>
               )}
 
-              {/* MAIN CATEGORIES (Dinamis dari Database) */}
+              {/* MAIN CATEGORIES */}
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">
                   Categories
@@ -306,9 +300,6 @@ const Explore: React.FC = () => {
                 if (product.details?.type === 'tour') subLabel = product.details.tourCategory;
                 if (product.details?.type === 'stay') subLabel = product.details.stayCategory;
                 if (product.details?.type === 'car') subLabel = product.details.transportCategory;
-                
-                // Determine image to display (prioritize image_url, fallback to image or first in images array)
-                const displayImage = product.image_url || product.image || (product.images && product.images.length > 0 ? product.images[0] : '');
 
                 return (
                   <Link
@@ -319,7 +310,7 @@ const Explore: React.FC = () => {
 
                     <div className="aspect-[4/3] relative overflow-hidden">
                       <img
-                        src={displayImage}
+                        src={product.image_url || product.image}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
