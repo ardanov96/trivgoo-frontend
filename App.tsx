@@ -12,6 +12,7 @@ import PublicLayout from './components/PublicLayout';
 // Public Pages
 import AITripPlanner from './pages/AITripPlanner';
 import Explore from './pages/Explore';
+import TermAndService from './pages/TermAndService';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Payment from './pages/Payment';
@@ -34,6 +35,13 @@ import AgentVerification from './pages/agent/Verification';
 import CustomerBookings from './pages/customer/Bookings';
 import Register from './pages/Register';
 import RegisterAgent from './pages/RegisterAgent';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import HelpCenter from './pages/HelpCenter';
+import ContactUs from './pages/ContactUs';
+import AboutUs from './pages/AboutUs';
+import Career from './pages/Career';
+import PressAndMedia from './pages/PressAndMedia';
+import TravelBlog from './pages/TravelBlog';
 
 // Route Guards
 interface ProtectedRouteProps {
@@ -84,6 +92,14 @@ const AppRoutes = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/register/agent" element={<PublicOnlyRoute><RegisterAgent /></PublicOnlyRoute>} />
         <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/career" element={<Career />} />
+        <Route path="/press-and-media" element={<PressAndMedia />} />
+        <Route path="/travel-blog" element={<TravelBlog />} />
+        <Route path="/help-center" element={<HelpCenter />} />
+        <Route path="/terms-and-service" element={<TermAndService />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/contact-us" element={<ContactUs />} />
 
         {/* Customer Protected Route - Nested in Public Layout for consistency */}
         <Route

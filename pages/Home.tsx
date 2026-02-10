@@ -30,7 +30,7 @@ const POPULAR_DESTINATIONS = [
   'Bali, Indonesia',
   'Raja Ampat, Indonesia',
   'Yogyakarta, Indonesia',
-  'Labuan Bajo, Indonesia',
+  'Padar Island, Indonesia',
 
   'Tokyo, Japan',
   'Seoul, South Korea',
@@ -54,9 +54,9 @@ const DESTINATION_STORIES = [
     image: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?auto=format&fit=crop&w=300&q=80',
   },
   {
-  name: 'Labuan Bajo',
-  image: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=300&q=80',
-},
+    name: 'Padar Island',
+    image: 'https://images.unsplash.com/photo-1589309736404-2e142a2acdf0?auto=format&fit=crop&w=800&q=80',
+  },
   {
     name: 'Tokyo',
     image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=300&q=80',

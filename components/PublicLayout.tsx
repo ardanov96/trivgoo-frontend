@@ -330,10 +330,16 @@ const PublicLayout: React.FC = () => {
                     />
                   </svg>
                 </div>
-                <div className="w-10 h-10 bg-gray-800 rounded-full hover:bg-primary-600 transition-all cursor-pointer flex items-center justify-center text-gray-400 hover:text-white">
+                <a 
+                  href="https://www.instagram.com/trivgoo/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="group w-10 h-10 bg-gray-800 rounded-full hover:bg-gradient-to-r hover:from-purple-600 hover:via-pink-600 hover:to-orange-500 transition-all duration-300 cursor-pointer flex items-center justify-center text-gray-400 hover:text-white transform hover:-translate-y-0.5 hover:shadow-lg"
+                  aria-label="Follow us on Instagram"
+                >
                   <span className="sr-only">Instagram</span>
                   <svg
-                    className="h-5 w-5"
+                    className="h-5 w-5 group-hover:scale-110 transition-transform duration-300"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                     aria-hidden="true"
@@ -344,7 +350,7 @@ const PublicLayout: React.FC = () => {
                       clipRule="evenodd"
                     />
                   </svg>
-                </div>
+                </a>
               </div>
             </div>
 
@@ -354,36 +360,32 @@ const PublicLayout: React.FC = () => {
               </h4>
               <ul className="space-y-4 text-gray-400 text-sm">
                 <li>
-                  <a
-                    href="#"
+                  <Link to="/about-us"
                     className="hover:text-primary-400 transition-colors"
                   >
                     About Trivgoo
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link to="/career"
                     className="hover:text-primary-400 transition-colors"
                   >
                     Careers
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link to="/press-and-media"
                     className="hover:text-primary-400 transition-colors"
                   >
                     Press & Media
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link to="/travel-blog"
                     className="hover:text-primary-400 transition-colors"
                   >
                     Travel Blog
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <Link
@@ -402,36 +404,32 @@ const PublicLayout: React.FC = () => {
               </h4>
               <ul className="space-y-4 text-gray-400 text-sm">
                 <li>
-                  <a
-                    href="#"
+                  <Link to="/help-center"
                     className="hover:text-primary-400 transition-colors"
                   >
                     Help Center
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link to="/terms-and-service"
                     className="hover:text-primary-400 transition-colors"
                   >
                     Terms of Service
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link to="/privacy-policy"
                     className="hover:text-primary-400 transition-colors"
                   >
                     Privacy Policy
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#"
+                  <Link to="/contact-us"
                     className="hover:text-primary-400 transition-colors"
                   >
                     Contact Us
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -458,7 +456,7 @@ const PublicLayout: React.FC = () => {
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
-              &copy; 2024 Trivgoo Inc. All rights reserved.
+              © {new Date().getFullYear()} Trivgoo Inc. All rights reserved.
             </p>
             <div className="flex space-x-6 text-gray-500 text-sm font-medium">
               <a href="#" className="hover:text-white transition-colors">
