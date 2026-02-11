@@ -304,7 +304,7 @@ const PressAndMedia: React.FC = () => {
             </span>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 leading-tight">
               Our Story in <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-amber-200">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-yellow-200 to-amber-300">
                 The Making
               </span>
             </h1>

@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
+    "@fontsource/geist": "^5.2.8",
     "@google/genai": "^1.30.0",
     "@react-google-maps/api": "^2.20.8",
     "axios": "^1.13.2",

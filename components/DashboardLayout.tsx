@@ -95,8 +95,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
         } flex flex-col`}
       >
         <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100">
-          <Link to="/" className="text-2xl font-serif font-bold text-gray-900">
-            trivgoo<span className="text-primary-500">.</span>
+          <Link to="/" className="flex items-center">
+            <img
+              src="/inline_trp.png"
+              alt="Trivgoo Logo"
+              className="h-10 w-auto"
+            />
           </Link>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
@@ -144,7 +148,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
           <div className="flex items-center mb-4 px-2">
             <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mr-3 flex-shrink-0">
               <img
-                src={user.avatar || '/avatar.png'}
+                src={user.avatar || '/favicon-black-bg.png'}
                 alt="User"
                 className="w-full h-full object-cover"
               />

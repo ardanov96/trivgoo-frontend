@@ -126,6 +126,7 @@ const SEARCH_CATEGORIES = [
   },
   { id: 'cars', label: 'Rental Mobil', icon: Car, placeholder: 'Pick-up location' },
   { id: 'transfers', label: 'Jemput Bandara', icon: Plane, placeholder: 'Airport or Hotel' },
+  { id: 'events', label: 'Event', icon: Calendar, placeholder: 'Concert, festival, or event' },
 ];
 
 const Home: React.FC = () => {
@@ -371,7 +372,7 @@ const Home: React.FC = () => {
   return (
     <div>
       {/* Immersive Hero Section */}
-      <div className="relative min-h-[100dvh] md:h-[90vh] flex items-center justify-center px-4 pt-28 md:pt-0 pb-12">
+      <div className="relative min-h-[100dvh] flex items-start justify-center px-4 pt-28 md:pt-24 lg:pt-28 pb-12">
         {/* Background Image - Isolated z-0 and overflow handling */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <video
@@ -387,15 +388,15 @@ const Home: React.FC = () => {
 
         {/* Hero Content - z-20 to sit above background but below search popup */}
         <div className="relative z-20 w-full max-w-7xl mx-auto text-center px-4">
-          <span className="inline-block py-1.5 px-4 rounded-full bg-white/10 backdrop-blur-md text-white text-[10px] md:text-xs font-bold tracking-[0.2em] mb-6 md:mb-8 border border-white/20 uppercase animate-in fade-in slide-in-from-bottom-4 duration-700">
-            The World Awaits
-          </span>
-          <h1 className="text-4xl md:text-6xl lg:text-8xl font-serif font-bold text-white mb-6 leading-tight tracking-tight drop-shadow-sm">
-            Find Your <br className="md:hidden" />{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-200 to-white">
-              {typewriterText}
+          <h1 className="font-serif font-bold text-white mb-6 leading-tight tracking-tight drop-shadow-sm">
+            <span className="block text-2xl md:text-4xl lg:text-5xl opacity-90">
+              Find Your
             </span>
-            <span className="animate-pulse text-teal-200">|</span>
+
+            <span className="block text-5xl md:text-7xl lg:text-9xl text-outlined bg-clip-text bg-gradient-to-r from-primary-200 to-white">
+              {typewriterText}
+              <span className="animate-pulse text-outlined-thin">|</span>
+            </span>
           </h1>
           <p className="mt-4 md:mt-6 max-w-2xl text-base md:text-xl text-gray-100 mx-auto font-light leading-relaxed mb-8 md:mb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200 px-2">
             Travel Indonesia and Asia effortlessly with curated tours, quality stays, and complete transportation solutions.

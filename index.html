@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon_trp.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trivgoo - Experience the World</title>
+    <title>Trivgoo - Experience the Indonesia & Asia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Rubik:wght@600;700;800;900&display=swap"
       rel="stylesheet"
     />
     <script>
@@ -15,21 +15,21 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              serif: ['Playfair Display', 'serif'],
+              sans: ['Nunito', 'sans-serif'],
+              serif: ['Rubik', 'sans-serif'],
             },
             colors: {
               primary: {
-                50: '#f0fdfa',
-                100: '#ccfbf1',
-                200: '#99f6e4',
-                300: '#5eead4',
-                400: '#2dd4bf',
-                500: '#14b8a6',
-                600: '#0d9488',
-                700: '#0f766e',
-                800: '#115e59',
-                900: '#134e4a',
+                50: '#fef5f3',
+                100: '#fde8e4',
+                200: '#fbd1ca',
+                300: '#f7aea1',
+                400: '#f18169',
+                500: '#e6654d',
+                600: '#E05845',  
+                700: '#c34134',
+                800: '#a23830',
+                900: '#85322e',
               },
               accent: {
                 500: '#f97316',
@@ -44,6 +44,70 @@
       };
     </script>
     <style>
+      /* Text Outline Effects - EXTRA TEBAL seperti Logo */
+      .text-outlined {
+        -webkit-text-stroke: 8px white;
+        text-stroke: 8px white;
+        color: #E05845;
+        paint-order: stroke fill;
+        font-weight: 900;
+      }
+      
+      .text-outlined-medium {
+        -webkit-text-stroke: 6px white;
+        text-stroke: 6px white;
+        color: #E05845;
+        paint-order: stroke fill;
+        font-weight: 900;
+      }
+      
+      .text-outlined-thin {
+        -webkit-text-stroke: 4px white;
+        text-stroke: 4px white;
+        color: #E05845;
+        paint-order: stroke fill;
+        font-weight: 800;
+      }
+      
+      /* Responsive outline - lebih tebal di desktop */
+      @media (min-width: 768px) {
+        .text-outlined {
+          -webkit-text-stroke: 10px white;
+          text-stroke: 10px white;
+        }
+      }
+      
+      @media (min-width: 1024px) {
+        .text-outlined {
+          -webkit-text-stroke: 12px white;
+          text-stroke: 12px white;
+        }
+      }
+      
+      /* Alternative: Shadow-based outline SUPER TEBAL */
+      .text-shadow-outline {
+        color: #E05845;
+        text-shadow: 
+          /* Layer 1 - Inner */
+          -2px -2px 0 white, 2px -2px 0 white,
+          -2px  2px 0 white, 2px  2px 0 white,
+          /* Layer 2 */
+          -4px -4px 0 white, 4px -4px 0 white,
+          -4px  4px 0 white, 4px  4px 0 white,
+          /* Layer 3 */
+          -6px -6px 0 white, 6px -6px 0 white,
+          -6px  6px 0 white, 6px  6px 0 white,
+          /* Layer 4 - Outer */
+          -8px -8px 0 white, 8px -8px 0 white,
+          -8px  8px 0 white, 8px  8px 0 white,
+          /* Cardinal directions */
+          -6px 0 0 white, 6px 0 0 white,
+          0 -6px 0 white, 0  6px 0 white,
+          -8px 0 0 white, 8px 0 0 white,
+          0 -8px 0 white, 0  8px 0 white;
+        font-weight: 900;
+      }
+      
       .no-scrollbar::-webkit-scrollbar {
         display: none;
       }

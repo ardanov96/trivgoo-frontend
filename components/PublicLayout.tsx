@@ -75,13 +75,11 @@ const PublicLayout: React.FC = () => {
                 to="/"
                 className="flex-shrink-0 flex items-center group relative z-10"
               >
-                <span
-                  className={`text-2xl md:text-3xl font-serif font-bold tracking-tighter transition-colors ${
-                    scrolled || !isHome ? "text-primary-800" : "text-white"
-                  }`}
-                >
-                  trivgoo<span className="text-accent-500">.</span>
-                </span>
+                <img
+                  src="/offest_inline_trp.png"
+                  alt="Trivgoo Logo"
+                  className="h-10 md:h-16 w-auto"
+                />
               </Link>
 
               <div className="hidden md:ml-12 md:flex md:space-x-8">
@@ -306,9 +304,11 @@ const PublicLayout: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
             <div className="space-y-6">
-              <span className="text-3xl font-serif font-bold tracking-tighter text-white block">
-                trivgoo<span className="text-primary-500">.</span>
-              </span>
+              <img
+                src="/Lapisan.png"
+                alt="Trivgoo Logo"
+                className="h-16 w-auto"
+              />
               <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
                 Curating the world's most breathtaking adventures and luxury
                 stays. Your journey begins with a single click.

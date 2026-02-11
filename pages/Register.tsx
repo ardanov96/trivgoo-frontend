@@ -59,12 +59,18 @@ const Register: React.FC = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-primary-900/80 to-transparent"></div>
         <div className="relative z-10 w-full flex flex-col justify-between p-12 text-white">
-          <span className="text-3xl font-serif font-bold tracking-tighter">trivgoo.</span>
+          <span className="text-3xl font-serif font-bold tracking-tighter">
+              <img
+                src="/Lapisan.png"
+                alt="Trivgoo Logo"
+                className="h-16 w-auto"
+              />
+          </span>
           <div>
             <h2 className="text-4xl font-serif font-bold mb-6">Start your journey today.</h2>
             <p className="text-lg text-primary-100 max-w-md">Join thousands of travelers who have found their perfect getaway with Trivgoo.</p>
           </div>
-          <div className="text-primary-200 text-sm">&copy; 2024 Trivgoo Inc.</div>
+          <div className="text-primary-200 text-sm"></div>
         </div>
       </div>
 
