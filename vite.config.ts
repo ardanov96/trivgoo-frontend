@@ -6,9 +6,28 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   return {
     server: {
-      port: 3000,
+      port: 3000, // Frontend port (tetap 3000)
       host: false,
       strictPort: true,
+      proxy: {
+        // Proxy semua request /api ke backend
+        '/api': {
+          target: 'http://localhost:4000', // ← Backend port
+          changeOrigin: true,
+          secure: false,
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.log('❌ Proxy error:', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log('📤 Proxying:', req.method, req.url, '→ http://localhost:4000');
+            });
+            proxy.on('proxyRes', (proxyRes, req, _res) => {
+              console.log('📥 Response:', proxyRes.statusCode, req.url);
+            });
+          },
+        }
+      }
     },
     plugins: [react()],
     define: {

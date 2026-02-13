@@ -95,24 +95,21 @@ const Login: React.FC = () => {
           alt="Travel"
           className="absolute inset-0 w-full h-full object-cover opacity-60"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary-900/80 to-transparent"></div>
-        <div className="relative z-10 w-full flex flex-col justify-between p-12">
-          <div className="flex items-center">
-            <span className="text-3xl font-serif font-bold text-white tracking-tighter">
-              trivgoo.
+        <div className="absolute inset-0 bg-gradient-to-t from-primary-900 to-transparent"></div>
+          <div className="relative z-10 w-full flex flex-col justify-between p-12 text-white">
+            <span className="text-3xl font-serif font-bold tracking-tighter mt-8">
             </span>
+            <div>
+              <h2 className="text-4xl font-serif font-bold text-white mb-6">
+                Turn your travel dreams into reality.
+              </h2>
+              <p className="text-lg text-primary-100 max-w-md">
+                Join thousands of travelers who have found their perfect getaway with Trivgoo.
+              </p>
+            </div>
+            <div className="text-primary-200 text-sm"></div>
           </div>
-          <div>
-            <h2 className="text-4xl font-serif font-bold text-white mb-6">
-              Turn your travel dreams into reality.
-            </h2>
-            <p className="text-lg text-primary-100 max-w-md">
-              Join thousands of travelers who have found their perfect getaway with Trivgoo.
-            </p>
-          </div>
-          <div className="text-primary-200 text-sm">&copy; 2024 Trivgoo Inc.</div>
         </div>
-      </div>
 
       {/* Right Side - Form */}
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24">
