@@ -25,6 +25,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminPayouts from './pages/admin/Payouts';
 import AdminProducts from './pages/admin/Products';
 import AdminSettings from './pages/admin/Settings';
+import PaymentSetting from './pages/admin/PaymentSetting';
 import AdminUsers from './pages/admin/Users';
 import AgentAddProduct from './pages/agent/AddProduct';
 import AgentCommissions from './pages/agent/Commissions';
@@ -136,6 +137,7 @@ const AppRoutes = () => {
         <Route path="payouts" element={<AdminPayouts />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="payment-settings" element={<PaymentSetting />} />
       </Route>
 
       <Route

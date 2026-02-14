@@ -13,6 +13,7 @@ import {
   UserCheck,
   Users,
   X,
+  Wallet2,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -119,6 +120,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               <NavItem to="/admin/users" icon={Users} label="Users & Verification" />
               <NavItem to="/admin/payouts" icon={CreditCard} label="Payout Requests" />
               <NavItem to="/admin/settings" icon={Settings} label="Settings" />
+              <NavItem to="/admin/payment-settings" icon={Wallet2} label="Payment Settings" />
             </>
           )}
 
