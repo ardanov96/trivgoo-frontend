@@ -30,42 +30,55 @@ const AdminDashboard: React.FC = () => {
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [summary, setSummary] = useState<any>(null);
+
+  const [filterRange, setFilterRange] = useState<'7days' | 'month' | 'year'>('7days');
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
+  useEffect(() => {
+    if (bookings.length > 0) {
+      generateChartData(bookings, filterRange);
+    }
+  }, [filterRange, bookings]);
+
   const fetchDashboardData = async () => {
-  setIsLoading(true);
+    setIsLoading(true);
 
-  try {
-    const [bookingsResponse, summaryResponse] = await Promise.all([
-      axios.get('/api/v1/admin/bookings', { withCredentials: true }),
-      axios.get('/api/v1/admin/dashboard/summary', { withCredentials: true })
-    ]);
+    try {
+      // 1. Panggil API 
+      const [bookingsResponse, summaryResponse] = await Promise.all([
+        axios.get('/api/v1/admin/bookings', { withCredentials: true }),
+        axios.get('/api/v1/admin/dashboard/summary', { withCredentials: true })
+      ]);
 
-    // BOOKINGS (untuk table + activity + chart sementara)
-    if (!bookingsResponse.data?.error && Array.isArray(bookingsResponse.data.data)) {
-      const allBookings = bookingsResponse.data.data;
-      setBookings(allBookings);
-      generateChartData(allBookings);
+      // 2. Proses data BOOKINGS
+      if (!bookingsResponse.data?.error && Array.isArray(bookingsResponse.data.data)) {
+        const allBookings = bookingsResponse.data.data;
+        setBookings(allBookings);
+
+        generateChartData(allBookings, '7days');
+      }
+
+      // 3. Proses data SUMMARY (Gunakan summaryResponse di sini)
+      if (!summaryResponse.data?.error) {
+        const summaryData = summaryResponse.data.data;
+        setSummary(summaryData);
+
+        // Ambil data asli dari backend (active_agents & active_customers)
+        setTotalAgents(summaryData.active_agents || 0);
+        setTotalCustomers(summaryData.active_customers || 0);
+      }
+
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    // SUMMARY (untuk stats cards)
-    if (!summaryResponse.data?.error) {
-      setSummary(summaryResponse.data.data);
-    }
-
-    // TODO replace later with real endpoint
-    setTotalAgents(24);
-    setTotalCustomers(156);
-
-  } catch (error) {
-    console.error('Failed to fetch dashboard data:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -74,35 +87,72 @@ const AdminDashboard: React.FC = () => {
     }).format(amount);
   };
 
-  const [summary, setSummary] = useState<any>(null);
-
-  const generateChartData = (bookings: Booking[]) => {
-    // Get last 7 days
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const last7Days = [];
+  // Tambahkan parameter "range" di sini
+  const generateChartData = (allBookings: Booking[], range: '7days' | 'month' | 'year') => {
+    const chartDataArray = [];
     const today = new Date();
+    
+    // Tentukan berapa hari ke belakang berdasarkan tombol yang diklik
+    let daysToLookBack = 6; 
+    if (range === 'month') daysToLookBack = 29;
+    if (range === 'year') daysToLookBack = 364;
 
-    for (let i = 6; i >= 0; i--) {
+    for (let i = daysToLookBack; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       
-      const dayName = days[date.getDay()];
       const dateStr = date.toISOString().split('T')[0];
+      
+      // Label sumbu X: Kalau 7 hari pakai nama hari (Sun, Mon), 
+      // kalau sebulan/setahun pakai format tanggal (12 Jan)
+      const dayLabel = range === '7days' 
+        ? new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date)
+        : new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'short' }).format(date);
 
-      // Calculate revenue for this day (only COMPLETED bookings)
-      const dayRevenue = bookings
+      const dayRevenue = allBookings
         .filter(b => b.date === dateStr && b.status === BookingStatus.COMPLETED)
         .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
-      last7Days.push({
-        name: dayName,
+      chartDataArray.push({
+        name: dayLabel,
         revenue: dayRevenue,
         date: dateStr
       });
     }
 
-    setChartData(last7Days);
+    setChartData(chartDataArray);
   };
+
+  const getFilteredSummary = () => {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // Set ke akhir hari ini
+
+  let daysToLookBack = 7;
+  if (filterRange === 'month') daysToLookBack = 30;
+  if (filterRange === 'year') daysToLookBack = 365;
+
+  const startDate = new Date();
+  startDate.setDate(today.getDate() - daysToLookBack);
+  startDate.setHours(0, 0, 0, 0); // Set ke awal hari periode
+
+  // Filter bookings dengan mengubah string date menjadi objek Date untuk perbandingan
+  const filtered = bookings.filter(b => {
+    const bDate = new Date(b.date);
+    return bDate >= startDate && bDate <= today;
+  });
+
+  const completed = filtered.filter(b => b.status === BookingStatus.COMPLETED);
+  
+  return {
+    total_revenue: completed.reduce((sum, b) => sum + (Number(b.totalPrice) || 0), 0),
+    total_bookings: filtered.length,
+    completed_bookings: completed.length,
+    pending_bookings: filtered.filter(b => b.status === BookingStatus.PENDING).length,
+    cancelled_bookings: filtered.filter(b => b.status === BookingStatus.CANCELLED).length,
+  };
+};
+
+  const currentSummary = getFilteredSummary();
 
   // Get status badge config
   const getStatusConfig = (status: BookingStatus) => {
@@ -218,13 +268,28 @@ const AdminDashboard: React.FC = () => {
           <p className="text-gray-500 text-sm">Welcome back, here's what's happening today.</p>
         </div>
         <div className="flex items-center gap-3 bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
-          <button className="px-4 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold shadow-md">
+          <button 
+            onClick={() => setFilterRange('7days')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              filterRange === '7days' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
             Last 7 Days
           </button>
-          <button className="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-xs font-bold">
+          <button 
+            onClick={() => setFilterRange('month')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              filterRange === 'month' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
             Last Month
           </button>
-          <button className="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-xs font-bold">
+          <button 
+            onClick={() => setFilterRange('year')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              filterRange === 'year' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
             Last Year
           </button>
         </div>
@@ -233,32 +298,30 @@ const AdminDashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Total Revenue"
-          value={formatIDR(summary?.total_revenue || 0)}
-          subtext={`From ${summary?.completed_bookings || 0} completed bookings`}
-          icon={DollarSign}
-          colorClass="text-green-600"
-          bgClass="bg-green-50"
-          trend="+12%"
-        />
-        <StatsCard
-          title="Total Bookings"
-          value={summary?.total_bookings || 0}
-          subtext={`${summary?.pending_bookings || 0} pending, ${summary?.cancelled_bookings || 0} cancelled`}
-          icon={ShoppingCart}
-          colorClass="text-blue-600"
-          bgClass="bg-blue-50"
-          trend="+8%"
-        />
-        <StatsCard
-          title="Active Agents"
-          value={totalAgents}
-          subtext="Verified partners"
-          icon={UserCheck}
-          colorClass="text-purple-600"
-          bgClass="bg-purple-50"
-          trend="+5%"
-        />
+    title="Total Revenue"
+    value={formatIDR(currentSummary.total_revenue)}
+    subtext={`From ${currentSummary.completed_bookings} completed bookings`}
+    icon={DollarSign}
+    colorClass="text-green-600"
+    bgClass="bg-green-50"
+    trend={filterRange === '7days' ? "+12%" : undefined} // Trend opsional
+  />
+  <StatsCard
+    title="Total Bookings"
+    value={currentSummary.total_bookings}
+    subtext={`${currentSummary.pending_bookings} pending, ${currentSummary.cancelled_bookings} cancelled`}
+    icon={ShoppingCart}
+    colorClass="text-blue-600"
+    bgClass="bg-blue-50"
+  />
+  <StatsCard
+    title="Active Agents"
+    value={totalAgents} // Ini biasanya tetap total keseluruhan
+    subtext="Verified partners"
+    icon={UserCheck}
+    colorClass="text-purple-600"
+    bgClass="bg-purple-50"
+  />
         <StatsCard
           title="Customers"
           value={totalCustomers}
@@ -302,7 +365,7 @@ const AdminDashboard: React.FC = () => {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: '#9ca3af' }}
-                  tickFormatter={(val) => `$${val}`}
+                  tickFormatter={(val) => `Rp${(val / 1000000).toFixed(1)}jt`} // Format Juta agar rapi
                 />
                 <Tooltip
                   contentStyle={{
@@ -311,7 +374,8 @@ const AdminDashboard: React.FC = () => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                   }}
                   cursor={{ stroke: '#0d9488', strokeWidth: 1 }}
-                  formatter={(value: any) => [`$${value.toLocaleString()}`, 'Revenue']}
+                  // Ganti formatter di bawah ini:
+                  formatter={(value: any) => [formatIDR(value), 'Revenue']}
                 />
                 <Area
                   type="monotone"
@@ -395,7 +459,7 @@ const AdminDashboard: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-gray-900">
-                      ${booking.totalPrice?.toFixed(2) || '0.00'}
+                      {formatIDR(booking.totalPrice || 0)}
                     </td>
                   </tr>
                 );
