@@ -7,29 +7,21 @@ import {
   Lock,
   TrendingUp,
   Users,
+  Package,
 } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../../AuthContext';
 import { authService } from '../../services/authService';
 import { VerificationStatus } from '../../types';
-
-const data = [
-  { name: 'Mon', sales: 400 },
-  { name: 'Tue', sales: 300 },
-  { name: 'Wed', sales: 200 },
-  { name: 'Thu', sales: 278 },
-  { name: 'Fri', sales: 189 },
-  { name: 'Sat', sales: 239 },
-  { name: 'Sun', sales: 349 },
-];
+import axios from 'axios';
 
 type StatCardProps = {
   title: string;
   value: React.ReactNode;
   icon: React.ElementType;
-  color: string; // tailwind class
+  color: string;
 };
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color }) => (
@@ -46,15 +38,30 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color }) 
   </div>
 );
 
+interface DashboardStats {
+  total_commission: number;
+  bookings_this_month: number;
+  active_customers: number;
+  total_products: number;
+}
+
+interface WeeklySales {
+  name: string;
+  sales: number;
+}
+
 const AgentDashboard: React.FC = () => {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ biar ga double-call di React 18 Strict Mode + bisa refresh tiap navigasi
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [weeklySales, setWeeklySales] = useState<WeeklySales[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const lastFetchedLocationKeyRef = useRef<string | null>(null);
 
-  // ✅ AUTO REFRESH USER dari session (Redis) saat page mount / navigasi berubah
+  // Auto refresh user dari session
   useEffect(() => {
     if (lastFetchedLocationKeyRef.current === location.key) return;
     lastFetchedLocationKeyRef.current = location.key;
@@ -90,6 +97,46 @@ const AgentDashboard: React.FC = () => {
       cancelled = true;
     };
   }, [location.key, updateUser, logout, navigate]);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        const [statsResponse, salesResponse] = await Promise.all([
+          axios.get('/api/v1/agent/dashboard/stats', { withCredentials: true }),
+          axios.get('/api/v1/agent/dashboard/weekly-sales', { withCredentials: true })
+        ]);
+
+        if (!statsResponse.data?.error) {
+          setStats(statsResponse.data.data);
+        }
+
+        if (!salesResponse.data?.error) {
+          setWeeklySales(salesResponse.data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Hanya fetch jika user sudah verified
+    if (user?.verification_status === VerificationStatus.VERIFIED) {
+      fetchDashboardData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user?.verification_status]);
+
+  const formatIDR = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const isVerified = user?.verification_status === VerificationStatus.VERIFIED;
   const isPending = user?.verification_status === VerificationStatus.PENDING;
@@ -198,34 +245,80 @@ const AgentDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Stats Grid - Blurred if unverified to tease features */}
-      <div
-        className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${
-          !isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''
-        }`}
-      >
-        <StatCard title="Total Commission" value={`${0}`} icon={DollarSign} color="bg-green-500" />
-        <StatCard title="Bookings This Month" value="24" icon={TrendingUp} color="bg-blue-500" />
-        <StatCard title="Active Customers" value="156" icon={Users} color="bg-indigo-500" />
-      </div>
+      {/* Stats Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-32"></div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          className={`grid grid-cols-1 md:grid-cols-4 gap-6 ${
+            !isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''
+          }`}
+        >
+          <StatCard
+            title="Total Commission"
+            value={formatIDR(stats?.total_commission || 0)}
+            icon={DollarSign}
+            color="bg-green-500"
+          />
+          <StatCard
+            title="Bookings This Month"
+            value={stats?.bookings_this_month || 0}
+            icon={TrendingUp}
+            color="bg-blue-500"
+          />
+          <StatCard
+            title="Active Customers"
+            value={stats?.active_customers || 0}
+            icon={Users}
+            color="bg-indigo-500"
+          />
+          <StatCard
+            title="Total Products"
+            value={stats?.total_products || 0}
+            icon={Package}
+            color="bg-purple-500"
+          />
+        </div>
+      )}
 
+      {/* Weekly Sales Chart */}
       <div
         className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 ${
           !isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''
         }`}
       >
         <h3 className="text-lg font-bold text-gray-900 mb-6">Weekly Sales Performance</h3>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="sales" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {isLoading ? (
+          <div className="h-80 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        ) : (
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklySales}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(val) => formatIDR(val)} />
+                <Tooltip
+                  formatter={(value: any) => [formatIDR(value), 'Sales']}
+                  contentStyle={{
+                    borderRadius: '8px',
+                    border: 'none',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  }}
+                />
+                <Bar dataKey="sales" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );
