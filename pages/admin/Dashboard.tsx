@@ -30,7 +30,7 @@ const AdminDashboard: React.FC = () => {
   const [summary, setSummary] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const [filterRange, setFilterRange] = useState<'7days' | 'month' | 'year'>('7days');
+  const [filterRange, setFilterRange] = useState<'all' | '7days' | 'month' | 'year'>('all');
 
   // Fetch data saat component mount dan saat filterRange berubah
   useEffect(() => {
@@ -39,6 +39,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
+    setSummary(null);
 
     try {
       // Fetch bookings untuk chart dan table
@@ -77,37 +78,65 @@ const AdminDashboard: React.FC = () => {
     }).format(amount);
   };
 
-  const generateChartData = (allBookings: Booking[], range: '7days' | 'month' | 'year') => {
-    const chartDataArray = [];
-    const today = new Date();
-    
-    let daysToLookBack = 6; 
-    if (range === 'month') daysToLookBack = 29;
-    if (range === 'year') daysToLookBack = 364;
+  const generateChartData = (allBookings: Booking[], range: 'all' | '7days' | 'month' | 'year') => {
+  const chartDataArray = [];
+  const today = new Date();
+  
+  // Ambil hanya yang COMPLETED
+  const completedBookings = allBookings.filter(b => 
+    String(b.status).toUpperCase() === 'COMPLETED'
+  );
+
+  console.log("Total Bookings Completed:", completedBookings.length);
+
+  if (range === 'year') {
+    for (let i = 11; i >= 0; i--) {
+      const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthLabel = targetDate.toLocaleString('en-US', { month: 'short' });
+      const m = targetDate.getMonth();
+      const y = targetDate.getFullYear();
+
+      const monthlyRevenue = completedBookings
+        .filter(b => {
+          const d = new Date(b.date);
+          return d.getMonth() === m && d.getFullYear() === y;
+        })
+        .reduce((sum, b) => sum + (Number(b.totalPrice) || 0), 0);
+
+      chartDataArray.push({ name: monthLabel, revenue: monthlyRevenue });
+    }
+  } else {
+    const daysToLookBack = range === '7days' ? 6 : 29;
 
     for (let i = daysToLookBack; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
       
-      const dateStr = date.toISOString().split('T')[0];
+      // Format manual YYYY-MM-DD agar sinkron dengan format SQL DATE_FORMAT
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
       
-      const dayLabel = range === '7days' 
-        ? new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date)
-        : new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'short' }).format(date);
+      const dayLabel = (range === '7days') 
+        ? d.toLocaleDateString('en-US', { weekday: 'short' })
+        : d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
 
-      const dayRevenue = allBookings
-        .filter(b => b.date === dateStr && b.status === BookingStatus.COMPLETED)
-        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+      const dayRevenue = completedBookings
+        .filter(b => {
+          // Normalisasi format tanggal booking jika ada jamnya
+          const bDateOnly = b.date.includes('T') ? b.date.split('T')[0] : b.date;
+          return bDateOnly === dateStr;
+        })
+        .reduce((sum, b) => sum + (Number(b.totalPrice) || 0), 0);
 
-      chartDataArray.push({
-        name: dayLabel,
-        revenue: dayRevenue,
-        date: dateStr
-      });
+      chartDataArray.push({ name: dayLabel, revenue: dayRevenue });
     }
+  }
 
-    setChartData(chartDataArray);
-  };
+  console.log("Final Chart Data:", chartDataArray);
+  setChartData(chartDataArray);
+};
 
   // Get status badge config
   const getStatusConfig = (status: BookingStatus) => {
@@ -234,6 +263,14 @@ const AdminDashboard: React.FC = () => {
         </div>
         <div className="flex items-center gap-3 bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
           <button 
+            onClick={() => setFilterRange('all')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              filterRange === 'all' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            All Time
+          </button>
+          <button 
             onClick={() => setFilterRange('7days')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
               filterRange === '7days' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'
@@ -337,7 +374,7 @@ const AdminDashboard: React.FC = () => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                   }}
                   cursor={{ stroke: '#0d9488', strokeWidth: 1 }}
-                  formatter={(value: any) => [formatIDR(value), 'Revenue']}
+                  formatter={(value: any) => [formatIDR(Number(value)), 'Revenue']}
                 />
                 <Area
                   type="monotone"

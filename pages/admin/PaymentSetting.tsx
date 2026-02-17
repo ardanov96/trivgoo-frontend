@@ -185,9 +185,11 @@ const PaymentSettings: React.FC = () => {
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
-    setSaveSuccess(false);
-
     try {
+      // Fungsi pembantu untuk menghapus properti icon
+      const stripIcons = (methods: PaymentMethod[]) => 
+        methods.map(({ icon, ...rest }) => rest);
+
       const payload = {
         selectedGateway,
         isTestMode,
@@ -195,27 +197,21 @@ const PaymentSettings: React.FC = () => {
           apiKey: xenditApiKey,
           webhookUrl: xenditWebhookUrl,
           webhookSecret: xenditWebhookSecret,
-          paymentMethods: xenditPaymentMethods,
+          paymentMethods: stripIcons(xenditPaymentMethods),
         },
         midtrans: {
-          serverKey: midtransServerKey,
-          clientKey: midtransClientKey,
+          server_key: midtransServerKey, // Sesuaikan key jika perlu
+          client_key: midtransClientKey,
           webhookUrl: midtransWebhookUrl,
-          paymentMethods: midtransPaymentMethods,
+          paymentMethods: stripIcons(midtransPaymentMethods),
         },
       };
 
-      const response = await axios.post('/api/v1/admin/payment-settings', payload, {
-        withCredentials: true,
-      });
-
-      if (!response.data?.error) {
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
-      }
+      await axios.post('/api/v1/admin/payment-settings', payload, { withCredentials: true });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
-      console.error('Failed to save payment settings:', error);
-      alert('Failed to save settings. Please try again.');
+      alert('Failed to save settings');
     } finally {
       setIsSaving(false);
     }
