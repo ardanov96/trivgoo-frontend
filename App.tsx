@@ -43,6 +43,7 @@ import AboutUs from './pages/AboutUs';
 import Career from './pages/Career';
 import PressAndMedia from './pages/PressAndMedia';
 import TravelBlog from './pages/TravelBlog';
+import ProfileSetting from './pages/agent/ProfileSetting';
 
 // Route Guards
 interface ProtectedRouteProps {
@@ -155,6 +156,7 @@ const AppRoutes = () => {
         <Route path="customers" element={<AgentCustomerBookings />} />
         <Route path="commissions" element={<AgentCommissions />} />
         <Route path="verification" element={<AgentVerification />} />
+        <Route path="profile/settings" element={<ProfileSetting />} />
       </Route>
     </Routes>
   );

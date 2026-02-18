@@ -142,6 +142,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
 
               <NavItem to="/agent/products" icon={ShoppingBag} label="My Products" />
               <NavItem to="/agent/products/new" icon={PlusCircle} label="Add Product" />
+              <NavItem to="/agent/profile/settings" icon={Settings} label="Profile Settings" />
             </>
           )}
         </nav>
