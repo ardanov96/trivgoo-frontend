@@ -5,12 +5,28 @@ import { useWishlist } from '../components/WishlistContext';
 import { Category, Product, StayCategory, TourCategory, TransportCategory } from '../types';
 import { mockService } from '@/services/mockService';
 import { agentProductService } from '../services/agentProductService';
+import { ShoppingCart } from "lucide-react";
+import { useCart } from "../components/CartContext";
+import { useToast } from "../components/ToastContext";
 
 const Explore: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toggleWishlist, isInWishlist } = useWishlist();
+
+  const { addToCart, isInCart } = useCart();
+  const { showToast } = useToast();
+
+  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isInCart(product.id)) return;
+
+    addToCart(product, 1);
+    showToast(`${product.name} ditambahkan ke keranjang!`, "success");
+  };
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -127,7 +143,7 @@ const Explore: React.FC = () => {
           <div className="h-3 bg-gray-200 rounded w-1/3"></div>
         </div>
         <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-        <div className="mt-auto pt-4 flex items-end justify-between border-t border-gray-50">
+        <div className="mt-auto pt-3 flex items-end justify-between border-t border-gray-50">
           <div>
             <div className="h-3 bg-gray-200 rounded w-10 mb-1"></div>
             <div className="h-6 bg-gray-200 rounded w-24"></div>
@@ -140,7 +156,7 @@ const Explore: React.FC = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen pt-24 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-2">
@@ -289,7 +305,7 @@ const Explore: React.FC = () => {
         </div>
 
         {/* Results Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-5">
           {isLoading
             ? // Show 8 Skeletons
               [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
@@ -334,36 +350,61 @@ const Explore: React.FC = () => {
                         {product.rating}
                       </div>
                     </div>
-                    <div className="p-6 flex-1 flex flex-col">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center text-primary-600 text-xs font-bold uppercase tracking-wide">
-                          <MapPin className="w-3.5 h-3.5 mr-1.5" />
-                          {product.location}
-                        </div>
-                        {subLabel && (
-                          <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-bold uppercase">
-                            {subLabel}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-serif font-bold text-xl text-gray-900 mb-2 truncate group-hover:text-primary-600 transition-colors">
+                    <div className="p-4 flex-1 flex flex-col">
+
+                      {/* Package Name */}
+                      <h3 className="font-serif font-bold text-lg text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
                         {product.name}
                       </h3>
-                      <div className="mt-auto pt-4 flex items-end justify-between border-t border-gray-50">
-                        <div>
-                          <span className="text-[10px] text-gray-400 uppercase font-bold">
-                            From
+
+                      {/* Date */}
+                      <p className="text-sm text-gray-500 font-medium mb-2">
+                        {dateQuery ? dateQuery : "Available Daily"}
+                      </p>
+
+                      {/* Price */}
+                      <div className="mt-auto pt-4 border-t border-gray-100">
+                        <p className="text-sm text-gray-500 mb-1">
+                          From
+                        </p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {product.currency} {product.price} 
+                          <span className="text-sm font-medium text-gray-500">
+                            {" "} /pax-*
                           </span>
-                          <p className="text-xl font-bold text-gray-900">
-                            {product.currency} {product.price}
-                          </p>
+                        </p>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-3 mt-4">
+                          {/* See Details */}
+                          <Link
+                            to={`/product/${product.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center"
+                          >
+                            See Details
+                          </Link>
+
+                          {/* Add To Cart */}
+                          <button
+                            onClick={(e) => handleAddToCart(e, product)}
+                            disabled={isInCart(product.id)}
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border transform active:scale-[0.98]
+                              ${
+                                isInCart(product.id)
+                                  ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                                  : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
+                              }`}
+                          >
+                            <ShoppingCart
+                              className={`w-4 h-4 ${
+                                isInCart(product.id) ? "stroke-green-600" : ""
+                              }`}
+                            />
+                            {isInCart(product.id) ? "Added" : "Add"}
+                          </button>
+
                         </div>
-                        <Link 
-                          to={`/product/${product.id}`}
-                          className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300"
-                        >
-                          <ArrowRight className="w-5 h-5" />
-                        </Link>
                       </div>
                     </div>
                   </Link>

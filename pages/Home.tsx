@@ -653,48 +653,6 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Popular Destinations (Instagram Stories Style - Optimized) - Z-Index lower than Hero search */}
-      <div className="bg-white py-8 md:py-12 border-b border-gray-100 relative z-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6 md:mb-8">
-            <h2 className="text-xl md:text-3xl font-serif font-bold text-gray-900 tracking-tight">
-              Popular Destinations
-            </h2>
-            <Link
-              to="/explore"
-              className="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center"
-            >
-              View All <ArrowRight className="w-4 h-4 ml-1" />
-            </Link>
-          </div>
-
-          {/* Desktop: Centered, No Wrap. Mobile: Horizontal Scroll */}
-          <div className="flex items-center justify-start md:justify-center gap-4 sm:gap-6 lg:gap-8 overflow-x-auto md:overflow-visible py-4 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar md:flex-nowrap">
-            {DESTINATION_STORIES.map((dest, index) => (
-              <div
-                key={index}
-                onClick={() => goToExplore(dest.name)}
-                className="flex flex-col items-center flex-shrink-0 cursor-pointer group transition-all"
-              >
-                {/* Circle Size Adjusted for single row on desktop: Mobile 70px, Tablet 80px, Desktop 96px */}
-                <div className="w-[70px] h-[70px] md:w-[84px] md:h-[84px] lg:w-[100px] lg:h-[100px] rounded-full p-[2px] md:p-[3px] bg-gradient-to-tr from-amber-400 via-orange-500 to-primary-600 group-hover:scale-105 group-hover:shadow-lg transition-all duration-300 relative">
-                  <div className="w-full h-full rounded-full border-[2px] md:border-[3px] border-white overflow-hidden bg-white relative z-10">
-                    <img
-                      src={dest.image}
-                      alt={dest.name}
-                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                    />
-                  </div>
-                </div>
-                <span className="mt-3 text-xs md:text-sm font-bold text-gray-700 group-hover:text-primary-600 transition-colors transform group-hover:translate-y-0.5 block">
-                  {dest.name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* DYNAMIC FLASH SALE / CAMPAIGN SECTION (Theme Takeover) */}
       <div
         className={`py-16 md:py-24 overflow-hidden relative transition-colors duration-500 ${
@@ -1067,130 +1025,96 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Featured Experiences (Grid Layout) */}
-      <div className="bg-gray-50 py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-12">
-            <div>
-              <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-                Curated Experiences
-              </h2>
-              <p className="text-gray-500 max-w-xl text-lg">
-                Handpicked adventures that go beyond the ordinary.
-              </p>
-            </div>
+      {/* Popular Destinations (Instagram Stories Style - Optimized) - Z-Index lower than Hero search */}
+      <div className="relative py-8 md:py-12 border-b border-gray-100 overflow-hidden">
+  
+      {/* Base Soft Background */}
+      <div className="absolute inset-0 bg-[#FFEEEB]"></div>
+
+      {/* Glow Orb Top Right */}
+      <div className="absolute -top-24 -right-24 w-72 h-72 bg-primary-400 rounded-full blur-3xl opacity-20"></div>
+
+      {/* Glow Orb Bottom Left */}
+      <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-amber-300 rounded-full blur-3xl opacity-20"></div>
+
+      {/* Content */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+          <div className="flex items-center justify-between mb-6 md:mb-8">
+            <h2 className="text-xl md:text-3xl font-serif font-bold text-gray-900 tracking-tight">
+              Popular Destinations
+            </h2>
             <Link
               to="/explore"
-              className="hidden md:flex items-center text-primary-600 font-bold hover:text-primary-700 transition-colors"
+              className="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center"
             >
-              View All Tours <ArrowRight className="w-4 h-4 ml-2" />
+              View All <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProducts.map(
-              (product: {
-                id: any;
-                image: any;
-                name: any;
-                rating: any;
-                location: any;
-                description: any;
-                currency: any;
-                price: any;
-              }) => (
-                <div
-                  key={product.id}
-                  onClick={() => navigate(`/product/${product.id}`)}
-                  className="group cursor-pointer bg-white rounded-3xl overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100 flex flex-col h-full"
-                >
-                  <div className="aspect-[4/3] relative overflow-hidden">
+          {/* Desktop: Centered, No Wrap. Mobile: Horizontal Scroll */}
+          <div className="flex items-center justify-start md:justify-center gap-4 sm:gap-6 lg:gap-8 overflow-x-auto md:overflow-visible py-4 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar md:flex-nowrap">
+            {DESTINATION_STORIES.map((dest, index) => (
+              <div
+                key={index}
+                onClick={() => goToExplore(dest.name)}
+                className="flex flex-col items-center flex-shrink-0 cursor-pointer group transition-all"
+              >
+                <div className="w-[70px] h-[70px] md:w-[84px] md:h-[84px] lg:w-[100px] lg:h-[100px] rounded-full p-[2px] md:p-[3px] bg-gradient-to-tr from-amber-400 via-orange-500 to-primary-600 group-hover:scale-105 group-hover:shadow-lg transition-all duration-300 relative">
+                  <div className="w-full h-full rounded-full border-[2px] md:border-[3px] border-white overflow-hidden bg-white relative z-10">
                     <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      src={dest.image}
+                      alt={dest.name}
+                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                     />
-                    <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl flex items-center text-xs font-bold text-gray-900 shadow-lg">
-                      <Star className="w-3.5 h-3.5 text-amber-400 mr-1.5 fill-current" />
-                      {product.rating}
-                    </div>
-                    {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      <span className="bg-white/90 backdrop-blur text-gray-900 px-6 py-3 rounded-full font-bold text-sm transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                        View Details
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-8 flex-1 flex flex-col">
-                    <div className="flex items-center text-primary-600 text-xs font-bold uppercase tracking-wide mb-3">
-                      <MapPin className="w-3.5 h-3.5 mr-1.5" />
-                      {product.location}
-                    </div>
-                    <h3 className="font-serif font-bold text-2xl text-gray-900 mb-3 group-hover:text-primary-600 transition-colors line-clamp-2">
-                      {product.name}
-                    </h3>
-                    <p className="text-gray-500 text-sm line-clamp-2 mb-6 leading-relaxed flex-1">
-                      {product.description}
-                    </p>
-
-                    <div className="pt-6 border-t border-gray-100 flex items-end justify-between">
-                      <div>
-                        <span className="text-xs text-gray-400 uppercase font-bold block mb-1">
-                          Starting from
-                        </span>
-                        <span className="text-2xl font-bold text-gray-900">
-                          {product.currency} {product.price}
-                        </span>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300">
-                        <ArrowRight className="w-5 h-5" />
-                      </div>
-                    </div>
                   </div>
                 </div>
-              ),
-            )}
+                <span className="mt-3 text-xs md:text-sm font-bold text-gray-700 group-hover:text-primary-600 transition-colors transform group-hover:translate-y-0.5 block">
+                  {dest.name}
+                </span>
+              </div>
+            ))}
           </div>
 
-          <div className="mt-12 text-center md:hidden">
-            <Link
-              to="/explore"
-              className="inline-flex items-center px-6 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-900 shadow-sm"
-            >
-              View All Tours <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
-          </div>
         </div>
       </div>
 
       {/* Testimonials Section */}
       <div className="py-20 bg-gray-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+
+        {/* HEADER tetap dalam container */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
-            <span className="text-primary-400 font-bold text-sm uppercase tracking-widest mb-3 block">
-              Happy Travelers
-            </span>
             <h2 className="text-3xl md:text-5xl font-serif font-bold text-white mb-6">
               Stories from the Road
             </h2>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {REVIEWS.map((review) => (
+        {/* MARQUEE FULL WIDTH */}
+        <div className="relative z-10 space-y-8 overflow-hidden
+                        [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+
+          {/* Row 1 */}
+          <div className="flex gap-6 marquee-left w-max px-6">
+            {[...REVIEWS, ...REVIEWS].map((review, index) => (
               <div
-                key={review.id}
-                className="bg-gray-800 p-8 rounded-3xl border border-gray-700 relative hover:bg-gray-750 transition-colors"
+                key={`row1-${index}`}
+                className="w-[260px] bg-gray-800 p-6 rounded-2xl border border-gray-700 hover:bg-gray-800/80 transition-colors flex-shrink-0 relative"
               >
-                <Quote className="w-10 h-10 text-primary-900 absolute top-6 right-6 opacity-50" />
-                <div className="flex items-center mb-6">
+                <Quote className="w-6 h-6 text-primary-500 absolute top-4 right-4 opacity-40" />
+
+                <div className="flex items-center mb-4">
                   <img
                     src={review.avatar}
                     alt={review.user}
-                    className="w-12 h-12 rounded-full border-2 border-primary-500 mr-4"
+                    className="w-10 h-10 rounded-full border-2 border-primary-500 mr-3"
                   />
                   <div>
-                    <h4 className="font-bold text-lg">{review.user}</h4>
+                    <h4 className="font-bold text-sm text-white">
+                      {review.user}
+                    </h4>
                     <div className="flex text-amber-400 text-xs">
                       {[...Array(5)].map((_, i) => (
                         <Star
@@ -1203,43 +1127,134 @@ const Home: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <p className="text-gray-300 italic mb-6 leading-relaxed">"{review.text}"</p>
-                <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-wide">
-                  <MapPin className="w-3.5 h-3.5 mr-1.5 text-primary-500" />
+
+                <p className="text-gray-300 text-sm italic leading-relaxed line-clamp-4">
+                  "{review.text}"
+                </p>
+
+                <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-wide mt-4">
+                  <MapPin className="w-3 h-3 mr-1 text-primary-500" />
                   {review.location}
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Row 2 */}
+          <div className="flex gap-6 marquee-right w-max px-6">
+            {[...REVIEWS, ...REVIEWS].map((review, index) => (
+              <div
+                key={`row2-${index}`}
+                className="w-[260px] bg-gray-800 p-6 rounded-2xl border border-gray-700 hover:bg-gray-800/80 transition-colors flex-shrink-0 relative"
+              >
+                <Quote className="w-6 h-6 text-primary-500 absolute top-4 right-4 opacity-40" />
+
+                <div className="flex items-center mb-4">
+                  <img
+                    src={review.avatar}
+                    alt={review.user}
+                    className="w-10 h-10 rounded-full border-2 border-primary-500 mr-3"
+                  />
+                  <div>
+                    <h4 className="font-bold text-sm text-white">
+                      {review.user}
+                    </h4>
+                    <div className="flex text-amber-400 text-xs">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3 h-3 ${
+                            i < review.rating ? 'fill-current' : 'text-gray-600'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-gray-300 text-sm italic leading-relaxed line-clamp-4">
+                  "{review.text}"
+                </p>
+
+                <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-wide mt-4">
+                  <MapPin className="w-3 h-3 mr-1 text-primary-500" />
+                  {review.location}
+                </div>
+              </div>
+            ))}
+          </div>
+
         </div>
       </div>
-
+      
       {/* Call to Action */}
-      <div className="bg-primary-600 py-24 px-4 text-center relative overflow-hidden">
+      <div className="relative bg-primary-600 py-24 px-4 overflow-hidden">
+        {/* Luxury Glow Background */}
+        <div className="absolute -top-32 -left-32 w-[400px] h-[400px] bg-white/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-32 -right-32 w-[400px] h-[400px] bg-primary-400/40 rounded-full blur-3xl"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
-        <div className="relative z-10 max-w-3xl mx-auto">
-          <h2 className="text-4xl md:text-6xl font-serif font-bold text-white mb-8">
-            Ready for your next adventure?
-          </h2>
-          <p className="text-primary-100 text-xl mb-10 max-w-2xl mx-auto">
-            Join thousands of travelers who have found their perfect getaway with Trivgoo.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link
-              to="/explore"
-              className="px-10 py-4 bg-white text-primary-900 rounded-full font-bold text-lg hover:bg-gray-50 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:scale-95"
-            >
-              Start Exploring
-            </Link>
-            {!isLoggedIn && (
-              <Link
-                to="/login"
-                className="px-10 py-4 bg-primary-700 text-white rounded-full font-bold text-lg border border-primary-500 hover:bg-primary-800 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:scale-95"
+
+        <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
+
+          {/* LEFT SIDE */}
+          <div className="text-white max-w-xl text-center lg:text-left">
+            <h2 className="text-4xl md:text-6xl font-serif font-bold mb-6 leading-tight">
+              Unlock App-Only Deals
+            </h2>
+
+            <p className="text-primary-100 text-lg md:text-xl mb-10">
+              Save up to 
+              <span className="font-bold text-white"> IDR 400.000 </span>
+              on your first transaction.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
+
+              {/* App Store Button */}
+              <a
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 bg-black px-6 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1 active:scale-95"
               >
-                Sign Up Now
-              </Link>
-            )}
+                <img
+                  src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+                  alt="App Store"
+                  className="h-8"
+                />
+              </a>
+
+              {/* Google Play Button */}
+              <a
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 bg-black px-6 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1 active:scale-95"
+              >
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+                  alt="Google Play"
+                  className="h-8"
+                />
+              </a>
+
+            </div>
           </div>
+
+          {/* RIGHT SIDE */}
+          <div className="flex flex-col items-center">
+            <div className="bg-white p-8 rounded-[32px] shadow-2xl">
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://trivgoo.com/app"
+                alt="QR Code Download Trivgoo App"
+                className="w-56 h-56 md:w-64 md:h-64 object-contain"
+              />
+            </div>
+            <span className="text-white mt-6 text-sm uppercase tracking-widest font-semibold">
+              Scan to download
+            </span>
+          </div>
+
         </div>
       </div>
     </div>
