@@ -166,143 +166,129 @@ const Explore: React.FC = () => {
         </div>
 
         {/* Search and Filter Container - REMOVED STICKY */}
-        <div className="bg-white p-4 md:p-6 rounded-3xl shadow-soft border border-gray-100 mb-10 relative">
-          <div className="flex flex-col gap-6">
-            {/* Top Row: Search & Sort */}
-            <div className="flex flex-col lg:flex-row gap-4 items-center">
-              <div className="flex-1 relative w-full">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search destinations, tours, or activities..."
-                  className="w-full pl-12 pr-10 py-3.5 rounded-2xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm font-medium"
-                  value={searchQuery}
-                  onChange={(e) => updateSearch(e.target.value)}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => updateSearch('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-gray-100 p-1 rounded-full"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+        {/* Search and Filter Container */}
+<div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 mb-12">
 
-              {/* Advanced Filter Toggle */}
-              <div className="flex gap-2 w-full lg:w-auto">
-                <div className="relative flex-1 lg:flex-none">
-                  <select
-                    className="w-full appearance-none px-4 py-3.5 pr-10 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer"
-                    value={sortBy || ''}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                  >
-                    <option value="">Sort By</option>
-                    <option value="price_asc">Price: Low to High</option>
-                    <option value="price_desc">Price: High to Low</option>
-                    <option value="rating">Top Rated</option>
-                  </select>
-                  <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-            </div>
+  <div className="flex flex-col gap-8">
 
-            <div className="flex flex-col gap-4">
-              {/* Active Date Badge */}
-              {dateQuery && (
-                <div className="inline-flex items-center px-4 py-3 bg-primary-50 text-primary-700 rounded-xl border border-primary-100 whitespace-nowrap shadow-sm animate-in fade-in self-start">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-bold">Date: {dateQuery}</span>
-                  <button
-                    onClick={() => {
-                      const newParams = new URLSearchParams(searchParams);
-                      newParams.delete('date');
-                      setSearchParams(newParams);
-                    }}
-                    className="ml-3 p-0.5 hover:bg-primary-100 rounded-full text-primary-500 hover:text-primary-700 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
+    {/* =============================== */}
+    {/* MAIN SERVICE FILTER BUTTONS    */}
+    {/* =============================== */}
+    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+      {[
+        { label: "Travel", id: 1 },
+        { label: "Hotel & Villa", id: 2 },
+        { label: "Rental Mobil", id: 4 },
+        { label: "Jemput Bandara", id: 4 },
+        { label: "Event", id: 3 },
+      ].map((item) => (
+        <button
+          key={item.label}
+          onClick={() => handleCategorySelect(item.id)}
+          className={`px-6 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border
+            ${
+              selectedCategory === item.id
+                ? "bg-gray-900 text-white border-gray-900 shadow-md"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-900 hover:text-white hover:border-gray-900"
+            }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
 
-              {/* MAIN CATEGORIES */}
-              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">
-                  Categories
-                </p>
-                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar w-full">
-                  <button
-                    onClick={() => handleCategorySelect(null)}
-                    className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all flex-shrink-0 border ${
-                      !selectedCategory
-                        ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {isLoading
-                    ? [1, 2, 3].map((i) => (
-                        <div
-                          key={i}
-                          className="w-24 h-10 bg-gray-200 rounded-full animate-pulse flex-shrink-0"
-                        ></div>
-                      ))
-                    : categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          onClick={() => handleCategorySelect(cat.id)}
-                          className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all flex-shrink-0 border ${
-                            selectedCategory === cat.id
-                              ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-                              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                </div>
-              </div>
+    {/* =============================== */}
+    {/* SEARCH + DROPDOWN FILTER       */}
+    {/* =============================== */}
+    <div className="flex flex-col lg:flex-row gap-4">
 
-              {/* SUB CATEGORIES - Only visible when a main category is selected */}
-              {selectedCategory && subCategories.length > 0 && (
-                <div className="animate-in fade-in slide-in-from-top-2">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">
-                    Type of Experience
-                  </p>
-                  <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar w-full">
-                    <button
-                      onClick={() => setSelectedSubCategory(null)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 border ${
-                        !selectedSubCategory
-                          ? 'bg-primary-100 text-primary-700 border-primary-200'
-                          : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
-                      }`}
-                    >
-                      All {categories.find((c) => c.id === selectedCategory)?.name}
-                    </button>
-                    {subCategories.map((sub) => (
-                      <button
-                        key={sub}
-                        onClick={() => setSelectedSubCategory(sub)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 border ${
-                          selectedSubCategory === sub
-                            ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
-                            : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
-                        }`}
-                      >
-                        {sub}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+      {/* SEARCH */}
+      <div className="flex-1 relative">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
         </div>
+        <input
+          type="text"
+          placeholder="Search destination or package..."
+          value={searchQuery}
+          onChange={(e) => updateSearch(e.target.value)}
+          className="w-full pl-12 pr-10 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm font-medium"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => updateSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-gray-100 p-1 rounded-full"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* TRIP TYPE */}
+      <div className="relative w-full lg:w-56">
+        <select
+          onChange={(e) => setSelectedSubCategory(e.target.value || null)}
+          className="w-full appearance-none px-4 py-3.5 pr-10 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer"
+        >
+          <option value="">Trip Type</option>
+          <option value="Open Trip">Open Trip</option>
+          <option value="Private Trip">Private Trip</option>
+          <option value="Group Trip">Group Trip</option>
+        </select>
+        <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      </div>
+
+      {/* SORT PRICE */}
+      <div className="relative w-full lg:w-56">
+        <select
+          value={sortBy || ""}
+          onChange={(e) => setSortBy(e.target.value as any)}
+          className="w-full appearance-none px-4 py-3.5 pr-10 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer"
+        >
+          <option value="">Sort by Price</option>
+          <option value="price_asc">Lowest Price</option>
+          <option value="price_desc">Highest Price</option>
+        </select>
+        <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      </div>
+    </div>
+
+    {/* =============================== */}
+    {/* EXPERIENCE TAG FILTER          */}
+    {/* =============================== */}
+    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+      {[
+        "Semua",
+        "Keluarga",
+        "Honeymoon",
+        "Transport",
+        "Solo Travel",
+        "Healing",
+        "Workation",
+        "Adventure",
+        "Cultural",
+        "Culinary",
+        "Eco Tourism",
+      ].map((tag) => (
+        <button
+          key={tag}
+          onClick={() =>
+            setSelectedSubCategory(tag === "Semua" ? null : tag)
+          }
+          className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all border
+            ${
+              selectedSubCategory === tag
+                ? "bg-primary-600 text-white border-primary-600 shadow-md"
+                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-primary-600 hover:text-white hover:border-primary-600"
+            }`}
+        >
+          {tag}
+        </button>
+      ))}
+    </div>
+
+  </div>
+</div>
 
         {/* Results Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-5">
