@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  CreditCard, 
-  MapPin, 
-  Calendar, 
-  Users, 
-  ChevronRight, 
+import {
+  CreditCard,
+  MapPin,
+  Calendar,
+  Users,
+  ChevronRight,
   ShieldCheck,
-  ArrowLeft
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Clock,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -16,27 +20,79 @@ const CheckoutSummary: React.FC = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
 
-  // Data pesanan biasanya dilempar dari page sebelumnya melalui state router
+  // Data passed from ProductDetail handleBookNow
   const bookingData = location.state || {
-    productName: "Bali Tropical Tour - Nusa Penida",
-    location: "Klungkung, Bali",
-    date: "2024-05-20",
+    productName: 'Bali Tropical Tour - Nusa Penida',
+    location: 'Klungkung, Bali',
+    date: '2024-05-20',
     pax: 2,
     pricePerPax: 750000,
     totalPrice: 1500000,
-    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4"
+    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4',
+    currency: 'IDR',
+    duration: 1,
+    guestCount: 2,
+    unitLabel: 'Ticket',
+    priceUnitLabel: 'person',
+    contactDetails: {
+      name: '',
+      email: '',
+      phone: '',
+    },
+  };
+
+  const {
+    productName,
+    location: productLocation,
+    date,
+    pax,
+    pricePerPax,
+    totalPrice,
+    image,
+    currency = 'IDR',
+    duration = 1,
+    guestCount,
+    unitLabel = 'Ticket',
+    priceUnitLabel = 'person',
+    contactDetails = {},
+  } = bookingData;
+
+  // Format date display: handles both single date (YYYY-MM-DD) and range (YYYY-MM-DD - YYYY-MM-DD)
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return '-';
+    // Range check
+    if (dateStr.includes(' - ')) {
+      const [start, end] = dateStr.split(' - ');
+      const fmt = (s: string) => {
+        const [y, m, d] = s.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+      };
+      return `${fmt(start)} – ${fmt(end)}`;
+    }
+    // Single date
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('id-ID', {
+      dateStyle: 'long',
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    if (currency === 'IDR') return `Rp ${amount.toLocaleString('id-ID')}`;
+    return `${currency} ${amount.toLocaleString()}`;
   };
 
   const handlePayment = async () => {
     try {
       setLoading(true);
-      
-      // Dummy Response simulasi dari Backend
+      // Dummy — ganti dengan API call ke backend
       setTimeout(() => {
-        const xenditInvoiceUrl = "https://checkout.xendit.co/web/609123456789";
-        window.location.href = xenditInvoiceUrl; // Redirect ke Xendit
+        const xenditInvoiceUrl = 'https://checkout.xendit.co/web/609123456789';
+        window.location.href = xenditInvoiceUrl;
       }, 1500);
-
     } catch (error: any) {
       setLoading(false);
       Swal.fire('Error', error.message || 'Gagal memproses pembayaran', 'error');
@@ -57,59 +113,100 @@ const CheckoutSummary: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 mt-6 space-y-4">
-        
+
         {/* Detail Produk */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
           <div className="flex p-4 gap-4">
-            <img 
-              src={bookingData.image} 
-              alt="product" 
-              className="w-24 h-24 rounded-lg object-cover"
+            <img
+              src={image}
+              alt={productName}
+              className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
             />
             <div className="flex-1">
-              <h2 className="font-bold text-gray-800 leading-tight">{bookingData.productName}</h2>
+              <h2 className="font-bold text-gray-800 leading-tight">{productName}</h2>
               <div className="flex items-center text-sm text-gray-500 mt-2">
-                <MapPin className="w-3 h-3 mr-1" />
-                {bookingData.location}
+                <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                {productLocation}
               </div>
             </div>
           </div>
           <div className="bg-gray-50 p-4 border-t border-gray-100 grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center text-gray-600">
-              <Calendar className="w-4 h-4 mr-2 text-primary" />
-              {new Date(bookingData.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}
+            <div className="flex items-start text-gray-600 gap-2">
+              <Calendar className="w-4 h-4 mt-0.5 text-primary-500 flex-shrink-0" />
+              <span>{formatDateDisplay(date)}</span>
             </div>
-            <div className="flex items-center text-gray-600">
-              <Users className="w-4 h-4 mr-2 text-primary" />
-              {bookingData.pax} Peserta
+            <div className="flex items-center text-gray-600 gap-2">
+              <Users className="w-4 h-4 text-primary-500 flex-shrink-0" />
+              <span>
+                {guestCount ?? pax} Tamu
+                {duration > 1 && (
+                  <span className="ml-1 text-gray-400">· {duration} Malam</span>
+                )}
+              </span>
             </div>
+            {duration > 1 && (
+              <div className="flex items-center text-gray-600 gap-2 col-span-2">
+                <Clock className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                <span>{duration} {priceUnitLabel === 'night' ? 'Malam' : 'Hari'} · {pax} {unitLabel}(s)</span>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Kontak Pemesan */}
+        {(contactDetails.name || contactDetails.email || contactDetails.phone) && (
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+            <h3 className="font-bold text-gray-800 mb-4">Data Pemesan</h3>
+            <div className="space-y-3">
+              {contactDetails.name && (
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-primary-500" />
+                  </div>
+                  <span>{contactDetails.name}</span>
+                </div>
+              )}
+              {contactDetails.email && (
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-4 h-4 text-primary-500" />
+                  </div>
+                  <span>{contactDetails.email}</span>
+                </div>
+              )}
+              {contactDetails.phone && (
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-4 h-4 text-primary-500" />
+                  </div>
+                  <span>{contactDetails.phone}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Rincian Harga */}
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <h3 className="font-bold text-gray-800 mb-4">Rincian Harga</h3>
           <div className="space-y-3">
-            <div className="flex justify-between text-gray-600">
-              <span>{bookingData.productName} (x{bookingData.pax})</span>
-              <span>Rp {bookingData.totalPrice.toLocaleString()}</span>
+            <div className="flex justify-between text-gray-600 text-sm">
+              <span>
+                {formatCurrency(pricePerPax)} / {priceUnitLabel} × {pax} {unitLabel}
+                {duration > 1 && ` × ${duration} ${priceUnitLabel === 'night' ? 'malam' : 'hari'}`}
+              </span>
+              <span>{formatCurrency(totalPrice)}</span>
             </div>
-            <div className="flex justify-between text-gray-600">
+            <div className="flex justify-between text-gray-600 text-sm">
               <span>Biaya Layanan</span>
               <span className="text-green-600 font-medium">Gratis</span>
             </div>
             <hr className="border-dashed" />
             <div className="flex justify-between items-center pt-2">
-              <span className="text-lg font-bold text-gray-800">Total Pembayaran</span>
-              <span className="text-lg font-bold text-blue-600">Rp {bookingData.totalPrice.toLocaleString()}</span>
+              <span className="text-base font-bold text-gray-800">Total Pembayaran</span>
+              <span className="text-lg font-bold text-primary-600">{formatCurrency(totalPrice)}</span>
             </div>
           </div>
-        </div>
-
-        {/* Keamanan & Info */}
-        <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl text-blue-700 text-sm border border-blue-100">
-          <ShieldCheck className="w-5 h-5 flex-shrink-0" />
-          <p>Pembayaran aman & terenkripsi. Anda akan diarahkan ke halaman pembayaran aman Xendit untuk menyelesaikan transaksi.</p>
         </div>
 
         {/* Button Action */}
@@ -117,13 +214,14 @@ const CheckoutSummary: React.FC = () => {
           <button
             onClick={handlePayment}
             disabled={loading}
-            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2
-              ${loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'}`}
+            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2
+              ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'}`}
           >
             {loading ? (
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
+                <CreditCard className="w-5 h-5" />
                 Lanjut ke Pembayaran
                 <ChevronRight className="w-5 h-5" />
               </>

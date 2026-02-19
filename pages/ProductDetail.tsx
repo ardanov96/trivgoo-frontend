@@ -1,6 +1,3 @@
-// pages/ProductDetail.tsx
-// ✅ FULL CODE (mockService tetap ada & di-comment sesuai request)
-
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,6 +20,7 @@ import {
   Navigation,
   Phone,
   Share2,
+  ShoppingCart,
   Star,
   User,
   Utensils,
@@ -34,7 +32,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { useToast } from "../components/ToastContext";
 import { useWishlist } from "../components/WishlistContext";
-// import { adminService } from "../services/adminService";
+import { useCart } from "../components/CartContext";
 import { agentProductService } from "../services/agentProductService";
 import {
   CarDetails,
@@ -53,22 +51,18 @@ const ProductDetail: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { addToCart, isInCart, cartCount } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
-  // ✅ lat/lng state (dari product)
   const [coords, setCoords] = useState<LatLng | null>(null);
 
-  // Date States
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
 
-  // Calendar UI State
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [calendarMode, setCalendarMode] = useState<"checkIn" | "checkOut">(
-    "checkIn"
-  );
+  const [calendarMode, setCalendarMode] = useState<"checkIn" | "checkOut">("checkIn");
   const [pickerDate, setPickerDate] = useState(new Date());
   const calendarRef = useRef<HTMLDivElement>(null);
   const bookingSectionRef = useRef<HTMLDivElement>(null);
@@ -77,12 +71,10 @@ const ProductDetail: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Contact Details State
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
 
-  // Lightbox State
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -94,73 +86,35 @@ const ProductDetail: React.FC = () => {
   const normalizeLatLngFromProduct = (p: any): LatLng | null => {
     const lat = toNum(p?.lat);
     const lng = toNum(p?.lng);
-
     return { lat, lng };
   };
 
   const buildGoogleMapsUrl = (p: Product | null, c: LatLng | null) => {
-    // Prioritas: lat,lng kalau ada -> lebih akurat
-    if (c) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        `${c.lat},${c.lng}`
-      )}`;
-    }
-
-    // fallback: pakai text location
+    if (c) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.lat},${c.lng}`)}`;
     const q = (p as any)?.location || (p as any)?.name || "";
-    if (typeof q === "string" && q.trim()) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        q.trim()
-      )}`;
-    }
-
+    if (typeof q === "string" && q.trim()) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q.trim())}`;
     return "https://www.google.com/maps";
   };
 
   const buildAppleMapsUrl = (p: Product | null, c: LatLng | null) => {
-    // Apple Maps: ll=lat,lng, q=label
     const label = (p as any)?.name || (p as any)?.location || "Destination";
-    if (c) {
-      return `https://maps.apple.com/?ll=${encodeURIComponent(
-        `${c.lat},${c.lng}`
-      )}&q=${encodeURIComponent(String(label))}`;
-    }
-
+    if (c) return `https://maps.apple.com/?ll=${encodeURIComponent(`${c.lat},${c.lng}`)}&q=${encodeURIComponent(String(label))}`;
     const q = (p as any)?.location || (p as any)?.name || "";
-    if (typeof q === "string" && q.trim()) {
-      return `https://maps.apple.com/?q=${encodeURIComponent(q.trim())}`;
-    }
-
+    if (typeof q === "string" && q.trim()) return `https://maps.apple.com/?q=${encodeURIComponent(q.trim())}`;
     return "https://maps.apple.com/";
   };
 
-  // ✅ Fetch product by ADMIN API: /admin/agents/products/:id
   useEffect(() => {
     if (!id) return;
-
     window.scrollTo(0, 0);
-
     (async () => {
       try {
         const pid = Number(id);
-        if (!Number.isFinite(pid) || pid <= 0) {
-          showToast("Invalid product id", "error");
-          return;
-        }
-
-        // const res = await adminService.getAgentProductDetail(pid);
-        
-        // const p = res?.data || null;
-
+        if (!Number.isFinite(pid) || pid <= 0) { showToast("Invalid product id", "error"); return; }
         const p = await agentProductService.getProductById(pid);
-
         setProduct(p);
-
-        // ✅ ambil coords dari product
         const c = p ? normalizeLatLngFromProduct(p) : null;
         setCoords(c);
-
-        // Reset states
         setCheckIn("");
         setCheckOut("");
         setGuests(1);
@@ -172,7 +126,6 @@ const ProductDetail: React.FC = () => {
         setCoords(null);
       }
     })();
-
   }, [id, showToast]);
 
   useEffect(() => {
@@ -182,13 +135,9 @@ const ProductDetail: React.FC = () => {
     }
   }, [user]);
 
-  // Click outside to close calendar
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        calendarRef.current &&
-        !calendarRef.current.contains(event.target as Node)
-      ) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
         setIsCalendarOpen(false);
       }
     }
@@ -199,37 +148,28 @@ const ProductDetail: React.FC = () => {
   if (!product) return <div className="p-20 text-center">Loading...</div>;
 
   const isLiked = isInWishlist(product.id);
+  const inCart = isInCart(product.id);
   const details = product.details;
 
-  // Type Guards
   const isTour = (d: any): d is TourDetails => d?.type === "tour";
   const isStay = (d: any): d is StayDetails => d?.type === "stay";
   const isCar = (d: any): d is CarDetails => d?.type === "car";
 
-  // Airport transfer behaves like a Tour (Single date)
   const isSingleDaySelection =
     isTour(details) ||
-    (isCar(details) &&
-      details.transportCategory === TransportCategory.AIRPORT_TRANSFER);
+    (isCar(details) && details.transportCategory === TransportCategory.AIRPORT_TRANSFER);
 
-  // --- FLASH SALE LOGIC (kalau belum ada di API, aman karena optional) ---
   const activeFlashSale =
-    (product as any).flashSale &&
-    (product as any).flashSale.status === "approved"
+    (product as any).flashSale && (product as any).flashSale.status === "approved"
       ? (product as any).flashSale
       : null;
-  const effectivePrice = activeFlashSale
-    ? activeFlashSale.salePrice
-    : product.price;
+  const effectivePrice = activeFlashSale ? activeFlashSale.salePrice : product.price;
 
-  // --- LIGHTBOX LOGIC ---
   const heroImage = (product as any).image_url || product.image;
 
   const galleryImages =
     product.images && Array.isArray(product.images) && product.images.length > 0
-      ? product.images
-          .map((x: any) => (typeof x === "string" ? x : x?.url))
-          .filter(Boolean)
+      ? product.images.map((x: any) => (typeof x === "string" ? x : x?.url)).filter(Boolean)
       : [heroImage, heroImage, heroImage, heroImage, heroImage].filter(Boolean);
 
   const openLightbox = (index: number) => {
@@ -250,48 +190,19 @@ const ProductDetail: React.FC = () => {
 
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setLightboxIndex(
-      (prev) => (prev - 1 + galleryImages.length) % galleryImages.length
-    );
+    setLightboxIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
   };
 
-  // --- CALENDAR LOGIC ---
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-  const getDaysInMonth = (year: number, month: number) =>
-    new Date(year, month + 1, 0).getDate();
-  const getFirstDayOfMonth = (year: number, month: number) =>
-    new Date(year, month, 1).getDay();
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
-  const handlePrevMonth = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setPickerDate(
-      new Date(pickerDate.getFullYear(), pickerDate.getMonth() - 1, 1)
-    );
-  };
-
-  const handleNextMonth = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setPickerDate(
-      new Date(pickerDate.getFullYear(), pickerDate.getMonth() + 1, 1)
-    );
-  };
+  const handlePrevMonth = (e: React.MouseEvent) => { e.preventDefault(); setPickerDate(new Date(pickerDate.getFullYear(), pickerDate.getMonth() - 1, 1)); };
+  const handleNextMonth = (e: React.MouseEvent) => { e.preventDefault(); setPickerDate(new Date(pickerDate.getFullYear(), pickerDate.getMonth() + 1, 1)); };
 
   const isDateBlocked = (dateStr: string) => {
     if (!(product as any).blocked_dates) return false;
@@ -314,30 +225,17 @@ const ProductDetail: React.FC = () => {
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return "";
     const date = parseDateLocal(dateStr);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
   const handleDateSelect = (day: number) => {
-    const selectedDate = new Date(
-      pickerDate.getFullYear(),
-      pickerDate.getMonth(),
-      day
-    );
+    const selectedDate = new Date(pickerDate.getFullYear(), pickerDate.getMonth(), day);
     const dateStr = formatDateStr(selectedDate);
-
     if (selectedDate < today) return;
-
     const blocked = isDateBlocked(dateStr);
 
     if (isSingleDaySelection) {
-      if (blocked) {
-        showToast("This date is fully booked or unavailable.", "error");
-        return;
-      }
+      if (blocked) { showToast("This date is fully booked or unavailable.", "error"); return; }
       setCheckIn(dateStr);
       setCheckOut("");
       setIsCalendarOpen(false);
@@ -345,43 +243,25 @@ const ProductDetail: React.FC = () => {
     }
 
     if (calendarMode === "checkIn") {
-      if (blocked) {
-        showToast("Check-in date is unavailable.", "error");
-        return;
-      }
+      if (blocked) { showToast("Check-in date is unavailable.", "error"); return; }
       setCheckIn(dateStr);
-      if (checkOut && parseDateLocal(dateStr) >= parseDateLocal(checkOut)) {
-        setCheckOut("");
-      }
+      if (checkOut && parseDateLocal(dateStr) >= parseDateLocal(checkOut)) setCheckOut("");
       setCalendarMode("checkOut");
     } else {
       if (parseDateLocal(dateStr) <= parseDateLocal(checkIn)) {
-        if (blocked) {
-          showToast("Check-in date is unavailable.", "error");
-          return;
-        }
+        if (blocked) { showToast("Check-in date is unavailable.", "error"); return; }
         setCheckIn(dateStr);
         setCheckOut("");
         return;
       }
-
       let ok = true;
       let current = parseDateLocal(checkIn);
       const end = parseDateLocal(dateStr);
-
       while (current.getTime() < end.getTime()) {
-        if (isDateBlocked(formatDateStr(current))) {
-          ok = false;
-          break;
-        }
+        if (isDateBlocked(formatDateStr(current))) { ok = false; break; }
         current.setDate(current.getDate() + 1);
       }
-
-      if (!ok) {
-        showToast("Selected dates include unavailable nights.", "error");
-        return;
-      }
-
+      if (!ok) { showToast("Selected dates include unavailable nights.", "error"); return; }
       setCheckOut(dateStr);
       setIsCalendarOpen(false);
     }
@@ -392,8 +272,8 @@ const ProductDetail: React.FC = () => {
     const month = pickerDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
-
     const days: React.ReactNode[] = [];
+
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-9 w-9"></div>);
     }
@@ -401,19 +281,15 @@ const ProductDetail: React.FC = () => {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const dateStr = formatDateStr(date);
-
       const blocked = isDateBlocked(dateStr);
       const isPast = date < today;
-
       let disabled = isPast;
       if (!disabled) {
         if (isSingleDaySelection && blocked) disabled = true;
         else if (calendarMode === "checkIn" && blocked) disabled = true;
       }
-
       let selected = false;
       let inRange = false;
-
       if (isSingleDaySelection) {
         selected = checkIn === dateStr;
       } else {
@@ -424,55 +300,30 @@ const ProductDetail: React.FC = () => {
           inRange = date > start && date < end;
         }
       }
-
       const showBlockedStyle = !disabled && blocked;
-
       days.push(
         <button
           key={day}
-          onClick={(e) => {
-            e.preventDefault();
-            !disabled && handleDateSelect(day);
-          }}
+          onClick={(e) => { e.preventDefault(); !disabled && handleDateSelect(day); }}
           disabled={disabled}
           className={`h-9 w-9 text-xs font-bold rounded-full flex items-center justify-center transition-all relative
-              ${
-                disabled
-                  ? "text-gray-300 cursor-not-allowed bg-gray-50"
-                  : selected
-                  ? "bg-primary-600 text-white shadow-md z-10"
-                  : inRange
-                  ? "bg-primary-50 text-primary-700 rounded-none"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-primary-600"
-              }
-              ${
-                showBlockedStyle
-                  ? "bg-orange-50 text-orange-400 ring-1 ring-orange-200"
-                  : ""
-              }
-            `}
-          title={
-            blocked
-              ? calendarMode === "checkOut" && !isSingleDaySelection
-                ? "Available for Checkout"
-                : "Fully Booked"
-              : isPast
-              ? "Past Date"
-              : "Available"
-          }
+            ${disabled ? "text-gray-300 cursor-not-allowed bg-gray-50"
+              : selected ? "bg-primary-600 text-white shadow-md z-10"
+              : inRange ? "bg-primary-50 text-primary-700 rounded-none"
+              : "text-gray-700 hover:bg-gray-100 hover:text-primary-600"}
+            ${showBlockedStyle ? "bg-orange-50 text-orange-400 ring-1 ring-orange-200" : ""}`}
+          title={blocked ? (calendarMode === "checkOut" && !isSingleDaySelection ? "Available for Checkout" : "Fully Booked") : isPast ? "Past Date" : "Available"}
         >
           {day}
         </button>
       );
     }
-
     return days;
   };
 
   const calculateDuration = () => {
     if (isSingleDaySelection) return 1;
     if (!checkIn || !checkOut) return 1;
-
     const start = parseDateLocal(checkIn);
     const end = parseDateLocal(checkOut);
     const diffTime = Math.abs(end.getTime() - start.getTime());
@@ -495,31 +346,24 @@ const ProductDetail: React.FC = () => {
     ? effectivePrice * guests
     : effectivePrice * unitsNeeded * duration;
 
-  const priceUnitLabel = isTour(details)
-    ? "person"
-    : isStay(details)
-    ? "night"
-    : "day";
-  const itemLabel = isTour(details)
-    ? "Guest"
-    : isCar(details)
-    ? "Passenger"
-    : "Guest";
-  const unitLabel = isCar(details)
-    ? "Car"
-    : isStay(details)
-    ? "Unit"
-    : "Ticket";
+  const priceUnitLabel = isTour(details) ? "person" : isStay(details) ? "night" : "day";
+  const itemLabel = isTour(details) ? "Guest" : isCar(details) ? "Passenger" : "Guest";
+  const unitLabel = isCar(details) ? "Car" : isStay(details) ? "Unit" : "Ticket";
+
+  // ── Add to Cart ────────────────────────────────────────────────────────────
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (inCart) return; // sudah di cart, tidak perlu action — cart buka via navbar
+    addToCart(product, 1);
+    showToast(`${product.name} ditambahkan ke keranjang!`, "success");
+  };
 
   const handleBookNow = (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
 
     if (!checkIn) {
       if (bookingSectionRef.current) {
-        bookingSectionRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+        bookingSectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
         setIsCalendarOpen(true);
         setCalendarMode("checkIn");
       }
@@ -536,10 +380,7 @@ const ProductDetail: React.FC = () => {
     if (!isSingleDaySelection && !checkOut) {
       showToast("Please select an end date.", "error");
       if (bookingSectionRef.current) {
-        bookingSectionRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
+        bookingSectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
         setIsCalendarOpen(true);
         setCalendarMode("checkOut");
       }
@@ -548,27 +389,21 @@ const ProductDetail: React.FC = () => {
 
     setIsProcessing(true);
 
-    const productForPayment = {
-      ...product,
-      price: effectivePrice,
-    };
-
-    navigate("/payment", {
+    navigate("/checkout-summary", {
       state: {
-        product: productForPayment,
-        quantity: isTour(details) ? guests : unitsNeeded,
-        guestCount: guests,
-        duration: duration,
+        productName: product.name,
+        location: product.location,
+        date: isSingleDaySelection ? checkIn : `${checkIn} - ${checkOut}`,
+        pax: isTour(details) ? guests : unitsNeeded,
+        pricePerPax: effectivePrice,
         totalPrice: totalPrice,
-        date: isSingleDaySelection
-          ? formatDateDisplay(checkIn)
-          : `${formatDateDisplay(checkIn)} - ${formatDateDisplay(checkOut)}`,
+        image: heroImage,
         currency: product.currency,
-        contactDetails: {
-          name: contactName,
-          email: contactEmail,
-          phone: contactPhone,
-        },
+        duration: duration,
+        guestCount: guests,
+        unitLabel: unitLabel,
+        priceUnitLabel: priceUnitLabel,
+        contactDetails: { name: contactName, email: contactEmail, phone: contactPhone },
       },
     });
   };
@@ -583,46 +418,27 @@ const ProductDetail: React.FC = () => {
     showToast("Link copied to clipboard!");
   };
 
-  // ✅ Open Maps (pakai lat,lng kalau ada)
   const handleOpenMaps = () => {
     const gmaps = buildGoogleMapsUrl(product, coords);
-    // kalau mau iOS friendly, bisa pakai apple maps:
-    // const apple = buildAppleMapsUrl(product, coords);
     window.open(gmaps, "_blank", "noopener,noreferrer");
   };
 
   return (
     <div className="bg-gray-50 min-h-screen pb-24">
+
       {/* Lightbox Modal */}
       {isLightboxOpen && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <button
-            onClick={closeLightbox}
-            className="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all"
-          >
+          <button onClick={closeLightbox} className="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all">
             <X className="w-6 h-6" />
           </button>
-
-          <button
-            onClick={prevImage}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all md:left-8"
-          >
+          <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all md:left-8">
             <ChevronLeft className="w-8 h-8" />
           </button>
-
-          <img
-            src={galleryImages[lightboxIndex]}
-            alt="Gallery Fullscreen"
-            className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
-          />
-
-          <button
-            onClick={nextImage}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all md:right-8"
-          >
+          <img src={galleryImages[lightboxIndex]} alt="Gallery Fullscreen" className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300" />
+          <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all md:right-8">
             <ChevronRight className="w-8 h-8" />
           </button>
-
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium bg-black/50 px-4 py-2 rounded-full">
             {lightboxIndex + 1} / {galleryImages.length}
           </div>
@@ -630,31 +446,20 @@ const ProductDetail: React.FC = () => {
       )}
 
       {/* Product Hero Image */}
-      <div
-        className="h-[40vh] md:h-[60vh] relative group cursor-pointer"
-        onClick={() => openLightbox(0)}
-      >
-        <img
-          src={heroImage}
-          alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-        />
+      <div className="h-[40vh] md:h-[60vh] relative group cursor-pointer" onClick={() => openLightbox(0)}>
+        <img src={heroImage} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
-        {/* View Photos Button Overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="bg-black/50 backdrop-blur-md text-white px-6 py-3 rounded-full font-bold flex items-center hover:bg-black/70 transition-colors pointer-events-none">
             <Maximize2 className="w-5 h-5 mr-2" /> View Photos
           </div>
         </div>
 
-        {/* Navigation Overlays */}
+        {/* Top nav — hanya back + wishlist + share (cart sudah di PublicLayout navbar) */}
         <div className="absolute top-0 w-full p-4 md:p-8 flex justify-between items-start z-10 pt-24 md:pt-28">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(-1);
-            }}
+            onClick={(e) => { e.stopPropagation(); navigate(-1); }}
             className="bg-white/20 backdrop-blur-md hover:bg-white text-white hover:text-gray-900 p-3 rounded-full transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -662,17 +467,12 @@ const ProductDetail: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={handleToggleLike}
-              className={`bg-white/20 backdrop-blur-md hover:bg-white text-white hover:text-red-500 p-3 rounded-full transition-all ${
-                isLiked ? "bg-white text-red-500" : ""
-              }`}
+              className={`bg-white/20 backdrop-blur-md hover:bg-white text-white hover:text-red-500 p-3 rounded-full transition-all ${isLiked ? "bg-white text-red-500" : ""}`}
             >
               <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleShare();
-              }}
+              onClick={(e) => { e.stopPropagation(); handleShare(); }}
               className="bg-white/20 backdrop-blur-md hover:bg-white text-white hover:text-blue-500 p-3 rounded-full transition-all"
             >
               <Share2 className="w-5 h-5" />
@@ -682,36 +482,17 @@ const ProductDetail: React.FC = () => {
 
         <div className="absolute bottom-0 left-0 w-full p-6 md:p-12">
           <div className="max-w-7xl mx-auto">
-            {/* Breadcrumbs */}
             <div className="hidden md:flex items-center text-white/70 text-sm mb-4 space-x-2">
-              <Link
-                to="/"
-                className="hover:text-white transition-colors flex items-center"
-              >
-                <Home className="w-3 h-3 mr-1" /> Home
-              </Link>
+              <Link to="/" className="hover:text-white transition-colors flex items-center"><Home className="w-3 h-3 mr-1" /> Home</Link>
               <ChevronRight className="w-3 h-3" />
-              <Link
-                to="/explore"
-                className="hover:text-white transition-colors"
-              >
-                Explore
-              </Link>
+              <Link to="/explore" className="hover:text-white transition-colors">Explore</Link>
               <ChevronRight className="w-3 h-3" />
-              <span className="text-white font-medium truncate max-w-[200px]">
-                {product.name}
-              </span>
+              <span className="text-white font-medium truncate max-w-[200px]">{product.name}</span>
             </div>
 
             <div className="flex items-center gap-3 mb-4">
               <div className="inline-flex items-center px-3 py-1 rounded-lg bg-primary-600 text-white text-xs font-bold uppercase tracking-wider">
-                {isTour(details)
-                  ? "Tour Package"
-                  : isStay(details)
-                  ? "Luxury Stay"
-                  : isCar(details)
-                  ? "Vehicle Rental"
-                  : "Experience"}
+                {isTour(details) ? "Tour Package" : isStay(details) ? "Luxury Stay" : isCar(details) ? "Vehicle Rental" : "Experience"}
               </div>
               {activeFlashSale && (
                 <div className="inline-flex items-center px-3 py-1 rounded-lg bg-red-600 text-white text-xs font-bold uppercase tracking-wider animate-pulse">
@@ -720,9 +501,7 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-serif font-bold text-white mb-4 leading-tight">
-              {product.name}
-            </h1>
+            <h1 className="text-3xl md:text-5xl font-serif font-bold text-white mb-4 leading-tight">{product.name}</h1>
             <div className="flex flex-wrap items-center text-white/90 gap-4 md:gap-8 text-sm md:text-base">
               <div className="flex items-center">
                 <MapPin className="w-5 h-5 mr-2 text-primary-400" />
@@ -731,9 +510,7 @@ const ProductDetail: React.FC = () => {
               <div className="flex items-center">
                 <Star className="w-5 h-5 text-amber-400 fill-current mr-2" />
                 <span className="font-bold">{product.rating}</span>
-                <span className="ml-1 opacity-70">
-                  ({(product as any).reviews?.length || 0} reviews)
-                </span>
+                <span className="ml-1 opacity-70">({(product as any).reviews?.length || 0} reviews)</span>
               </div>
               {isTour(details) && (
                 <div className="flex items-center">
@@ -750,197 +527,90 @@ const ProductDetail: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
           {/* Main Info */}
           <div className="lg:col-span-2">
-            {/* Description Card */}
             <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100 mb-8">
               <div className="flex space-x-6 border-b border-gray-100 mb-6 overflow-x-auto no-scrollbar">
-                <button
-                  onClick={() => setActiveTab("overview")}
-                  className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                    activeTab === "overview"
-                      ? "text-primary-600 border-b-2 border-primary-600"
-                      : "text-gray-400 hover:text-gray-600"
-                  }`}
-                >
-                  Overview
-                </button>
-                {isTour(details) && (
-                  <button
-                    onClick={() => setActiveTab("itinerary")}
-                    className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                      activeTab === "itinerary"
-                        ? "text-primary-600 border-b-2 border-primary-600"
-                        : "text-gray-400 hover:text-gray-600"
-                    }`}
-                  >
-                    Itinerary
-                  </button>
-                )}
-
-                <button
-                  onClick={() => setActiveTab("gallery")}
-                  className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                    activeTab === "gallery"
-                      ? "text-primary-600 border-b-2 border-primary-600"
-                      : "text-gray-400 hover:text-gray-600"
-                  }`}
-                >
-                  Gallery
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("reviews")}
-                  className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                    activeTab === "reviews"
-                      ? "text-primary-600 border-b-2 border-primary-600"
-                      : "text-gray-400 hover:text-gray-600"
-                  }`}
-                >
-                  Reviews
-                </button>
+                {["overview", isTour(details) ? "itinerary" : null, "gallery", "reviews"]
+                  .filter(Boolean)
+                  .map((tab) => (
+                    <button
+                      key={tab!}
+                      onClick={() => setActiveTab(tab!)}
+                      className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
+                        activeTab === tab
+                          ? "text-primary-600 border-b-2 border-primary-600"
+                          : "text-gray-400 hover:text-gray-600"
+                      }`}
+                    >
+                      {tab === "itinerary" ? "Itinerary" : tab!.charAt(0).toUpperCase() + tab!.slice(1)}
+                    </button>
+                  ))}
               </div>
 
               {activeTab === "overview" && (
                 <div className="animate-in fade-in">
-                  <p className="text-gray-600 leading-loose text-lg mb-8">
-                    {product.description}
-                  </p>
-
+                  <p className="text-gray-600 leading-loose text-lg mb-8">{product.description}</p>
                   <h3 className="text-lg font-bold mb-6 flex items-center text-gray-900">
-                    <span className="w-1 h-6 bg-primary-500 rounded-full mr-3"></span>
-                    Key Features
+                    <span className="w-1 h-6 bg-primary-500 rounded-full mr-3"></span>Key Features
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 mb-8">
-                    {/* Gunakan Optional Chaining dan pastikan data adalah array */}
                     {Array.isArray(product?.features) && product.features.length > 0 ? (
-                      product.features
-                        .filter((item) => item && item.trim() !== "") // Menghapus string kosong atau null
-                        .map((feature, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100"
-                          >
-                            <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center mr-3 flex-shrink-0">
-                              <Check className="w-4 h-4 text-primary-600" />
-                            </div>
-                            <span className="font-medium text-sm md:text-base">{feature}</span>
+                      product.features.filter((item) => item && item.trim() !== "").map((feature, idx) => (
+                        <div key={idx} className="flex items-center text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                          <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center mr-3 flex-shrink-0">
+                            <Check className="w-4 h-4 text-primary-600" />
                           </div>
-                        ))
+                          <span className="font-medium text-sm md:text-base">{feature}</span>
+                        </div>
+                      ))
                     ) : (
-                      /* Tampilan jika data kosong agar tidak blank */
-                      <p className="text-gray-400 italic text-sm col-span-2 ml-4">
-                        No features listed for this product.
-                      </p>
+                      <p className="text-gray-400 italic text-sm col-span-2 ml-4">No features listed for this product.</p>
                     )}
                   </div>
 
-                  {/* Updated Location Map Section */}
                   <div className="mt-10 pt-8 border-t border-gray-100">
                     <h3 className="text-lg font-bold mb-6 flex items-center text-gray-900">
-                      <MapPin className="w-5 h-5 mr-2 text-primary-500" />{" "}
-                      Location & Surroundings
+                      <MapPin className="w-5 h-5 mr-2 text-primary-500" /> Location & Surroundings
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="md:col-span-2 relative rounded-2xl overflow-hidden h-64 border border-gray-200 group cursor-pointer shadow-sm">
-                        <img
-                          src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80"
-                          alt="Map View"
-                          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 scale-110"
-                        />
+                        <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80" alt="Map View" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 scale-110" />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="bg-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="font-bold text-gray-800 text-sm">
-                              {product.location}
-                            </span>
+                            <span className="font-bold text-gray-800 text-sm">{product.location}</span>
                           </div>
                         </div>
-
-                        {/* ✅ tombol open maps: now include lat,lng */}
                         <div className="absolute bottom-4 right-4">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenMaps();
-                            }}
-                            className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-md flex items-center hover:bg-gray-50 border border-gray-100"
-                            title={
-                              // Pengecekan lebih ketat: pastikan lat & lng adalah angka
-                              typeof coords?.lat === 'number' && typeof coords?.lng === 'number'
-                                ? `Open Maps (${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)})`
-                                : "Open Maps"
-                            }
-                          >
-                            <Navigation className="w-3 h-3 mr-2" />
-                            Open Maps
+                          <button type="button" onClick={(e) => { e.stopPropagation(); handleOpenMaps(); }} className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold shadow-md flex items-center hover:bg-gray-50 border border-gray-100">
+                            <Navigation className="w-3 h-3 mr-2" /> Open Maps
                           </button>
                         </div>
-
-                        {/* ✅ tampil kecil lat/lng di card map */}
                         <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-mono text-gray-700 border border-gray-100 shadow-sm">
                           {typeof coords?.lat === 'number' && typeof coords?.lng === 'number'
-                            ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`
-                            : "lat/lng: -"}
+                            ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : "lat/lng: -"}
                         </div>
                       </div>
 
                       <div className="space-y-3">
-                        <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wide">
-                          Nearby Highlights
-                        </h4>
-                        <div className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 mr-3">
-                            <Utensils className="w-4 h-4" />
+                        <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Nearby Highlights</h4>
+                        {[
+                          { icon: Utensils, color: "orange", label: "Local Cuisine", sub: "5 mins walk" },
+                          { icon: Car, color: "blue", label: "Airport Access", sub: "45 mins drive" },
+                          { icon: Mountain, color: "green", label: "Scenic Spot", sub: "10 mins drive" },
+                        ].map(({ icon: Icon, color, label, sub }) => (
+                          <div key={label} className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            <div className={`w-8 h-8 rounded-full bg-${color}-100 flex items-center justify-center text-${color}-600 mr-3`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-900">{label}</p>
+                              <p className="text-[10px] text-gray-500">{sub}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs font-bold text-gray-900">
-                              Local Cuisine
-                            </p>
-                            <p className="text-[10px] text-gray-500">
-                              5 mins walk
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                            <Car className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-gray-900">
-                              Airport Access
-                            </p>
-                            <p className="text-[10px] text-gray-500">
-                              45 mins drive
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
-                            <Mountain className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-gray-900">
-                              Scenic Spot
-                            </p>
-                            <p className="text-[10px] text-gray-500">
-                              10 mins drive
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* ✅ optional: tombol Apple Maps */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = buildAppleMapsUrl(product, coords);
-                            window.open(url, "_blank", "noopener,noreferrer");
-                          }}
-                          className="w-full mt-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center"
-                          title="Open in Apple Maps"
-                        >
-                          <Navigation className="w-3 h-3 mr-2" />
-                          Open Apple Maps
+                        ))}
+                        <button type="button" onClick={() => { const url = buildAppleMapsUrl(product, coords); window.open(url, "_blank", "noopener,noreferrer"); }} className="w-full mt-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center">
+                          <Navigation className="w-3 h-3 mr-2" /> Open Apple Maps
                         </button>
                       </div>
                     </div>
@@ -949,50 +619,32 @@ const ProductDetail: React.FC = () => {
                   {details && "rules" in details && (details as any).rules && (
                     <>
                       <h3 className="text-lg font-bold mb-4 flex items-center text-gray-900 mt-8">
-                        <Info className="w-5 h-5 mr-2 text-primary-500" />{" "}
-                        Important Info
+                        <Info className="w-5 h-5 mr-2 text-primary-500" /> Important Info
                       </h3>
                       <ul className="space-y-2 text-gray-600">
-                        {(details as any).rules.map(
-                          (rule: string, idx: number) => (
-                            <li key={idx} className="flex items-start">
-                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                              {rule}
-                            </li>
-                          )
-                        )}
+                        {(details as any).rules.map((rule: string, idx: number) => (
+                          <li key={idx} className="flex items-start">
+                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>{rule}
+                          </li>
+                        ))}
                       </ul>
                     </>
                   )}
                 </div>
               )}
 
-              {/* GALLERY TAB CONTENT */}
               {activeTab === "gallery" && (
                 <div className="animate-in fade-in">
                   <h3 className="text-lg font-bold mb-6 flex items-center text-gray-900">
-                    <Image className="w-5 h-5 mr-2 text-primary-500" /> Photo
-                    Gallery
+                    <Image className="w-5 h-5 mr-2 text-primary-500" /> Photo Gallery
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {galleryImages.map((img, index) => (
-                      <div
-                        key={index}
-                        onClick={() => openLightbox(index)}
-                        className={`relative rounded-2xl overflow-hidden group shadow-sm cursor-pointer ${
-                          index === 0 ? "md:col-span-2 md:h-80" : "h-48"
-                        }`}
-                      >
-                        <img
-                          src={img}
-                          alt={`Gallery ${index}`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                        />
+                      <div key={index} onClick={() => openLightbox(index)} className={`relative rounded-2xl overflow-hidden group shadow-sm cursor-pointer ${index === 0 ? "md:col-span-2 md:h-80" : "h-48"}`}>
+                        <img src={img} alt={`Gallery ${index}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="bg-black/30 backdrop-blur-sm p-3 rounded-full text-white">
-                            <Maximize2 className="w-6 h-6" />
-                          </div>
+                          <div className="bg-black/30 backdrop-blur-sm p-3 rounded-full text-white"><Maximize2 className="w-6 h-6" /></div>
                         </div>
                       </div>
                     ))}
@@ -1000,57 +652,34 @@ const ProductDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* REVIEWS TAB CONTENT */}
               {activeTab === "reviews" && (
                 <div className="animate-in fade-in">
                   <h3 className="text-lg font-bold mb-6 flex items-center text-gray-900">
-                    <Star className="w-5 h-5 mr-2 text-primary-500 fill-current" />{" "}
-                    Customer Reviews
+                    <Star className="w-5 h-5 mr-2 text-primary-500 fill-current" /> Customer Reviews
                   </h3>
-                  {!(product as any).reviews ||
-                  (product as any).reviews.length === 0 ? (
+                  {!(product as any).reviews || (product as any).reviews.length === 0 ? (
                     <div className="text-center py-10 bg-gray-50 rounded-2xl">
-                      <p className="text-gray-500">
-                        No reviews yet. Be the first to review this adventure!
-                      </p>
+                      <p className="text-gray-500">No reviews yet. Be the first to review this adventure!</p>
                     </div>
                   ) : (
                     <div className="space-y-6">
                       {(product as any).reviews.map((review: any) => (
-                        <div
-                          key={review.id}
-                          className="border-b border-gray-100 pb-6 last:border-0 last:pb-0"
-                        >
+                        <div key={review.id} className="border-b border-gray-100 pb-6 last:border-0 last:pb-0">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center">
-                              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mr-3">
-                                {review.userName?.charAt?.(0) || "U"}
-                              </div>
+                              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mr-3">{review.userName?.charAt?.(0) || "U"}</div>
                               <div>
-                                <h4 className="font-bold text-gray-900 text-sm">
-                                  {review.userName}
-                                </h4>
-                                <span className="text-xs text-gray-400">
-                                  {review.date}
-                                </span>
+                                <h4 className="font-bold text-gray-900 text-sm">{review.userName}</h4>
+                                <span className="text-xs text-gray-400">{review.date}</span>
                               </div>
                             </div>
                             <div className="flex bg-amber-50 px-2 py-1 rounded-lg">
                               {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-3 h-3 ${
-                                    i < review.rating
-                                      ? "fill-amber-400 text-amber-400"
-                                      : "text-gray-300"
-                                  }`}
-                                />
+                                <Star key={i} className={`w-3 h-3 ${i < review.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}`} />
                               ))}
                             </div>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">
-                            {review.comment}
-                          </p>
+                          <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>
                         </div>
                       ))}
                     </div>
@@ -1058,51 +687,24 @@ const ProductDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* TOUR ITINERARY */}
               {activeTab === "itinerary" && isTour(details) && (
                 <div className="space-y-8 animate-in fade-in">
                   {details.itinerary.map((day) => (
-                    <div
-                      key={day.day}
-                      className="relative pl-8 border-l-2 border-gray-100 last:border-0"
-                    >
+                    <div key={day.day} className="relative pl-8 border-l-2 border-gray-100 last:border-0">
                       <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-primary-500 border-4 border-white shadow-sm"></div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">
-                        Day {day.day}: {day.title}
-                      </h4>
-                      <p className="text-gray-600 mb-4 leading-relaxed">
-                        {day.description}
-                      </p>
-
+                      <h4 className="text-lg font-bold text-gray-900 mb-2">Day {day.day}: {day.title}</h4>
+                      <p className="text-gray-600 mb-4 leading-relaxed">{day.description}</p>
                       <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-3 border border-gray-100">
                         {day.accommodation && (
                           <div className="flex items-center text-gray-700">
-                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-3 shadow-sm text-blue-600">
-                              <BedDouble className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <span className="text-xs font-bold text-gray-400 uppercase block">
-                                Accommodation
-                              </span>
-                              <span className="font-medium">
-                                {day.accommodation}
-                              </span>
-                            </div>
+                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-3 shadow-sm text-blue-600"><BedDouble className="w-4 h-4" /></div>
+                            <div><span className="text-xs font-bold text-gray-400 uppercase block">Accommodation</span><span className="font-medium">{day.accommodation}</span></div>
                           </div>
                         )}
                         {day.meals && day.meals.length > 0 && (
                           <div className="flex items-center text-gray-700">
-                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-3 shadow-sm text-orange-500">
-                              <Utensils className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <span className="text-xs font-bold text-gray-400 uppercase block">
-                                Meals Included
-                              </span>
-                              <span className="font-medium">
-                                {day.meals.join(", ")}
-                              </span>
-                            </div>
+                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-3 shadow-sm text-orange-500"><Utensils className="w-4 h-4" /></div>
+                            <div><span className="text-xs font-bold text-gray-400 uppercase block">Meals Included</span><span className="font-medium">{day.meals.join(", ")}</span></div>
                           </div>
                         )}
                       </div>
@@ -1112,51 +714,25 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            {/* RELATED PRODUCTS SECTION */}
             {relatedProducts.length > 0 && (
               <div className="mt-16 animate-in fade-in slide-in-from-bottom-8">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-serif font-bold text-gray-900">
-                    You Might Also Like
-                  </h3>
-                  <Link
-                    to="/explore"
-                    className="text-primary-600 font-bold text-sm hover:underline flex items-center"
-                  >
-                    View All <ArrowRight className="w-4 h-4 ml-1" />
-                  </Link>
+                  <h3 className="text-2xl font-serif font-bold text-gray-900">You Might Also Like</h3>
+                  <Link to="/explore" className="text-primary-600 font-bold text-sm hover:underline flex items-center">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {relatedProducts.map((rp) => (
-                    <Link
-                      key={rp.id}
-                      to={`/product/${rp.id}`}
-                      className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all border border-gray-100 overflow-hidden group hover:-translate-y-1 block"
-                    >
+                    <Link key={rp.id} to={`/product/${rp.id}`} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all border border-gray-100 overflow-hidden group hover:-translate-y-1 block">
                       <div className="h-48 relative overflow-hidden">
-                        <img
-                          src={(rp as any).image_url || rp.image}
-                          alt={rp.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded-md shadow-sm">
-                          {rp.rating} ⭐
-                        </div>
+                        <img src={(rp as any).image_url || rp.image} alt={rp.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded-md shadow-sm">{rp.rating} ⭐</div>
                       </div>
                       <div className="p-5">
-                        <div className="flex items-center text-xs text-gray-500 mb-2">
-                          <MapPin className="w-3 h-3 mr-1" /> {rp.location}
-                        </div>
-                        <h4 className="font-bold text-gray-900 mb-3 line-clamp-1 group-hover:text-primary-600 transition-colors">
-                          {rp.name}
-                        </h4>
+                        <div className="flex items-center text-xs text-gray-500 mb-2"><MapPin className="w-3 h-3 mr-1" /> {rp.location}</div>
+                        <h4 className="font-bold text-gray-900 mb-3 line-clamp-1 group-hover:text-primary-600 transition-colors">{rp.name}</h4>
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-bold text-primary-600">
-                            {rp.currency} {rp.price}
-                          </span>
-                          <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">
-                            Details
-                          </span>
+                          <span className="text-lg font-bold text-primary-600">{rp.currency} {rp.price}</span>
+                          <span className="text-xs text-gray-400 uppercase font-bold tracking-wider">Details</span>
                         </div>
                       </div>
                     </Link>
@@ -1166,12 +742,8 @@ const ProductDetail: React.FC = () => {
             )}
           </div>
 
-          {/* Booking Card - Sticky */}
-          <div
-            className="lg:col-span-1"
-            id="booking-section"
-            ref={bookingSectionRef}
-          >
+          {/* ── Booking Card ──────────────────────────────────────────────────── */}
+          <div className="lg:col-span-1" id="booking-section" ref={bookingSectionRef}>
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 sticky top-28 relative overflow-hidden">
               {activeFlashSale && (
                 <div className="absolute top-0 left-0 w-full bg-red-600 text-white text-center py-1 text-xs font-bold uppercase tracking-wider animate-pulse">
@@ -1181,116 +753,45 @@ const ProductDetail: React.FC = () => {
 
               <div className="flex justify-between items-end mb-8 pb-6 border-b border-gray-100 mt-4">
                 <div>
-                  <span className="text-sm text-gray-400 font-bold uppercase tracking-wider">
-                    Price per {priceUnitLabel}
-                  </span>
+                  <span className="text-sm text-gray-400 font-bold uppercase tracking-wider">Price per {priceUnitLabel}</span>
                   <div className="flex items-end gap-2 mt-1">
-                    {activeFlashSale && (
-                      <span className="text-lg text-gray-400 line-through mb-1">
-                        {product.currency} {product.price}
-                      </span>
-                    )}
-                    <div
-                      className={`text-3xl font-bold ${
-                        activeFlashSale ? "text-red-600" : "text-gray-900"
-                      }`}
-                    >
-                      {product.currency} {effectivePrice}
-                    </div>
+                    {activeFlashSale && <span className="text-lg text-gray-400 line-through mb-1">{product.currency} {product.price}</span>}
+                    <div className={`text-3xl font-bold ${activeFlashSale ? "text-red-600" : "text-gray-900"}`}>{product.currency} {effectivePrice}</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">
-                    Available Today
-                  </div>
-                </div>
+                <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Available Today</div>
               </div>
 
               <form onSubmit={handleBookNow} className="space-y-5">
-                {/* CALENDAR SECTION */}
+                {/* Calendar */}
                 <div className="relative" ref={calendarRef}>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                     {isSingleDaySelection ? "Select Date" : "Select Dates"}
                   </label>
-                  <div
-                    onClick={() => {
-                      setIsCalendarOpen(true);
-                      setCalendarMode("checkIn");
-                    }}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl flex items-center justify-between cursor-pointer hover:bg-gray-50 bg-white"
-                  >
+                  <div onClick={() => { setIsCalendarOpen(true); setCalendarMode("checkIn"); }} className="w-full px-4 py-3 border border-gray-200 rounded-xl flex items-center justify-between cursor-pointer hover:bg-gray-50 bg-white">
                     <div className="flex items-center text-gray-700 text-sm font-medium">
                       <Calendar className="w-4 h-4 mr-3 text-primary-500" />
-                      {checkIn ? (
-                        isSingleDaySelection ? (
-                          formatDateDisplay(checkIn)
-                        ) : (
-                          `${formatDateDisplay(checkIn)} — ${
-                            checkOut ? formatDateDisplay(checkOut) : "End Date"
-                          }`
-                        )
-                      ) : (
-                        <span className="text-gray-400">
-                          Select {isSingleDaySelection ? "Date" : "Dates"}
-                        </span>
-                      )}
+                      {checkIn ? (isSingleDaySelection ? formatDateDisplay(checkIn) : `${formatDateDisplay(checkIn)} — ${checkOut ? formatDateDisplay(checkOut) : "End Date"}`) : <span className="text-gray-400">Select {isSingleDaySelection ? "Date" : "Dates"}</span>}
                     </div>
                   </div>
 
-                  {/* CALENDAR POPUP */}
                   {isCalendarOpen && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl p-5 z-50 border border-gray-100 animate-in fade-in slide-in-from-top-2">
                       <div className="flex justify-center gap-3 mb-4 pb-3 border-b border-gray-100">
-                        <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase">
-                          <span className="w-2 h-2 rounded-full bg-primary-600 mr-1.5"></span>{" "}
-                          Selected
-                        </div>
-                        <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase">
-                          <span className="w-2 h-2 rounded-full bg-orange-400 mr-1.5"></span>{" "}
-                          Full/Busy
-                        </div>
+                        <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase"><span className="w-2 h-2 rounded-full bg-primary-600 mr-1.5"></span> Selected</div>
+                        <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase"><span className="w-2 h-2 rounded-full bg-orange-400 mr-1.5"></span> Full/Busy</div>
                       </div>
-
                       <div className="flex items-center justify-between mb-4">
-                        <button
-                          onClick={handlePrevMonth}
-                          className="p-1 hover:bg-gray-100 rounded-full text-gray-600"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <h4 className="text-sm font-bold text-gray-900">
-                          {months[pickerDate.getMonth()]}{" "}
-                          {pickerDate.getFullYear()}
-                        </h4>
-                        <button
-                          onClick={handleNextMonth}
-                          className="p-1 hover:bg-gray-100 rounded-full text-gray-600"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
+                        <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-600"><ChevronLeft className="w-4 h-4" /></button>
+                        <h4 className="text-sm font-bold text-gray-900">{months[pickerDate.getMonth()]} {pickerDate.getFullYear()}</h4>
+                        <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-600"><ChevronRight className="w-4 h-4" /></button>
                       </div>
-
                       <div className="grid grid-cols-7 gap-1 text-center mb-1">
-                        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                          <div
-                            key={i}
-                            className="text-[10px] font-bold text-gray-400"
-                          >
-                            {d}
-                          </div>
-                        ))}
+                        {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} className="text-[10px] font-bold text-gray-400">{d}</div>)}
                       </div>
-                      <div className="grid grid-cols-7 gap-1 place-items-center">
-                        {renderCalendar()}
-                      </div>
-
+                      <div className="grid grid-cols-7 gap-1 place-items-center">{renderCalendar()}</div>
                       <div className="mt-4 pt-3 border-t border-gray-100 text-center">
-                        <button
-                          onClick={() => setIsCalendarOpen(false)}
-                          className="text-xs font-bold text-gray-400 hover:text-gray-900 uppercase"
-                        >
-                          Close
-                        </button>
+                        <button onClick={() => setIsCalendarOpen(false)} className="text-xs font-bold text-gray-400 hover:text-gray-900 uppercase">Close</button>
                       </div>
                     </div>
                   )}
@@ -1298,103 +799,48 @@ const ProductDetail: React.FC = () => {
 
                 {checkIn && checkOut && !isSingleDaySelection && (
                   <div className="p-3 bg-primary-50 rounded-xl text-center">
-                    <span className="text-xs font-bold text-primary-700">
-                      {duration} {isStay(details) ? "Nights" : "Days"} Selected
-                    </span>
+                    <span className="text-xs font-bold text-primary-700">{duration} {isStay(details) ? "Nights" : "Days"} Selected</span>
                   </div>
                 )}
 
-                {/* Guests/Units Input */}
+                {/* Guests */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                    {itemLabel}s{" "}
-                    {unitsNeeded > 1 && !isTour(details) && (
-                      <span className="text-orange-500 ml-1">
-                        ({unitsNeeded} {unitLabel}s required)
-                      </span>
-                    )}
+                    {itemLabel}s {unitsNeeded > 1 && !isTour(details) && <span className="text-orange-500 ml-1">({unitsNeeded} {unitLabel}s required)</span>}
                   </label>
                   <div className="relative group">
                     <User className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 group-hover:text-primary-500 transition-colors" />
-                    <input
-                      type="number"
-                      min="1"
-                      max={isTour(details) ? 20 : 30}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent font-medium bg-gray-50 focus:bg-white transition-all text-sm"
-                      value={guests}
-                      onChange={(e) =>
-                        setGuests(Math.max(1, parseInt(e.target.value) || 1))
-                      }
-                    />
+                    <input type="number" min="1" max={isTour(details) ? 20 : 30} className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent font-medium bg-gray-50 focus:bg-white transition-all text-sm" value={guests} onChange={(e) => setGuests(Math.max(1, parseInt(e.target.value) || 1))} />
                   </div>
-                  {!isTour(details) && (
-                    <p className="text-[10px] text-gray-400 mt-1.5 ml-1">
-                      Max capacity per {unitLabel.toLowerCase()}: {capacity}{" "}
-                      {itemLabel.toLowerCase()}s
-                    </p>
-                  )}
+                  {!isTour(details) && <p className="text-[10px] text-gray-400 mt-1.5 ml-1">Max capacity per {unitLabel.toLowerCase()}: {capacity} {itemLabel.toLowerCase()}s</p>}
                 </div>
 
-                {/* CONTACT DETAILS SECTION */}
+                {/* Contact Details */}
                 <div className="border-t border-gray-100 pt-4 mt-4">
-                  <h4 className="text-sm font-bold text-gray-900 mb-3">
-                    Contact Details (E-Ticket)
-                  </h4>
-
+                  <h4 className="text-sm font-bold text-gray-900 mb-3">Contact Details (E-Ticket)</h4>
                   <div className="space-y-3">
                     <div className="relative group">
                       <User className="absolute left-4 top-3 w-4 h-4 text-gray-400 group-hover:text-primary-500 transition-colors" />
-                      <input
-                        type="text"
-                        required
-                        placeholder="Full Name"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all text-sm"
-                        value={contactName}
-                        onChange={(e) => setContactName(e.target.value)}
-                      />
+                      <input type="text" required placeholder="Full Name" className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all text-sm" value={contactName} onChange={(e) => setContactName(e.target.value)} />
                     </div>
                     <div className="relative group">
                       <Mail className="absolute left-4 top-3 w-4 h-4 text-gray-400 group-hover:text-primary-500 transition-colors" />
-                      <input
-                        type="email"
-                        required
-                        placeholder="Email Address"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all text-sm"
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                      />
+                      <input type="email" required placeholder="Email Address" className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all text-sm" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
                     </div>
                     <div className="relative group">
                       <Phone className="absolute left-4 top-3 w-4 h-4 text-gray-400 group-hover:text-primary-500 transition-colors" />
-                      <input
-                        type="tel"
-                        required
-                        placeholder="Phone Number"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all text-sm"
-                        value={contactPhone}
-                        onChange={(e) => setContactPhone(e.target.value)}
-                      />
+                      <input type="tel" required placeholder="Phone Number" className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all text-sm" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
                     </div>
                   </div>
                 </div>
 
+                {/* Price Summary */}
                 <div className="pt-4 pb-2">
                   <div className="flex justify-between text-sm text-gray-600 mb-3">
-                    {isTour(details) ? (
-                      <span>
-                        {product.currency} {effectivePrice} x {guests}{" "}
-                        {itemLabel.toLowerCase()}s
-                      </span>
-                    ) : (
-                      <span>
-                        {product.currency} {effectivePrice} x {unitsNeeded}{" "}
-                        {unitLabel.toLowerCase()}(s) x {duration}{" "}
-                        {isStay(details) ? "night" : "day"}(s)
-                      </span>
-                    )}
-                    <span className="font-medium">
-                      {product.currency} {totalPrice}
-                    </span>
+                    {isTour(details)
+                      ? <span>{product.currency} {effectivePrice} x {guests} {itemLabel.toLowerCase()}s</span>
+                      : <span>{product.currency} {effectivePrice} x {unitsNeeded} {unitLabel.toLowerCase()}(s) x {duration} {isStay(details) ? "night" : "day"}(s)</span>}
+                    <span className="font-medium">{product.currency} {totalPrice}</span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600 mb-4">
                     <span>Service fee</span>
@@ -1402,12 +848,26 @@ const ProductDetail: React.FC = () => {
                   </div>
                   <div className="flex justify-between font-bold text-xl pt-4 border-t border-dashed border-gray-200">
                     <span>Total</span>
-                    <span className="text-primary-600">
-                      {product.currency} {totalPrice}
-                    </span>
+                    <span className="text-primary-600">{product.currency} {totalPrice}</span>
                   </div>
                 </div>
 
+                {/* ── Tambah ke Keranjang ── */}
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={inCart}
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all border-2 flex justify-center items-center gap-3 transform active:scale-[0.98] ${
+                    inCart
+                      ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                      : "border-gray-200 text-gray-700 bg-white hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50"
+                  }`}
+                >
+                  <ShoppingCart className={`w-5 h-5 ${inCart ? "fill-green-100 stroke-green-600" : ""}`} />
+                  {inCart ? "✓ Sudah di Keranjang" : "Tambah ke Keranjang"}
+                </button>
+
+                {/* ── Reserve Now ── */}
                 <button
                   type="submit"
                   disabled={isProcessing}
@@ -1416,28 +876,20 @@ const ProductDetail: React.FC = () => {
                   <CreditCard className="w-5 h-5 mr-3" />
                   Reserve Now
                 </button>
-                <p className="text-center text-xs text-gray-400 font-medium">
-                  You won't be charged yet
-                </p>
+                <p className="text-center text-xs text-gray-400 font-medium">You won't be charged yet</p>
               </form>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Sticky Booking Bar */}
+      {/* Mobile Sticky Bar — hanya Reserve Now, cart sudah di navbar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-6 md:hidden z-40 flex items-center justify-between shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
         <div>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-            Total Price
-          </p>
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Price</p>
           <div className="flex items-baseline gap-1">
-            <span className="text-xl font-bold text-primary-600">
-              {product.currency} {totalPrice}
-            </span>
-            {isStay(details) && duration > 1 && (
-              <span className="text-xs text-gray-400">/{duration} nights</span>
-            )}
+            <span className="text-xl font-bold text-primary-600">{product.currency} {totalPrice}</span>
+            {isStay(details) && duration > 1 && <span className="text-xs text-gray-400">/{duration} nights</span>}
           </div>
         </div>
         <button

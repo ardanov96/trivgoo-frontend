@@ -60,7 +60,7 @@ const AITripPlanner: React.FC = () => {
             <Sparkles className="w-6 h-6 text-primary-600" />
           </div>
           <h1 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-4 leading-tight">
-            Plan Your Dream Trip with AI
+            Siapkan Perjalananmu sesuai budgetmu!
           </h1>
           <p className="text-base md:text-lg text-gray-500 max-w-2xl mx-auto px-4">
             Tell us your story, budget, and dreams. Our AI will craft a personalized itinerary and

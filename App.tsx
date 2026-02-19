@@ -4,10 +4,12 @@ import { AuthProvider, useAuth } from './AuthContext';
 import { ToastProvider } from './components/ToastContext';
 import { WishlistProvider } from './components/WishlistContext';
 import { UserRole } from './types';
+import { CartProvider } from './components/CartContext';
 
 // Layouts
 import DashboardLayout from './components/DashboardLayout';
 import PublicLayout from './components/PublicLayout';
+
 
 // Public Pages
 import AITripPlanner from './pages/AITripPlanner';
@@ -176,12 +178,14 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <ToastProvider>
-        <WishlistProvider>
-          <HashRouter>
-            <ScrollToTop />
-            <AppRoutes />
-          </HashRouter>
-        </WishlistProvider>
+        <CartProvider>
+          <WishlistProvider>
+              <HashRouter>
+                <ScrollToTop />
+                <AppRoutes />
+              </HashRouter>
+          </WishlistProvider>
+        </CartProvider>
       </ToastProvider>
     </AuthProvider>
   );
