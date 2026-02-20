@@ -53,6 +53,8 @@ const ProductDetail: React.FC = () => {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { addToCart, isInCart, cartCount } = useCart();
 
+  const isLoggedIn = !!user; // ← true jika sudah login
+
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
@@ -350,10 +352,10 @@ const ProductDetail: React.FC = () => {
   const itemLabel = isTour(details) ? "Guest" : isCar(details) ? "Passenger" : "Guest";
   const unitLabel = isCar(details) ? "Car" : isStay(details) ? "Unit" : "Ticket";
 
-  // ── Add to Cart ────────────────────────────────────────────────────────────
+  // ── Add to Cart ─────────────────────────────────────────────
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (inCart) return; // sudah di cart, tidak perlu action — cart buka via navbar
+    if (inCart) return;
     addToCart(product, 1);
     showToast(`${product.name} ditambahkan ke keranjang!`, "success");
   };
@@ -456,7 +458,7 @@ const ProductDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Top nav — hanya back + wishlist + share (cart sudah di PublicLayout navbar) */}
+        {/* Top nav */}
         <div className="absolute top-0 w-full p-4 md:p-8 flex justify-between items-start z-10 pt-24 md:pt-28">
           <button
             onClick={(e) => { e.stopPropagation(); navigate(-1); }}
@@ -742,7 +744,7 @@ const ProductDetail: React.FC = () => {
             )}
           </div>
 
-          {/* ── Booking Card ──────────────────────────────────────────────────── */}
+          {/* ── Booking Card ─────────────────────────────────────── */}
           <div className="lg:col-span-1" id="booking-section" ref={bookingSectionRef}>
             <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 sticky top-28 relative overflow-hidden">
               {activeFlashSale && (
@@ -751,7 +753,7 @@ const ProductDetail: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex justify-between items-end mb-8 pb-6 border-b border-gray-100 mt-4">
+              <div className="flex justify-between items-end mb-8 pb-6 border-t border-gray-100 mt-4">
                 <div>
                   <span className="text-sm text-gray-400 font-bold uppercase tracking-wider">Price per {priceUnitLabel}</span>
                   <div className="flex items-end gap-2 mt-1">
@@ -852,22 +854,24 @@ const ProductDetail: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ── Tambah ke Keranjang ── */}
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  disabled={inCart}
-                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all border-2 flex justify-center items-center gap-3 transform active:scale-[0.98] ${
-                    inCart
-                      ? "border-green-500 text-green-600 bg-green-50 cursor-default"
-                      : "border-gray-200 text-gray-700 bg-white hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50"
-                  }`}
-                >
-                  <ShoppingCart className={`w-5 h-5 ${inCart ? "fill-green-100 stroke-green-600" : ""}`} />
-                  {inCart ? "✓ Sudah di Keranjang" : "Tambah ke Keranjang"}
-                </button>
+                {/* ── Tambah ke Keranjang — hanya tampil jika login ── */}
+                {isLoggedIn && (
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    disabled={inCart}
+                    className={`w-full py-4 rounded-xl font-bold text-lg transition-all border-2 flex justify-center items-center gap-3 transform active:scale-[0.98] ${
+                      inCart
+                        ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                        : "border-gray-200 text-gray-700 bg-white hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50"
+                    }`}
+                  >
+                    <ShoppingCart className={`w-5 h-5 ${inCart ? "fill-green-100 stroke-green-600" : ""}`} />
+                    {inCart ? "✓ Sudah di Keranjang" : "Tambah ke Keranjang"}
+                  </button>
+                )}
 
-                {/* ── Reserve Now ── */}
+                {/* ── Reserve Now — selalu tampil ── */}
                 <button
                   type="submit"
                   disabled={isProcessing}
@@ -883,21 +887,44 @@ const ProductDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Sticky Bar — hanya Reserve Now, cart sudah di navbar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-6 md:hidden z-40 flex items-center justify-between shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
-        <div>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Price</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-xl font-bold text-primary-600">{product.currency} {totalPrice}</span>
-            {isStay(details) && duration > 1 && <span className="text-xs text-gray-400">/{duration} nights</span>}
+      {/* ── Mobile Sticky Bar ── */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-6 md:hidden z-40 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Price</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-bold text-primary-600">{product.currency} {totalPrice}</span>
+              {isStay(details) && duration > 1 && <span className="text-xs text-gray-400">/{duration} nights</span>}
+            </div>
+          </div>
+
+          <div className={`flex gap-2 ${isLoggedIn ? 'flex-1' : ''}`}>
+            {/* Tambah ke Keranjang — hanya tampil jika login */}
+            {isLoggedIn && (
+              <button
+                onClick={handleAddToCart}
+                disabled={inCart}
+                className={`flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl font-bold text-sm transition-all border-2 active:scale-95 transform flex-shrink-0
+                  ${inCart
+                    ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-primary-400 hover:text-primary-600"
+                  }`}
+              >
+                <ShoppingCart className={`w-4 h-4 ${inCart ? "stroke-green-600" : ""}`} />
+                {inCart ? "Added" : "Cart"}
+              </button>
+            )}
+
+            {/* Reserve Now — selalu tampil */}
+            <button
+              onClick={(e) => handleBookNow(e)}
+              className={`bg-gray-900 active:bg-gray-800 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-gray-900/20 active:scale-95 transition-all transform
+                ${isLoggedIn ? 'flex-1' : 'px-8'}`}
+            >
+              {checkIn ? "Reserve" : "Check Availability"}
+            </button>
           </div>
         </div>
-        <button
-          onClick={(e) => handleBookNow(e)}
-          className="bg-gray-900 active:bg-gray-800 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg shadow-gray-900/20 active:scale-95 transition-all transform"
-        >
-          {checkIn ? "Reserve" : "Check Availability"}
-        </button>
       </div>
     </div>
   );

@@ -20,11 +20,24 @@ import {
   TrendingUp,
   Users,
   Zap,
+  ShoppingCart,
+  Heart,
+  BookOpen,
+  CreditCard,
+  Gift,
+  Award,
+  Sliders,
+  CheckCircle2,
+  Briefcase,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Category, FlashSaleCampaign, Product } from '../types';
 import { useAuth } from '../AuthContext';
+import { agentProductService } from '../services/agentProductService';
+import { useCart } from '../components/CartContext';
+import { useWishlist } from '../components/WishlistContext';
+import { useToast } from '../components/ToastContext';
 
 const POPULAR_DESTINATIONS = [
   'Bali, Indonesia',
@@ -129,6 +142,8 @@ const SEARCH_CATEGORIES = [
   { id: 'events', label: 'Event', icon: Calendar, placeholder: 'Concert, festival, or event' },
 ];
 
+const TRAVEL_FILTERS = ['All', 'Keluarga', 'Honeymoon', 'Solo Travel', 'Healing', 'Workation', 'Adventure'];
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
   // Categories state kept if needed for other parts, but removed from main display
@@ -183,6 +198,203 @@ const Home: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Our Travel Experience 
+  const [products, setProducts] = useState<Product[]>([]);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [isLoading, setIsLoading] = useState(true);
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const { addToCart, isInCart } = useCart();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    setIsLoading(true);
+    agentProductService.getAllProducts()
+      .then(setProducts)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const handleWishlist = (e: React.MouseEvent, product: Product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist(product);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isInCart(product.id)) return;
+    addToCart(product, 1);
+    showToast(`${product.name} ditambahkan ke keranjang!`, 'success');
+  };
+
+  const filteredProducts = products
+    .filter((p) => {
+      if (activeFilter === 'All') return true;
+      const detailsValues = p.details ? Object.values(p.details).map((v) => String(v).toLowerCase()) : [];
+      return detailsValues.includes(activeFilter.toLowerCase());
+    })
+    .slice(0, 8);
+
+  const SkeletonCard = () => (
+    <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col animate-pulse">
+      <div className="aspect-[4/3] bg-gray-200"></div>
+      <div className="p-5 space-y-3">
+        <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        <div className="h-6 bg-gray-200 rounded w-1/3 mt-2"></div>
+        <div className="flex gap-2 mt-3">
+          <div className="flex-1 h-9 bg-gray-200 rounded-xl"></div>
+          <div className="flex-1 h-9 bg-gray-200 rounded-xl"></div>
+        </div>
+      </div>
+    </div>
+  ); 
+
+  // Inspiration Itinerary
+  const ITINERARY_CARDS = [
+    {
+      id: 1,
+      destination: 'Bali',
+      title: '5D4N Bali Cultural Escape',
+      duration: '5 Days 4 Nights',
+      pax: 'For 2–8 pax',
+      tag: 'Honeymoon',
+      tagColor: 'bg-rose-100 text-rose-600',
+      image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80',
+      activities: ['Tanah Lot Sunset', 'Ubud Rice Terrace', 'Kecak Dance', 'Spa Day'],
+    },
+    {
+      id: 2,
+      destination: 'Raja Ampat',
+      title: '7D6N Raja Ampat Dive Adventure',
+      duration: '7 Days 6 Nights',
+      pax: 'For 4–10 pax',
+      tag: 'Adventure',
+      tagColor: 'bg-blue-100 text-blue-600',
+      image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf?auto=format&fit=crop&w=600&q=80',
+      activities: ['Snorkeling', 'Island Hopping', 'Kayaking', 'Night Dive'],
+    },
+    {
+      id: 3,
+      destination: 'Yogyakarta',
+      title: '4D3N Jogja Heritage Trail',
+      duration: '4 Days 3 Nights',
+      pax: 'For 2–12 pax',
+      tag: 'Cultural',
+      tagColor: 'bg-amber-100 text-amber-700',
+      image: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?auto=format&fit=crop&w=600&q=80',
+      activities: ['Borobudur', 'Prambanan', 'Batik Workshop', 'Gudeg Dinner'],
+    },
+    {
+      id: 4,
+      destination: 'Lombok',
+      title: '6D5N Lombok & Gili Islands',
+      duration: '6 Days 5 Nights',
+      pax: 'For 2–6 pax',
+      tag: 'Healing',
+      tagColor: 'bg-green-100 text-green-600',
+      image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=600&q=80',
+      activities: ['Gili Snorkel', 'Mount Rinjani View', 'Sunset Cruise', 'Beach Yoga'],
+    },
+    {
+      id: 5,
+      destination: 'Komodo',
+      title: '5D4N Komodo & Pink Beach',
+      duration: '5 Days 4 Nights',
+      pax: 'For 4–8 pax',
+      tag: 'Adventure',
+      tagColor: 'bg-blue-100 text-blue-600',
+      image: 'https://images.unsplash.com/photo-1596178060671-7a80dc8059ea?auto=format&fit=crop&w=600&q=80',
+      activities: ['Komodo Trek', 'Pink Beach', 'Manta Ray Dive', 'Padar Viewpoint'],
+    },
+  ];
+
+  const PROMO_CARDS = [
+  {
+    id: 'blog',
+    promoImage: '/homepage-asset/card1.png',
+    title: 'Check out the Trivgoo Blog',
+    description: 'Follow the latest travel trends, tips, and stories and plan your next unforgettable trip.',
+    buttonLabel: 'Read Now',
+    buttonLink: '/blog',
+    bg: 'from-primary-50/50 to-rose-50/50',
+    border: 'border-primary-100/50',
+    iconColor: 'text-primary-600',
+    buttonStyle: 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/25',
+    accent: 'bg-primary-500',
+  },
+  {
+    id: 'trivpay',
+    promoImage: '/homepage-asset/card2.png',
+    title: 'Save on Fun with TrivPay',
+    description: 'Find out how to save more when you book and leave a review',
+    buttonLabel: 'How It Works',
+    buttonLink: '/trivpay',
+    bg: 'from-primary-50/50 to-rose-50/50',
+    border: 'border-primary-100/50',
+    iconColor: 'text-primary-600',
+    buttonStyle: 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/25',
+    accent: 'bg-primary-500',
+  },
+  {
+    id: 'referral',
+    promoImage: '/homepage-asset/card3.png',
+    title: 'Share Joy & Get Reward',
+    description: 'Invite your friends to explore with Trivgoo and earn travel credits for every successful referral.',
+    buttonLabel: 'Invite Friend',
+    buttonLink: '/referral',
+    bg: 'from-primary-50/50 to-rose-50/50',
+    border: 'border-primary-100/50',
+    iconColor: 'text-primary-600',
+    buttonStyle: 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/25',
+    accent: 'bg-primary-500',
+  },
+];
+
+  const WHY_CHOOSE_US = [
+      {
+        id: 'quality',
+        promoImage: '/homepage-asset/whychoose1.png',
+        title: 'Best Quality',
+        description: 'We ensure every destination and activity meets our high standards for your comfort.',
+        bg: 'from-blue-50/50 to-indigo-50/50',
+        border: 'border-emerald-100/50',
+        iconColor: 'text-emerald-600',
+        accent: 'bg-blue-500',
+      },
+      {
+        id: 'price',
+        promoImage: '/homepage-asset/whychoose2.png',
+        title: 'Best Price',
+        description: 'Get the most competitive prices and exclusive deals for your dream vacation.',
+        bg: 'from-emerald-50/50 to-teal-50/50',
+        border: 'border-emerald-100/50',
+        iconColor: 'text-emerald-600',
+        accent: 'bg-emerald-500',
+      },
+      {
+        id: 'support',
+        promoImage: '/homepage-asset/whychoose3.png',
+        title: '24/7 Support',
+        description: 'Our dedicated team is always ready to help you anytime, anywhere during your trip.',
+        bg: 'from-orange-50/50 to-amber-50/50',
+        border: 'border-emerald-100/50',
+        iconColor: 'text-emerald-600',
+        accent: 'bg-orange-500',
+      },
+      {
+        id: 'secure',
+        promoImage: '/homepage-asset/whychoose4.png',
+        title: 'Secure Payment',
+        description: 'Your transactions are protected with the latest security technology for peace of mind.',
+        bg: 'from-purple-50/50 to-fuchsia-50/50',
+        border: 'border-emerald-100/50',
+        iconColor: 'text-emerald-600',
+        accent: 'bg-purple-500',
+      },
+  ];
 
   useEffect(() => {
     const type = () => {
@@ -951,6 +1163,137 @@ const Home: React.FC = () => {
         </div>
       </div>
 
+      {/* Our Travel Experience Section */}
+      <div className="bg-white py-16 md:py-24 relative overflow-hidden">
+      {/* Decorative */}
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+      <div className="absolute -right-20 top-20 w-72 h-72 bg-amber-50 rounded-full blur-3xl opacity-60"></div>
+      <div className="absolute -left-20 bottom-20 w-72 h-72 bg-primary-50 rounded-full blur-3xl opacity-60"></div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+          <div>
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 leading-tight">
+              Our Travel Experience
+            </h2>
+          </div>
+          <Link
+            to="/explore"
+            className="inline-flex items-center text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors group self-start md:self-auto"
+          >
+            View All Packages
+            <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        {/* Filter Buttons */}
+        <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 mb-8">
+          {TRAVEL_FILTERS.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border
+                ${
+                  activeFilter === filter
+                    ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-600/20'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-primary-600 hover:text-white hover:border-primary-600'
+                }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        {/* Product Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+          {isLoading
+            ? [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
+            : filteredProducts.length > 0
+            ? filteredProducts.map((product) => {
+                const isSaved = isInWishlist(product.id);
+                return (
+                  <Link
+                    key={product.id}
+                    to={`/product/${product.id}`}
+                    className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative"
+                  >
+                    <div className="aspect-[4/3] relative overflow-hidden">
+                      <img
+                        src={product.image_url || product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      {/* Wishlist */}
+                      <button
+                        onClick={(e) => handleWishlist(e, product)}
+                        className="absolute top-3 left-3 bg-white/95 backdrop-blur-md p-2 rounded-full shadow-sm z-10 hover:scale-110 transition-transform group/btn active:scale-90"
+                      >
+                        <Heart
+                          className={`w-4 h-4 transition-colors ${
+                            isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400 group-hover/btn:text-red-500'
+                          }`}
+                        />
+                      </button>
+                      {/* Rating */}
+                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center text-xs font-bold text-gray-900 shadow-sm z-10">
+                        <Star className="w-3.5 h-3.5 text-amber-400 mr-1 fill-current" />
+                        {product.rating}
+                      </div>
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col">
+                      <h3 className="font-serif font-bold text-base text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-gray-400 font-medium mb-2">Available Daily</p>
+
+                      <div className="mt-auto pt-3 border-t border-gray-100">
+                        <p className="text-xs text-gray-400 mb-0.5">From</p>
+                        <p className="text-base font-bold text-gray-900">
+                          {product.currency} {product.price}
+                          <span className="text-xs font-medium text-gray-400"> /pax</span>
+                        </p>
+
+                        <div className="flex items-center gap-2 mt-3">
+                          <Link
+                            to={`/product/${product.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 border border-gray-200 text-gray-700 py-2 rounded-xl text-xs font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center"
+                          >
+                            Details
+                          </Link>
+                          <button
+                            onClick={(e) => handleAddToCart(e, product)}
+                            disabled={isInCart(product.id)}
+                            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98]
+                              ${
+                                isInCart(product.id)
+                                  ? 'border-green-500 text-green-600 bg-green-50 cursor-default'
+                                  : 'border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md'
+                              }`}
+                          >
+                            <ShoppingCart className={`w-3.5 h-3.5 ${isInCart(product.id) ? 'stroke-green-600' : ''}`} />
+                            {isInCart(product.id) ? 'Added' : 'Add'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            : (
+              <div className="col-span-full text-center py-16 text-gray-400">
+                <p className="text-lg font-semibold">No packages found for "{activeFilter}"</p>
+                <button onClick={() => setActiveFilter('All')} className="mt-3 text-primary-600 font-bold text-sm hover:underline">
+                  Clear Filter
+                </button>
+              </div>
+            )}
+        </div>
+      </div>
+    </div>
+
       {/* Smart AI Trip Planner Section - UI Colors Synchronized (Teal/Primary) */}
       <div className="bg-white py-16 md:py-24 relative overflow-hidden">
         {/* Decorative background element */}
@@ -1078,6 +1421,199 @@ const Home: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Inspiration Itinerary */}
+      <div className="bg-gray-50 py-16 md:py-24 relative overflow-hidden">
+        {/* Subtle texture / decorative */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(224,88,69,0.05),_transparent_60%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(251,191,36,0.06),_transparent_60%)]"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          {/* ── SECTION HEADER ── */}
+          <div className="mb-10">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 leading-tight">
+              Inspiration for Your<br className="hidden md:block" /> Itinerary
+            </h2>
+          </div>
+
+          {/* ROW 1: Slider dengan 5 Cards per Baris (pada Desktop) */}
+          <div className="relative group mb-12">
+            
+            {/* Navigation Buttons */}
+            <button
+              onClick={() => {
+                const el = document.getElementById('itinerary-slider');
+                if (el) el.scrollBy({ left: -250, behavior: 'smooth' });
+              }}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 z-20 w-12 h-12 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-900 hover:text-white transition-all shadow-xl opacity-0 group-hover:opacity-100 hidden md:flex"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+
+            <button
+              onClick={() => {
+                const el = document.getElementById('itinerary-slider');
+                if (el) el.scrollBy({ left: 250, behavior: 'smooth' });
+              }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 z-20 w-12 h-12 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-900 hover:text-white transition-all shadow-xl opacity-0 group-hover:opacity-100 hidden md:flex"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+
+            {/* Slider Container */}
+            <div
+              id="itinerary-slider"
+              className="flex gap-4 overflow-x-auto no-scrollbar pb-6 -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth"
+            >
+              {ITINERARY_CARDS.map((item) => (
+                <div
+                  key={item.id}
+                  /* min-w-[230px] pada md (desktop) diatur agar muat 5 card dalam container max-w-7xl */
+                  className="min-w-[260px] md:min-w-[calc((100%/5)-13px)] flex-shrink-0 bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-500 group/card hover:-translate-y-1 flex flex-col"
+                >
+                  {/* Image Section */}
+                  <div className="relative h-36 overflow-hidden">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                    <span className={`absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${item.tagColor}`}>
+                      {item.tag}
+                    </span>
+                    <div className="absolute bottom-2 left-3">
+                      <div className="flex items-center text-white/90 text-[10px] font-semibold">
+                        <MapPin className="w-3 h-3 mr-1 text-primary-300" />
+                        {item.destination}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content Section */}
+                  <div className="p-4 flex-1 flex flex-col">
+                    <h3 className="font-serif font-bold text-sm text-gray-900 line-clamp-2 mb-2 group-hover/card:text-primary-600 transition-colors leading-snug">
+                      {item.title}
+                    </h3>
+                    <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium mb-3">
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {item.duration}</span>
+                      <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {item.pax}</span>
+                    </div>
+                    <div className="mt-auto">
+                      <Link
+                        to={`/explore?search=${item.destination}`}
+                        className="flex items-center justify-center w-full py-2 rounded-lg text-[11px] font-bold bg-gray-900 hover:bg-primary-600 text-white transition-all gap-1.5"
+                      >
+                        See Activities
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ROW 2: Promo Cards (Tetap 3 per Baris) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {PROMO_CARDS.map((card) => {
+              return (
+                <div
+                  key={card.id}
+                  className={`relative rounded-3xl overflow-hidden border ${card.border} bg-gradient-to-br ${card.bg} group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center`}
+                >
+                  {/* Top Accent Stripe */}
+                  <div className={`h-1.5 w-full ${card.accent}`}></div>
+
+                  <div className="p-8 flex flex-col flex-1 relative z-10 items-center w-full">
+                    {/* LARGE PNG IMAGE - Centered & Transparent Background */}
+                    <div className="w-full flex justify-center mb-6 h-28 items-center">
+                      <img 
+                        src={card.promoImage} 
+                        alt={card.title} 
+                        className="h-full w-auto object-contain group-hover:scale-110 transition-transform duration-500"
+                      />
+                    </div>
+
+                    <span className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${card.iconColor}`}>
+                      {card.id}
+                    </span>
+                    
+                    <h3 className="font-serif font-bold text-2xl text-gray-900 leading-tight mb-4">
+                      {card.title}
+                    </h3>
+                    
+                    <p className="text-sm text-gray-500 leading-relaxed mb-8 flex-1 max-w-[280px]">
+                      {card.description}
+                    </p>
+                    
+                    <Link
+                      to={card.buttonLink}
+                      className={`inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 group/btn w-full md:w-auto ${card.buttonStyle}`}
+                    >
+                      {card.buttonLabel}
+                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </div>
+
+      {/* Why Choose Us */}
+      <div className="bg-white py-16 md:py-24 relative overflow-hidden">
+        {/* Decorative blobs */}
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary-50 rounded-full blur-3xl opacity-60"></div>
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-amber-50 rounded-full blur-3xl opacity-60"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+          {/* Header */}
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 leading-tight">
+              Why Choose Us
+            </h2>
+          </div>
+
+          {/* 4-column row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {WHY_CHOOSE_US.map((card) => {
+              return (
+                <div
+                  key={card.id}
+                  className={`relative rounded-3xl overflow-hidden border ${card.border} bg-gradient-to-br ${card.bg} group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center`}
+                >
+                  {/* Top Accent Stripe */}
+                  <div className={`h-1.5 w-full ${card.accent}`}></div>
+
+                  <div className="p-6 flex flex-col flex-1 relative z-10 items-center w-full">
+                    <div className="w-full flex justify-center mb-6 h-40 items-center overflow-hidden">
+                      <img 
+                        src={card.promoImage} 
+                        alt={card.title} 
+                        className="h-full w-auto object-contain scale-110 group-hover:scale-125 transition-transform duration-500"
+                      />
+                    </div>
+                    
+                    <h3 className="font-serif font-bold text-xl text-gray-900 leading-tight mb-3">
+                      {card.title}
+                    </h3>
+                    
+                    <p className="text-xs text-gray-500 leading-relaxed mb-6 flex-1">
+                      {card.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
 
       {/* Testimonials Section */}
       <div className="py-20 bg-gray-900 text-white relative overflow-hidden">
