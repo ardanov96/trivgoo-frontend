@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { ToastProvider } from './components/ToastContext';
 import { WishlistProvider } from './components/WishlistContext';
@@ -180,10 +180,10 @@ const App: React.FC = () => {
       <ToastProvider>
         <CartProvider>
           <WishlistProvider>
-              <HashRouter>
+              <BrowserRouter>
                 <ScrollToTop />
                 <AppRoutes />
-              </HashRouter>
+              </BrowserRouter>
           </WishlistProvider>
         </CartProvider>
       </ToastProvider>
