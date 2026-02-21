@@ -757,11 +757,11 @@ const ProductDetail: React.FC = () => {
                 <div>
                   <span className="text-sm text-gray-400 font-bold uppercase tracking-wider">Price per {priceUnitLabel}</span>
                   <div className="flex items-end gap-2 mt-1">
-                    {activeFlashSale && <span className="text-lg text-gray-400 line-through mb-1">{product.currency} {product.price}</span>}
-                    <div className={`text-3xl font-bold ${activeFlashSale ? "text-red-600" : "text-gray-900"}`}>{product.currency} {effectivePrice}</div>
+                    {activeFlashSale && <span className="text-lg text-gray-400 line-through mb-1">{product.currency} {Number(product.price).toLocaleString('id-ID')}</span>}
+                    <div className={`text-3xl font-bold ${activeFlashSale ? "text-red-600" : "text-gray-900"}`}>{product.currency} {Number(effectivePrice).toLocaleString('id-ID')}</div>
                   </div>
                 </div>
-                <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Available Today</div>
+                {/* <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Available Today</div> */}
               </div>
 
               <form onSubmit={handleBookNow} className="space-y-5">
@@ -850,7 +850,7 @@ const ProductDetail: React.FC = () => {
                   </div>
                   <div className="flex justify-between font-bold text-xl pt-4 border-t border-dashed border-gray-200">
                     <span>Total</span>
-                    <span className="text-primary-600">{product.currency} {totalPrice}</span>
+                    <span className="text-primary-600">{product.currency} {Number(product.price).toLocaleString('id-ID')}</span>
                   </div>
                 </div>
 

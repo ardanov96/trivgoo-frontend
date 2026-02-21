@@ -319,7 +319,7 @@ const Explore: React.FC = () => {
                       <div className="mt-auto pt-4 border-t border-gray-100">
                         <p className="text-sm text-gray-500 mb-1">From</p>
                         <p className="text-lg font-bold text-gray-900">
-                          {product.currency} {product.price}
+                          {product.currency} {Number(product.price).toLocaleString('id-ID')} 
                           <span className="text-sm font-medium text-gray-500"> /pax-*</span>
                         </p>
 

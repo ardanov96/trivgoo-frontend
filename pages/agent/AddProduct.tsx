@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   BedDouble,
   Calendar,
+  Car,
   Check,
   Coffee,
   List,
@@ -158,6 +159,9 @@ const AgentAddProduct: React.FC = () => {
     driver: false,
   });
 
+  const [carList, setCarList] = useState<any[]>([]);
+  const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
+
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (formData.name || formData.description) {
@@ -301,6 +305,44 @@ const AgentAddProduct: React.FC = () => {
       })();
     }
   }, [id, user, navigate]);
+
+  const handleCarSelect = (carId: number) => {
+    const car = carList.find((c) => c.id === carId);
+    if (!car) return;
+
+    setSelectedCarId(carId);
+
+    // Auto-fill car details
+    setCarDetails({
+      seats: car.seats || 4,
+      transmission: car.transmission || 'Automatic',
+      luggage: carDetails.luggage,
+      fuelPolicy: carDetails.fuelPolicy,
+      year: car.model_year ? parseInt(car.model_year) : new Date().getFullYear(),
+      driver: carDetails.driver,
+    });
+
+    // Auto-fill listing title & description
+    setFormData(prev => ({
+      ...prev,
+      name: `${car.brand} ${car.name}`.trim(),
+      description: car.description || prev.description,
+    }));
+  };
+
+  useEffect(() => {
+    if (isTransport) {
+      (async () => {
+        try {
+          const res = await fetch('/api/v1/cars', { credentials: 'include' });
+          const json = await res.json();
+          setCarList(json.data || []);
+        } catch (err) {
+          console.error('Failed to fetch cars', err);
+        }
+      })();
+    }
+  }, [isTransport]);
 
   // --- GEOLOCATION LOGIC (NOMINATIM) ---
   const searchAddress = async (query: string) => {
@@ -680,14 +722,17 @@ const AgentAddProduct: React.FC = () => {
         price: Number(formData.price),
         currency: formData.currency,
         location: formData.location,
-        image_url: finalCoverUrl,
-        images: finalGalleryUrls,
-        features: formData.features.filter((f) => f.trim() !== ""),
+        image_url: isTransport
+          ? (carList.find(c => c.id === selectedCarId)?.image || '')  
+          : finalCoverUrl,
+        images: isTransport ? [] : finalGalleryUrls,
+        features: formData.features.filter((f) => f.trim() !== ''),
         details,
         daily_capacity: Number(formData.dailyCapacity),
         blocked_dates: formData.blockedDates,
-        lat: markerPos.lat,  
+        lat: markerPos.lat,
         lng: markerPos.lng,
+        ...(isTransport && selectedCarId ? { car_id: selectedCarId } : {}),
       };
 
       if (isEditMode && id) {
@@ -792,7 +837,10 @@ const AgentAddProduct: React.FC = () => {
                   type="text"
                   name="name"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white font-medium"
+                  readOnly={isTransport && !!selectedCarId}
+                  className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white font-medium ${
+                    isTransport && selectedCarId ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''
+                  }`}
                   placeholder="e.g. 3D2N Nusa Penida Adventure"
                   value={formData.name}
                   onChange={handleChange}
@@ -1264,13 +1312,13 @@ const AgentAddProduct: React.FC = () => {
                     </label>
                     <input
                       type="number"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white"
+                      readOnly={!!selectedCarId}
+                      className={`w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white ${
+                        selectedCarId ? 'cursor-not-allowed text-gray-500 bg-gray-100' : ''
+                      }`}
                       value={carDetails.year}
                       onChange={(e) =>
-                        setCarDetails({
-                          ...carDetails,
-                          year: parseInt(e.target.value, 10),
-                        })
+                        !selectedCarId && setCarDetails({ ...carDetails, year: parseInt(e.target.value, 10) })
                       }
                     />
                   </div>
@@ -1280,13 +1328,13 @@ const AgentAddProduct: React.FC = () => {
                       Transmission
                     </label>
                     <select
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white"
+                      disabled={!!selectedCarId}
+                      className={`w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white ${
+                        selectedCarId ? 'cursor-not-allowed text-gray-500 bg-gray-100' : ''
+                      }`}
                       value={carDetails.transmission}
                       onChange={(e) =>
-                        setCarDetails({
-                          ...carDetails,
-                          transmission: e.target.value,
-                        })
+                        !selectedCarId && setCarDetails({ ...carDetails, transmission: e.target.value })
                       }
                     >
                       <option>Automatic</option>
@@ -1300,13 +1348,13 @@ const AgentAddProduct: React.FC = () => {
                     </label>
                     <input
                       type="number"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white"
+                      readOnly={!!selectedCarId}
+                      className={`w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white ${
+                        selectedCarId ? 'cursor-not-allowed text-gray-500 bg-gray-100' : ''
+                      }`}
                       value={carDetails.seats}
                       onChange={(e) =>
-                        setCarDetails({
-                          ...carDetails,
-                          seats: parseInt(e.target.value, 10),
-                        })
+                        !selectedCarId && setCarDetails({ ...carDetails, seats: parseInt(e.target.value, 10) })
                       }
                     />
                   </div>
@@ -1320,14 +1368,19 @@ const AgentAddProduct: React.FC = () => {
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white"
                       value={carDetails.luggage}
                       onChange={(e) =>
-                        setCarDetails({
-                          ...carDetails,
-                          luggage: parseInt(e.target.value, 10),
-                        })
+                        setCarDetails({ ...carDetails, luggage: parseInt(e.target.value, 10) })
                       }
                     />
                   </div>
                 </div>
+
+                {/* Badge info jika car sudah dipilih */}
+                {selectedCarId && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-600 font-medium">
+                    <span>🔒</span>
+                    <span>Vehicle Year, Transmission & Seats are auto-filled from selected car and cannot be edited.</span>
+                  </div>
+                )}
 
                 <div className="flex items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <input
@@ -1335,14 +1388,9 @@ const AgentAddProduct: React.FC = () => {
                     id="driver"
                     className="w-5 h-5 text-primary-600 rounded"
                     checked={carDetails.driver}
-                    onChange={(e) =>
-                      setCarDetails({ ...carDetails, driver: e.target.checked })
-                    }
+                    onChange={(e) => setCarDetails({ ...carDetails, driver: e.target.checked })}
                   />
-                  <label
-                    htmlFor="driver"
-                    className="ml-3 text-sm font-bold text-gray-700 flex items-center"
-                  >
+                  <label htmlFor="driver" className="ml-3 text-sm font-bold text-gray-700 flex items-center">
                     <User className="w-4 h-4 mr-2" /> Driver Included
                   </label>
                 </div>
@@ -1445,107 +1493,142 @@ const AgentAddProduct: React.FC = () => {
         {/* RIGHT COLUMN - MEDIA & SUMMARY */}
         <div className="lg:col-span-1 space-y-8">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-28">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Media</h3>
+            
+            {/* Sembunyikan section media untuk Transport */}
+            {!isTransport && (
+              <>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Media</h3>
 
-            <input
-              ref={coverInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onPickCoverFile}
-            />
-            <input
-              ref={galleryInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={onPickGalleryFiles}
-            />
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onPickCoverFile}
+                />
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={onPickGalleryFiles}
+                />
 
-            <div className="mb-6">
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Cover Image
-              </label>
-
-              <div
-                onClick={openCoverPicker}
-                className="w-full h-40 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-all bg-gray-50 relative overflow-hidden"
-              >
-                {coverPreviewSrc ? (
-                  <img
-                    src={coverPreviewSrc}
-                    className="w-full h-full object-cover"
-                    alt="cover"
-                  />
-                ) : (
-                  <div className="text-center">
-                    <Upload className="w-6 h-6 mx-auto text-gray-400" />
-                    <span className="text-xs text-gray-500">Browse Cover</span>
+                <div className="mb-6">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Cover Image
+                  </label>
+                  <div
+                    onClick={openCoverPicker}
+                    className="w-full h-40 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-all bg-gray-50 relative overflow-hidden"
+                  >
+                    {coverPreviewSrc ? (
+                      <img src={coverPreviewSrc} className="w-full h-full object-cover" alt="cover" />
+                    ) : (
+                      <div className="text-center">
+                        <Upload className="w-6 h-6 mx-auto text-gray-400" />
+                        <span className="text-xs text-gray-500">Browse Cover</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-
-              {coverPreviewSrc ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCoverState((prev) => {
-                      if (prev?.kind === "file")
-                        URL.revokeObjectURL(prev.preview);
-                      return null;
-                    });
-                    setFormData((prev) => ({ ...prev, image: "" }));
-                  }}
-                  className="mt-2 text-xs font-bold text-red-500 hover:underline"
-                >
-                  Remove Cover
-                </button>
-              ) : null}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Gallery
-              </label>
-
-              <div className="grid grid-cols-3 gap-2">
-                {galleryItems.map((item, idx) => {
-                  const src = item.kind === "url" ? item.url : item.preview;
-                  return (
-                    <div
-                      key={idx}
-                      className="h-16 rounded-lg overflow-hidden relative group"
+                  {coverPreviewSrc && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoverState((prev) => {
+                          if (prev?.kind === 'file') URL.revokeObjectURL(prev.preview);
+                          return null;
+                        });
+                        setFormData((prev) => ({ ...prev, image: '' }));
+                      }}
+                      className="mt-2 text-xs font-bold text-red-500 hover:underline"
                     >
-                      <img
-                        src={src}
-                        className="w-full h-full object-cover"
-                        alt="gallery"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeGalleryItem(idx)}
-                        className="absolute top-0 right-0 bg-red-500 text-white p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  );
-                })}
-
-                <div
-                  onClick={openGalleryPicker}
-                  className="h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-primary-50"
-                >
-                  <Plus className="w-4 h-4 text-gray-400" />
+                      Remove Cover
+                    </button>
+                  )}
                 </div>
-              </div>
-            </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Gallery
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {galleryItems.map((item, idx) => {
+                      const src = item.kind === 'url' ? item.url : item.preview;
+                      return (
+                        <div key={idx} className="h-16 rounded-lg overflow-hidden relative group">
+                          <img src={src} className="w-full h-full object-cover" alt="gallery" />
+                          <button
+                            type="button"
+                            onClick={() => removeGalleryItem(idx)}
+                            className="absolute top-0 right-0 bg-red-500 text-white p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <div
+                      onClick={openGalleryPicker}
+                      className="h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-primary-50"
+                    >
+                      <Plus className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 text-[11px] text-gray-400">
+                  * Cover/Gallery will be uploaded when you click Save.
+                </div>
+              </>
+            )}
+
+            {/* Tampilkan Car Selector untuk Transport */}
+            {isTransport && (
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                  <Car className="w-5 h-5 mr-2 text-primary-500" />
+                  Select Vehicle
+                </h3>
+
+                <select
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary-500 text-sm font-medium"
+                  value={selectedCarId ?? ''}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val)) handleCarSelect(val);
+                  }}
+                >
+                  <option value="" disabled>-- Select a vehicle --</option>
+                  {carList.map((car) => (
+                    <option key={car.id} value={car.id}>
+                      {car.brand} {car.name} {car.model_year ? `(${car.model_year})` : ''}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Preview card setelah car dipilih */}
+                {selectedCarId && (() => {
+                  const car = carList.find(c => c.id === selectedCarId);
+                  return car ? (
+                    <div className="mt-4 p-4 rounded-xl border border-primary-100">
+                      {car.image && (
+                        <img
+                          src={car.image}
+                          alt={car.name}
+                          className="w-full h-32 object-cover rounded-lg mb-3"
+                        />
+                      )}
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+            )}
+
+            {/* Highlights tetap tampil untuk semua */}
             <div className="mt-8 pt-6 border-t border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                Highlights
-              </h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Highlights</h3>
               <div className="space-y-2">
                 {formData.features.map((feature, idx) => (
                   <div key={idx} className="flex gap-2">
@@ -1555,11 +1638,7 @@ const AgentAddProduct: React.FC = () => {
                       value={feature}
                       onChange={(e) => handleFeatureChange(idx, e.target.value)}
                     />
-                    <button
-                      onClick={() => removeFeature(idx)}
-                      className="text-red-400"
-                      type="button"
-                    >
+                    <button onClick={() => removeFeature(idx)} className="text-red-400" type="button">
                       <Trash className="w-3 h-3" />
                     </button>
                   </div>
@@ -1574,9 +1653,6 @@ const AgentAddProduct: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 text-[11px] text-gray-400">
-              * Cover/Gallery will be uploaded when you click Save.
-            </div>
           </div>
         </div>
       </div>

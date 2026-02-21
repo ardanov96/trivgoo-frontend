@@ -1101,7 +1101,7 @@ const Home: React.FC = () => {
                       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         <div>
                           <span className="text-gray-400 line-through text-sm font-medium block mb-0.5">
-                            {product.currency} {product.price}
+                            {product.currency} {Number(product.price).toLocaleString('id-ID')}
                           </span>
                           <span className="text-2xl font-bold text-red-600 tracking-tight">
                             {product.currency} {product.flashSale?.salePrice}
@@ -1251,7 +1251,7 @@ const Home: React.FC = () => {
                       <div className="mt-auto pt-3 border-t border-gray-100">
                         <p className="text-xs text-gray-400 mb-0.5">From</p>
                         <p className="text-base font-bold text-gray-900">
-                          {product.currency} {product.price}
+                          {product.currency} {Number(product.price).toLocaleString('id-ID')}
                           <span className="text-xs font-medium text-gray-400"> /pax</span>
                         </p>
 
