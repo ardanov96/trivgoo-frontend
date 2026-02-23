@@ -208,11 +208,32 @@ const Home: React.FC = () => {
   const { showToast } = useToast();
 
   useEffect(() => {
-    setIsLoading(true);
-    agentProductService.getAllProducts()
-      .then(setProducts)
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
+    const loadProducts = async () => {
+      try {
+        setIsLoading(true);
+
+        const prods = await agentProductService.getAllProducts();
+
+        const BASE_URL =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
+        const normalizedProducts = prods.map((p: Product) => ({
+          ...p,
+          image_url:
+            p.image_url && !p.image_url.startsWith("http")
+              ? `${BASE_URL}/${p.image_url}`
+              : p.image_url,
+        }));
+
+        setProducts(normalizedProducts);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProducts();
   }, []);
 
   const handleWishlist = (e: React.MouseEvent, product: Product) => {

@@ -5,8 +5,7 @@ type Envelope<T> = ApiEnvelope<T>;
 
 export const mediaService = {
   /**
-   * Upload 1 file (field: "file") ke /api/v1/media/upload
-   * return URL
+   * Upload 1 file (field: "file") → backend return { url, filename }
    */
   async uploadOne(file: File, purpose = "agent-products"): Promise<string> {
     const fd = new FormData();
@@ -19,12 +18,12 @@ export const mediaService = {
     );
 
     const data = unwrap(res.data);
-    return data.url;
+
+    return data.url ?? "";
   },
 
   /**
-   * Upload banyak file (field: "files") ke /api/v1/media/upload
-   * return array URL
+   * Upload banyak file (field: "files") → backend return { urls: string[] }
    */
   async uploadMany(
     files: File[],
@@ -42,6 +41,15 @@ export const mediaService = {
     );
 
     const data = unwrap(res.data);
-    return (data.items || []).map((x) => x.url).filter(Boolean);
+
+    if (Array.isArray(data.urls) && data.urls.length > 0) {
+      return data.urls.filter(Boolean);
+    }
+
+    if (data.url) {
+      return [data.url];
+    }
+
+    return [];
   },
 };

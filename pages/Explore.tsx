@@ -50,7 +50,19 @@ const Explore: React.FC = () => {
           agentProductService.getAllProducts(),
           agentProductService.getCategories(),
         ]);
-        setProducts(prods);
+
+        const BASE_URL =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
+        const normalizedProducts = prods.map((p: Product) => ({
+          ...p,
+          image_url:
+            p.image_url && !p.image_url.startsWith("http")
+              ? `${BASE_URL}/${p.image_url}`
+              : p.image_url,
+        }));
+
+        setProducts(normalizedProducts);
         setCategories(cats);
       } catch (error) {
         console.error("Failed to load data", error);

@@ -96,13 +96,11 @@ const MyBookings: React.FC = () => {
                 onClick={() => navigate(`/booking-detail/${booking.id}`)}
                 className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:border-blue-200 transition-all cursor-pointer group"
               >
-                <div className="flex gap-4">
-                  {/* Image */}
+                {/* <div className="flex gap-4">
                   <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                     <img src={booking.image} alt="" className="w-full h-full object-cover" />
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-1">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${getStatusStyle(booking.status)}`}>
@@ -130,13 +128,13 @@ const MyBookings: React.FC = () => {
                   <div className="flex items-center">
                     <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-colors" />
                   </div>
-                </div>
+                </div> */}
 
                 {/* Footer Card */}
-                <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
+                {/* <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
                   <div className="text-xs text-gray-400">Total Pembayaran</div>
                   <div className="font-bold text-blue-600">Rp {booking.totalAmount.toLocaleString()}</div>
-                </div>
+                </div> */}
               </div>
             ))
           ) : (

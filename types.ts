@@ -89,19 +89,21 @@ export type UploadedMediaItem = {
 };
 
 export type UploadMediaResponse = {
-  path: string;
-  url: string;
-  items: UploadedMediaItem[];
+  url?: string;       
+  filename?: string;   
+  urls?: string[];   
+  filenames?: string[];
+  items?: UploadedMediaItem[]; 
 };
 
 export interface TourDetails {
   type: "tour";
-  tourCategory: TourCategory; // Added
+  tourCategory: TourCategory;
   duration: string;
   groupSize: string;
-  difficulty: "Easy" | "Moderate" | "Hard"; // Added
-  ageRestriction?: string; // Added
-  meetingPoint: string; // Added
+  difficulty: "Easy" | "Moderate" | "Hard";
+  ageRestriction?: string;
+  meetingPoint: string;
   itinerary: ItineraryDay[];
   inclusions: string[];
   exclusions: string[];
@@ -109,27 +111,27 @@ export interface TourDetails {
 
 export interface StayDetails {
   type: "stay";
-  stayCategory: StayCategory; // Added
+  stayCategory: StayCategory;
   checkIn: string;
   checkOut: string;
   rooms: number;
   bathrooms: number;
-  beds: number; // Added
-  roomSize?: number; // sqm
+  beds: number;
+  roomSize?: number;
   amenities: { category: string; items: string[] }[];
   rules: string[];
-  breakfastIncluded: boolean; // Added
+  breakfastIncluded: boolean;
 }
 
 export interface CarDetails {
   type: "car";
-  transportCategory: TransportCategory; // Added
+  transportCategory: TransportCategory;
   transmission: "Automatic" | "Manual";
   seats: number;
   luggage: number;
   fuelPolicy: string;
-  year?: number; // Added
-  driverLanguages?: string[]; // Added
+  year?: number;
+  driverLanguages?: string[];
   requirements: string[];
   driver?: boolean;
 }
@@ -212,7 +214,6 @@ export interface User {
   profile_photo?: string | null;
   avatar?: string;
   balance?: number;
-
   verification_status?: VerificationStatus;
   agentType?: AgentType | null;
   specialization?: AgentSpecialization | null;
@@ -236,6 +237,7 @@ export interface Category {
   image: string;
 }
 
+// ✅ Single definition — gabungan dari dua definisi yang duplikat sebelumnya
 export interface ProductImage {
   id: number;
   url: string;
@@ -243,44 +245,34 @@ export interface ProductImage {
   created_at: string;
 }
 
+export interface AgentProductImage {
+  id: number;
+  url: string;
+  created_at: string;
+  sort_order: number;
+}
+
 export interface Product {
   id: number;
-
-  // owner
   owner_id: number;
   owner_name?: string;
-
-  // category
   category_id: number;
-
-  // basic info
   name: string;
   description: string;
   price: number;
   currency: string;
   location: string;
-
-  // images
-  image: string; // cover (images[0] || fallback)
-  images: ProductImage[]; // relasi product_images
+  image: string;
+  images: ProductImage[];
   image_url?: string;
-  
-  // meta
   rating: number;
   is_active: boolean;
   created_at?: string;
-
-  // optional business data
   features: string[];
   details?: ProductDetails;
-
   daily_capacity?: number;
   blocked_dates?: string[];
-
-  // campaign
   flashSale?: FlashSaleDetails;
-
-  // optional
   reviews?: Review[];
 }
 
@@ -329,27 +321,19 @@ export type AgentVerificationStatus = "PENDING" | "APPROVED" | "REJECTED";
 export interface AgentVerification {
   id: number;
   user_id: number;
-
   agent_type: AgentType;
   id_card_number: string;
   tax_id: string;
-
   company_name: string | null;
-
   bank_name: string;
   bank_account_number: string;
   bank_account_holder: string;
-
   specialization: AgentSpecialization;
-
   id_document_url: string | null;
-
   status: AgentVerificationStatus;
-
   reviewed_by: number | null;
   reviewed_at: string | null;
   rejection_reason: string | null;
-
   created_at: string;
   updated_at: string;
 }
@@ -365,13 +349,6 @@ export interface AgentListItem {
   verification: AgentVerification | null;
 }
 
-export interface AgentProductImage {
-  id: number;
-  url: string;
-  created_at: string;
-  sort_order: number;
-}
-
 export interface ProductItineraryItem {
   day: number;
   meals: string[];
@@ -379,8 +356,6 @@ export interface ProductItineraryItem {
   description: string;
   accommodation: string;
 }
-
-// ADMIN AGENT PRODUCT
 
 export interface Paginated<TItem> {
   meta: PaginationMeta;
@@ -399,13 +374,6 @@ export interface OwnerSummary {
   name: string;
   email: string;
   avatar_url: string | null;
-}
-
-export interface ProductImage {
-  id: number;
-  url: string;
-  created_at: string;
-  sort_order: number;
 }
 
 export interface ItineraryItem {
@@ -429,6 +397,7 @@ export interface AdminProductDetails {
   ageRestriction: string;
 }
 
+// ✅ FIX: hapus duplikat AgentProduct — digabung jadi satu interface lengkap
 export interface AgentProduct {
   id: number;
   owner_id: number;
@@ -439,50 +408,28 @@ export interface AgentProduct {
   currency: string;
   location: string;
 
-  image: string;
-  image_url: string;
+  image: string;      // resolved full URL
+  image_url: string;  // alias dari image, untuk kompatibilitas
 
-  images: ProductImage[];
-
-  features: string[];
-  details: ProductDetails;
-
-  daily_capacity: number;
-  lat: number;
-  lng: number;
-  rating: number;
-  is_active: boolean;
-
-  created_at: string;
-  updated_at: string;
-
-  owner: OwnerSummary;
-}
-
-export type ListAgentProductsResponse = ApiResponse<Paginated<AgentProduct>>;
-
-export interface AgentProduct {
-  id: number;
-  owner_id: number;
-  category_id: number;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  location: string;
-
-  image: string;
   images: AgentProductImage[];
 
   features: string[];
   details: ProductDetails;
+
   daily_capacity: number;
+  lat?: number;
+  lng?: number;
   rating: number;
   is_active: boolean;
-  created_at: string;
 
+  created_at: string;
+  updated_at?: string;
+
+  owner?: OwnerSummary;
   blocked_dates?: string[];
 }
+
+export type ListAgentProductsResponse = ApiResponse<Paginated<AgentProduct>>;
 
 export type CustomerListItem = {
   id: number;
@@ -491,8 +438,6 @@ export type CustomerListItem = {
   role: "CUSTOMER";
   avatar: string | null;
 };
-
-// PAYLOAD
 
 export interface AgentProductPayload {
   category_id: number;
@@ -510,8 +455,6 @@ export interface AgentProductPayload {
   daily_capacity?: number;
   blocked_dates?: string[];
 }
-
-// RESPONSE
 
 export interface ApiResponse<T> {
   status: number;
