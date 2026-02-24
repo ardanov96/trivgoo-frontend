@@ -12,6 +12,12 @@ import {
   Mail,
   Phone,
   Clock,
+  Car,
+  Gauge,
+  Briefcase,
+  Award,
+  Fuel,
+  UserCog,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -39,6 +45,16 @@ const CheckoutSummary: React.FC = () => {
       email: '',
       phone: '',
     },
+    // Car-specific fields
+    vehicleType: 'car',
+    transmission: 'Automatic',
+    seats: 7,
+    luggage: 2,
+    year: 2023,
+    fuelPolicy: 'Full to Full',
+    withDriver: false,
+    pickupTime: '10:00',
+    returnTime: '10:00',
   };
 
   const {
@@ -55,34 +71,110 @@ const CheckoutSummary: React.FC = () => {
     unitLabel = 'Ticket',
     priceUnitLabel = 'person',
     contactDetails = {},
+    // Car-specific fields
+    vehicleType,
+    transmission,
+    seats,
+    luggage,
+    year,
+    fuelPolicy,
+    withDriver,
+    pickupTime,
+    returnTime,
   } = bookingData;
 
-  // Format date display: handles both single date (YYYY-MM-DD) and range (YYYY-MM-DD - YYYY-MM-DD)
+  const isCarBooking = vehicleType === 'car';
+
+  // Format date from YYYY-MM-DD to readable format
+  const formatDateString = (dateStr: string) => {
+    if (!dateStr) return '-';
+    
+    try {
+      // Handle YYYY-MM-DD format
+      if (dateStr.includes('-')) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+          return new Date(y, m - 1, d).toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+        }
+      }
+      return dateStr;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateStr;
+    }
+  };
+
+  // Format date display for non-car products
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '-';
-    // Range check
-    if (dateStr.includes(' - ')) {
-      const [start, end] = dateStr.split(' - ');
-      const fmt = (s: string) => {
-        const [y, m, d] = s.split('-').map(Number);
-        return new Date(y, m - 1, d).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        });
-      };
-      return `${fmt(start)} – ${fmt(end)}`;
+    
+    try {
+      // Check if it's a range
+      if (dateStr.includes(' - ')) {
+        const [start, end] = dateStr.split(' - ');
+        return `${formatDateString(start)} – ${formatDateString(end)}`;
+      }
+      
+      // Single date
+      return formatDateString(dateStr);
+    } catch (error) {
+      console.error('Error formatting date display:', error);
+      return dateStr;
     }
-    // Single date
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString('id-ID', {
-      dateStyle: 'long',
-    });
+  };
+
+  // Format date range with time for car bookings
+  const formatDateRangeWithTime = () => {
+    if (!date || !date.includes(' - ')) {
+      return <span>{formatDateDisplay(date)}</span>;
+    }
+    
+    try {
+      const [start, end] = date.split(' - ');
+      
+      return (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-700">Ambil:</span>
+            <span className="font-medium">{formatDateString(start)}</span>
+            {pickupTime && <span className="text-sm text-gray-500">({pickupTime})</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-700">Kembali:</span>
+            <span className="font-medium">{formatDateString(end)}</span>
+            {returnTime && <span className="text-sm text-gray-500">({returnTime})</span>}
+          </div>
+        </div>
+      );
+    } catch (error) {
+      console.error('Error formatting date range:', error);
+      return <span>{date}</span>;
+    }
   };
 
   const formatCurrency = (amount: number) => {
     if (currency === 'IDR') return `Rp ${amount.toLocaleString('id-ID')}`;
     return `${currency} ${amount.toLocaleString()}`;
+  };
+
+  const getTransmissionLabel = (transmission?: string) => {
+    if (!transmission) return '-';
+    return transmission.toLowerCase() === 'automatic' ? 'Matic' : 'Manual';
+  };
+
+  const getFuelPolicyLabel = (policy?: string) => {
+    if (!policy) return 'Kebijakan Bahan Bakar';
+    const policyMap: Record<string, string> = {
+      'Full to Full': 'Full to Full',
+      'Full to Empty': 'Full to Empty',
+      'Same to Same': 'Same to Same',
+    };
+    return policyMap[policy] || policy;
   };
 
   const handlePayment = async () => {
@@ -128,26 +220,103 @@ const CheckoutSummary: React.FC = () => {
                 <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                 {productLocation}
               </div>
+              {isCarBooking && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                    Rental Mobil
+                  </span>
+                  {transmission && (
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">
+                      {getTransmissionLabel(transmission)}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-          <div className="bg-gray-50 p-4 border-t border-gray-100 grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-start text-gray-600 gap-2">
-              <Calendar className="w-4 h-4 mt-0.5 text-primary-500 flex-shrink-0" />
-              <span>{formatDateDisplay(date)}</span>
-            </div>
-            <div className="flex items-center text-gray-600 gap-2">
-              <Users className="w-4 h-4 text-primary-500 flex-shrink-0" />
-              <span>
-                {guestCount ?? pax} Tamu
-                {duration > 1 && (
-                  <span className="ml-1 text-gray-400">· {duration} Malam</span>
+          
+          <div className="bg-gray-50 p-4 border-t border-gray-100">
+            {isCarBooking ? (
+              // Layout khusus untuk rental mobil
+              <div className="space-y-3">
+                {/* Tanggal dan Waktu */}
+                <div className="flex items-start gap-3 text-sm">
+                  <Calendar className="w-4 h-4 mt-0.5 text-primary-500 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-gray-600">
+                      {formatDateRangeWithTime()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Durasi Sewa */}
+                <div className="flex items-center gap-3 text-sm">
+                  <Clock className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                  <span className="text-gray-600">
+                    Durasi Sewa: <span className="font-medium">{duration} Hari</span>
+                  </span>
+                </div>
+
+                {/* Detail Mobil */}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                  {seats && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">{seats} Penumpang</span>
+                    </div>
+                  )}
+                  {luggage && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Briefcase className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">{luggage} Koper</span>
+                    </div>
+                  )}
+                  {year && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Award className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">Tahun {year}</span>
+                    </div>
+                  )}
+                  {fuelPolicy && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Fuel className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">{getFuelPolicyLabel(fuelPolicy)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Opsi Sopir */}
+                {withDriver !== undefined && (
+                  <div className="flex items-center gap-2 text-sm pt-2 border-t border-gray-200">
+                    <UserCog className="w-4 h-4 text-primary-500" />
+                    <span className="text-gray-600">
+                      {withDriver ? 'Dengan Sopir' : 'Tanpa Sopir (Lepas Kunci)'}
+                    </span>
+                  </div>
                 )}
-              </span>
-            </div>
-            {duration > 1 && (
-              <div className="flex items-center text-gray-600 gap-2 col-span-2">
-                <Clock className="w-4 h-4 text-primary-500 flex-shrink-0" />
-                <span>{duration} {priceUnitLabel === 'night' ? 'Malam' : 'Hari'} · {pax} {unitLabel}(s)</span>
+              </div>
+            ) : (
+              // Layout untuk produk non-mobil (tour/stay)
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-start gap-2">
+                  <Calendar className="w-4 h-4 mt-0.5 text-primary-500 flex-shrink-0" />
+                  <span>{formatDateDisplay(date)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                  <span>
+                    {guestCount ?? pax} Tamu
+                    {duration > 1 && (
+                      <span className="ml-1 text-gray-400">· {duration} Malam</span>
+                    )}
+                  </span>
+                </div>
+                {duration > 1 && (
+                  <div className="flex items-center gap-2 col-span-2">
+                    <Clock className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                    <span>{duration} {priceUnitLabel === 'night' ? 'Malam' : 'Hari'} · {pax} {unitLabel}(s)</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -190,24 +359,57 @@ const CheckoutSummary: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <h3 className="font-bold text-gray-800 mb-4">Rincian Harga</h3>
           <div className="space-y-3">
-            <div className="flex justify-between text-gray-600 text-sm">
-              <span>
-                {formatCurrency(pricePerPax)} / {priceUnitLabel} × {pax} {unitLabel}
-                {duration > 1 && ` × ${duration} ${priceUnitLabel === 'night' ? 'malam' : 'hari'}`}
-              </span>
-              <span>{formatCurrency(totalPrice)}</span>
-            </div>
-            <div className="flex justify-between text-gray-600 text-sm">
-              <span>Biaya Layanan</span>
-              <span className="text-green-600 font-medium">Gratis</span>
-            </div>
+            {isCarBooking ? (
+              // Rincian harga untuk rental mobil
+              <>
+                <div className="flex justify-between text-gray-600 text-sm">
+                  <span>
+                    {formatCurrency(pricePerPax)} / hari × {duration} hari
+                  </span>
+                  <span>{formatCurrency(totalPrice)}</span>
+                </div>
+                {withDriver && (
+                  <div className="flex justify-between text-gray-600 text-sm">
+                    <span>Biaya Sopir</span>
+                    <span className="text-green-600">Termasuk</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              // Rincian harga untuk produk non-mobil
+              <div className="flex justify-between text-gray-600 text-sm">
+                <span>
+                  {formatCurrency(pricePerPax)} / {priceUnitLabel} × {pax} {unitLabel}
+                  {duration > 1 && ` × ${duration} ${priceUnitLabel === 'night' ? 'malam' : 'hari'}`}
+                </span>
+                <span>{formatCurrency(totalPrice)}</span>
+              </div>
+            )}
+            
             <hr className="border-dashed" />
+            
             <div className="flex justify-between items-center pt-2">
               <span className="text-base font-bold text-gray-800">Total Pembayaran</span>
               <span className="text-lg font-bold text-primary-600">{formatCurrency(totalPrice)}</span>
             </div>
           </div>
         </div>
+
+        {/* Informasi Tambahan untuk Rental Mobil */}
+        {isCarBooking && (
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+            <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4" />
+              Informasi Penting
+            </h3>
+            <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+              <li>Harap bawa SIM asli dan KTP saat pengambilan mobil</li>
+              <li>Deposit akan dikembalikan saat mobil dikembalikan dalam kondisi baik</li>
+              <li>Bahan bakar tidak termasuk dalam harga sewa</li>
+              <li>Pengembalian terlambat akan dikenakan biaya tambahan</li>
+            </ul>
+          </div>
+        )}
 
         {/* Button Action */}
         <div className="pt-4">

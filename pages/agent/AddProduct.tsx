@@ -239,27 +239,50 @@ const AgentAddProduct: React.FC = () => {
   }, [formData]);
 
   const renderSubCategories = () => {
+    const enumTourValues = Object.values(TourCategory);
+
+    const tourExperienceTags = [
+      "Family", "Honeymoon", "Solo Travel", "Healing", 
+      "Workation", "Adventure", "Cultural", "Culinary", "Eco Tourism"
+    ];
+
+    const tourOptions = Array.from(new Set([...enumTourValues, ...tourExperienceTags]));
+
     const options = isTour
-      ? Object.values(TourCategory)
+      ? tourOptions
       : isStay
       ? Object.values(StayCategory)
       : Object.values(TransportCategory);
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {options.map((opt) => (
-          <div
-            key={opt}
-            onClick={() => setSelectedSubCategory(opt)}
-            className={`cursor-pointer p-4 rounded-xl border-2 flex items-center justify-center text-center font-bold text-sm transition-all ${
-              selectedSubCategory === opt
-                ? "border-primary-500 bg-primary-50 text-primary-700"
-                : "border-gray-100 hover:border-gray-200 text-gray-600"
-            }`}
-          >
-            {opt}
-          </div>
-        ))}
+      <div className="space-y-4 mb-8">
+        {/* Container dengan Grid yang responsif */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {options.map((opt) => {
+            const isSelected = selectedSubCategory === opt;
+            return (
+              <button
+                key={opt}
+                type="button" // Mencegah form submit saat diklik
+                onClick={() => setSelectedSubCategory(opt)}
+                className={`group relative p-3 rounded-xl border-2 flex items-center justify-center text-center font-semibold text-xs transition-all duration-300 transform active:scale-95 ${
+                  isSelected
+                    ? "border-primary-600 bg-primary-50 text-primary-700 shadow-md ring-2 ring-primary-500/10"
+                    : "border-gray-100 hover:border-primary-200 bg-white text-gray-600 hover:text-primary-600 shadow-sm"
+                }`}
+              >
+                {opt}
+                
+                {/* Checkmark icon kecil saat terpilih (opsional untuk mempercantik) */}
+                {isSelected && (
+                  <div className="absolute -top-2 -right-2 bg-primary-600 text-white rounded-full p-0.5 shadow-sm">
+                    <Check className="w-3 h-3" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -509,7 +532,7 @@ const AgentAddProduct: React.FC = () => {
   const getCategoryId = () => {
     if (!user) return 1;
     if (user.specialization === AgentSpecialization.STAY)      return 2;
-    if (user.specialization === AgentSpecialization.TRANSPORT) return 4;
+    if (user.specialization === AgentSpecialization.TRANSPORT) return 3;
     return 1;
   };
 

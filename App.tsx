@@ -50,7 +50,6 @@ import CheckoutSummary from './pages/CheckoutSummary';
 import BookingSuccess from './pages/BookingSucess';
 import BookingFailed from './pages/BookingFailed';
 import BookingPending from './pages/BookingPending';
-import MyBookings from './pages/MyBooking';
 
 // Route Guards
 interface ProtectedRouteProps {
@@ -100,7 +99,6 @@ const AppRoutes = () => {
         <Route path="/booking-success" element={<BookingSuccess />} />
         <Route path="/booking-pending" element={<BookingPending />} />
         <Route path="/booking-failed" element={<BookingFailed />} />
-        <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/ai-planner" element={<AITripPlanner />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

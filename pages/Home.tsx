@@ -137,12 +137,23 @@ const SEARCH_CATEGORIES = [
     icon: Building2,
     placeholder: 'City, hotel, or destination',
   },
-  { id: 'cars', label: 'Rental Mobil', icon: Car, placeholder: 'Pick-up location' },
-  { id: 'transfers', label: 'Jemput Bandara', icon: Plane, placeholder: 'Airport or Hotel' },
+  { id: 'cars', label: 'Car Rental', icon: Car, placeholder: 'Pick-up location' },
+  { id: 'transfers', label: 'Airport Transfer', icon: Plane, placeholder: 'Airport or Hotel' },
   { id: 'events', label: 'Event', icon: Calendar, placeholder: 'Concert, festival, or event' },
 ];
 
-const TRAVEL_FILTERS = ['All', 'Keluarga', 'Honeymoon', 'Solo Travel', 'Healing', 'Workation', 'Adventure'];
+const TRAVEL_FILTERS = ['All', 'Family', 'Honeymoon', 'Solo Travel', 'Healing', 'Workation', 'Adventure', 'Cultural', 'Culinary', 'Eco Tourism'];
+
+// ✅ Taruh di luar component Home (level module)
+const getSubCategoryValue = (details: any): string => {
+  if (!details) return '';
+  return (
+    details.tourCategory ||
+    details.stayCategory ||
+    details.transportCategory ||
+    ''
+  ).toLowerCase();
+};
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -252,11 +263,11 @@ const Home: React.FC = () => {
 
   const filteredProducts = products
     .filter((p) => {
-      if (activeFilter === 'All') return true;
-      const detailsValues = p.details ? Object.values(p.details).map((v) => String(v).toLowerCase()) : [];
-      return detailsValues.includes(activeFilter.toLowerCase());
+      const matchCategory = Number(p.category_id) === 1;
+      if (activeFilter === 'All') return matchCategory;
+      return matchCategory && getSubCategoryValue(p.details) === activeFilter.toLowerCase();
     })
-    .slice(0, 8);
+  .slice(0, 8);
 
   const SkeletonCard = () => (
     <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col animate-pulse">
@@ -485,12 +496,24 @@ const Home: React.FC = () => {
     setShowSuggestions(false);
   };
 
+  const CATEGORY_ID_MAP: Record<string, number> = {
+    tours:     1,
+    stays:     2,
+    cars:      3,
+    transfers: 4,
+    events:    5,
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (searchQuery.trim()) params.append('search', searchQuery);
     if (searchDate) params.append('date', searchDate);
-    if (searchCategory) params.append('category', searchCategory);
+
+    // ✅ Kirim category_id sebagai number, bukan string id
+    const categoryId = CATEGORY_ID_MAP[searchCategory];
+    if (categoryId) params.append('category_id', String(categoryId));
+
     navigate(`/explore?${params.toString()}`);
   };
 

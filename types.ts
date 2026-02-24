@@ -47,6 +47,12 @@ export enum TourCategory {
   SPIRITUAL = "Spiritual",
   CULTURAL = "Cultural",
   CULINARY = "Culinary",
+  FAMILY = "Family",
+  HONEYMOON = "Honeymoon",
+  SOLO_TRAVEL = "Solo Travel",
+  HEALING = "Healing",
+  WORKATION = "Workation",
+  ECO_TOURISM = "Eco Tourism",
 }
 
 export enum StayCategory {
@@ -126,14 +132,21 @@ export interface StayDetails {
 export interface CarDetails {
   type: "car";
   transportCategory: TransportCategory;
-  transmission: "Automatic" | "Manual";
-  seats: number;
-  luggage: number;
-  fuelPolicy: string;
+  transmission: "Automatic" | "Manual" | "Matic" | "Manual"; 
+  seats: number; 
+  luggage?: number;
+  fuelPolicy?: string;
   year?: number;
   driverLanguages?: string[];
   requirements: string[];
   driver?: boolean;
+  location?: string; 
+  priceUnit?: "hari" | "jam" | "bulan"; 
+  fuelType?: "bensin" | "diesel" | "listrik" | "hybrid"; 
+  hasAC?: boolean; 
+  mileage?: number; 
+  insurance?: boolean; 
+  color?: string; 
 }
 
 export type ProductDetails = TourDetails | StayDetails | CarDetails;

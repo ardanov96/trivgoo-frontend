@@ -17,6 +17,18 @@ function unwrapArray<T>(res: unknown): T[] {
   return [];
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
+const resolveDocUrl = (url: string): string => {
+  if (!url) return '';
+  
+  const cleanUrl = url.replace(/^\/?public\//, '/');
+  
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return cleanUrl;
+  
+  return `${API_BASE_URL}${cleanUrl.startsWith('/') ? '' : '/'}${cleanUrl}`;
+};
+
 const UsersManagement: React.FC = () => {
   const DetailBlock = ({ label, value, isEnum = false }: { label: string, value?: any, isEnum?: boolean }) => (
     <div className="space-y-1">
@@ -36,27 +48,29 @@ const UsersManagement: React.FC = () => {
   const [selectedAgent, setSelectedAgent] = useState<AgentListItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleDownloadPdf = async (url: string) => {
-    try {
-      const filename = url.split('/').pop() || 'document.pdf';
-      
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-      const blobUrl = URL.createObjectURL(pdfBlob);
+const handleDownloadPdf = async (url: string) => {
+  try {
+    const filename = url.split('/').pop() || 'document.pdf';
 
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename; // e.g. "42_NIB.pdf"
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    const response = await fetch(url, { credentials: 'include' }); // ✅ kirim session cookie
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch (err) {
-      console.error('Download failed:', err);
-    }
-  };
+    const blob = await response.blob();
+    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+    const blobUrl = URL.createObjectURL(pdfBlob);
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (err) {
+    console.error('Download failed:', err);
+  }
+};
 
   // ✅ per-user loading untuk tombol approve/reject
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
@@ -470,7 +484,7 @@ const UsersManagement: React.FC = () => {
                     
                       <div className="flex gap-3">
                         <a
-                          href={selectedAgent.verification.id_document_url}
+                          href={resolveDocUrl(selectedAgent.verification.id_document_url)}
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-2 px-5 py-2.5 bg-white border border-red-300 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all"
@@ -481,7 +495,7 @@ const UsersManagement: React.FC = () => {
                         {/* Force download sebagai .pdf via Blob */}
                         <button
                           type="button"
-                          onClick={() => handleDownloadPdf(selectedAgent.verification!.id_document_url!)}
+                          onClick={() => handleDownloadPdf(resolveDocUrl(selectedAgent.verification!.id_document_url!))}
                           className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all shadow-md active:scale-95"
                         >
                           ↓ Download PDF
@@ -491,13 +505,13 @@ const UsersManagement: React.FC = () => {
                 ) : (
                   /* UI UNTUK GAMBAR (KTP/INDIVIDUAL) */
                   <a 
-                    href={selectedAgent.verification.id_document_url} 
+                    href={resolveDocUrl(selectedAgent.verification.id_document_url)}
                     target="_blank" 
                     rel="noreferrer"
                     className="group relative block rounded-xl overflow-hidden border-2 border-gray-100 hover:border-primary-500 transition-all"
                   >
                     <img 
-                      src={selectedAgent.verification.id_document_url} 
+                      src={resolveDocUrl(selectedAgent.verification.id_document_url)}
                       className="w-full h-auto max-h-64 object-contain bg-gray-50"
                       alt="Verification Document" 
                     />
