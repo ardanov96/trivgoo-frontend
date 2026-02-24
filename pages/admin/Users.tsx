@@ -36,6 +36,28 @@ const UsersManagement: React.FC = () => {
   const [selectedAgent, setSelectedAgent] = useState<AgentListItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const handleDownloadPdf = async (url: string) => {
+    try {
+      const filename = url.split('/').pop() || 'document.pdf';
+      
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(pdfBlob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename; // e.g. "42_NIB.pdf"
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.error('Download failed:', err);
+    }
+  };
+
   // ✅ per-user loading untuk tombol approve/reject
   const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
 
@@ -446,15 +468,25 @@ const UsersManagement: React.FC = () => {
                     <p className="text-red-700 font-bold mb-2">Corporate NIB Document (PDF)</p>
                     <p className="text-red-500/70 text-[10px] mb-4 uppercase tracking-widest">Click below to view or download</p>
                     
-                    <a 
-                      href={selectedAgent.verification.id_document_url} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      download // Menyarankan browser untuk mendownload saat diklik
-                      className="flex items-center gap-2 px-6 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all shadow-md active:scale-95"
-                    >
-                      <Eye className="w-4 h-4" /> Open / Download PDF
-                    </a>
+                      <div className="flex gap-3">
+                        <a
+                          href={selectedAgent.verification.id_document_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-red-300 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all"
+                        >
+                          <Eye className="w-4 h-4" /> Open
+                        </a>
+
+                        {/* Force download sebagai .pdf via Blob */}
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadPdf(selectedAgent.verification!.id_document_url!)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all shadow-md active:scale-95"
+                        >
+                          ↓ Download PDF
+                        </button>
+                      </div>
                   </div>
                 ) : (
                   /* UI UNTUK GAMBAR (KTP/INDIVIDUAL) */

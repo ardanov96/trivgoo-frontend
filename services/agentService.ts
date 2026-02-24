@@ -28,36 +28,47 @@ export const agentService = {
       specialization,
     } = payload;
 
+    // ── 1. Client-side file type guard ──────────────────────────────────────
     if (idDocument instanceof File) {
       const fileType = idDocument.type;
 
-      if (agent_type === 'INDIVIDUAL') {
+      if (agent_type === AgentType.INDIVIDUAL) {
         if (!fileType.startsWith('image/')) {
           throw new Error('Only images allowed for Individual type');
         }
-      } else if (agent_type === 'CORPORATE') {
+      } else if (agent_type === AgentType.CORPORATE) {
         if (fileType !== 'application/pdf') {
           throw new Error('Only PDF allowed for Corporate type');
         }
       }
     }
 
-    const uploadedUrl = await mediaService.uploadOne(idDocument, 'agent-verification');
+    // ── 2. Build FormData so multer can route to the correct folder ─────────
+    //    upload_type + agent_type are read by upload.js middleware:
+    //      INDIVIDUAL → public/users/individual
+    //      CORPORATE  → public/users/corporate
+    const formData = new FormData();
+    formData.append('upload_type', 'AGENT_DOCUMENT');
+    formData.append('agent_type', agent_type);
+    formData.append('id_card_number', idCardNumber);
+    formData.append('tax_id', taxId);
+    formData.append('bank_name', bankName);
+    formData.append('bank_account_number', accountNumber);
+    formData.append('bank_account_holder', accountHolder);
+    formData.append('specialization', specialization);
 
-    const finalIdDocUrl = uploadedUrl;
+    if (companyName) {
+      formData.append('company_name', companyName);
+    }
 
-    if (!finalIdDocUrl) throw new Error('Failed to upload document');
+    if (idDocument instanceof File) {
+      // Field name must match upload.single('idDocument') in agent.js route
+      formData.append('idDocument', idDocument);
+    }
 
-    await http.post('/agent/verification', {
-      agent_type,
-      id_card_number: idCardNumber,
-      tax_id: taxId,
-      company_name: companyName ?? null,
-      bank_name: bankName,
-      bank_account_number: accountNumber,
-      bank_account_holder: accountHolder,
-      specialization,
-      id_document_url: finalIdDocUrl,
+    // ── 3. POST as multipart — backend saves file & returns path via req.file ─
+    await http.post('/agent/verification', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
 
