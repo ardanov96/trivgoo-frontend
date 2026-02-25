@@ -2,6 +2,7 @@ import { ArrowRight, ArrowUpDown, Calendar, Heart, MapPin, Search, Star, X, User
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWishlist } from '../components/WishlistContext';
+import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
 import { 
   Category, 
   Product, 
@@ -308,9 +309,12 @@ const Explore: React.FC = () => {
         <div className="md:w-1/3 relative overflow-hidden">
           <div className="aspect-[4/3] md:aspect-auto md:h-full">
             <img
-              src={product.image_url || product.image}
+              src={getImageUrl(product.image_url || product.image)}
               alt={product.name}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+              }}
             />
           </div>
 
@@ -475,9 +479,12 @@ const Explore: React.FC = () => {
       >
         <div className="aspect-[4/3] relative overflow-hidden">
           <img
-            src={product.image_url || product.image}
+            src={getImageUrl(product.image_url || product.image)}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+            }}
           />
 
           {/* Wishlist Button */}
