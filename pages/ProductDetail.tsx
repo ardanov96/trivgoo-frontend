@@ -50,6 +50,7 @@ import {
   TourDetails,
   TransportCategory,
 } from "../types";
+import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
 
 type LatLng = { lat: number; lng: number };
 
@@ -82,7 +83,6 @@ const isTour = (d: any): d is TourDetails => d?.type === "tour";
 const isStay = (d: any): d is StayDetails => d?.type === "stay";
 const isCar = (d: any): d is CarDetails => d?.type === "car";
 
-// Car Detail Component
 // Car Detail Component
 const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
   const navigate = useNavigate();
@@ -130,7 +130,7 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
       : null;
   const effectivePrice = activeFlashSale ? activeFlashSale.salePrice : product.price;
 
-  const heroImage = (product as any).image_url || product.image;
+  const heroImage = getImageUrl((product as any).image_url || product.image);
 
   useEffect(() => {
     const today = new Date();
@@ -408,51 +408,49 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
   };
 
   const handleBookNow = (e: React.FormEvent | React.MouseEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!user) {
-    showToast("Please login to continue.", "info");
-    navigate("/login", { state: { from: location } });
-    return;
-  }
+    if (!user) {
+      showToast("Please login to continue.", "info");
+      navigate("/login", { state: { from: location } });
+      return;
+    }
 
-  // Validate all inputs
-  if (!isFormValid()) {
-    return;
-  }
+    if (!isFormValid()) {
+      return;
+    }
 
-  setIsProcessing(true);
+    setIsProcessing(true);
 
-  // Kirim tanggal dalam format YYYY-MM-DD (raw format)
-  navigate("/checkout-summary", {
-    state: {
-      productId: product.id,
-      productName: product.name,
-      location: product.location,
-      date: `${pickupDate} - ${returnDate}`, // Gunakan raw YYYY-MM-DD
-      pax: 1,
-      pricePerPax: effectivePrice,
-      totalPrice: totalPrice,
-      image: heroImage,
-      currency: product.currency,
-      duration: duration,
-      contactDetails: { 
-        name: contactName, 
-        email: contactEmail, 
-        phone: contactPhone 
+    navigate("/checkout-summary", {
+      state: {
+        productId: product.id,
+        productName: product.name,
+        location: product.location,
+        date: `${pickupDate} - ${returnDate}`,
+        pax: 1,
+        pricePerPax: effectivePrice,
+        totalPrice: totalPrice,
+        image: heroImage,
+        currency: product.currency,
+        duration: duration,
+        contactDetails: { 
+          name: contactName, 
+          email: contactEmail, 
+          phone: contactPhone 
+        },
+        vehicleType: "car",
+        transmission: details.transmission,
+        seats: details.seats,
+        luggage: details.luggage,
+        year: details.year,
+        fuelPolicy: details.fuelPolicy,
+        withDriver: withDriver,
+        pickupTime: pickupTime,
+        returnTime: returnTime,
       },
-      vehicleType: "car",
-      transmission: details.transmission,
-      seats: details.seats,
-      luggage: details.luggage,
-      year: details.year,
-      fuelPolicy: details.fuelPolicy,
-      withDriver: withDriver,
-      pickupTime: pickupTime,
-      returnTime: returnTime,
-    },
-  });
-};
+    });
+  };
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -465,7 +463,6 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
     document.body.style.overflow = "unset";
   };
 
-  // Error styling helper
   const getInputClassName = (field: keyof typeof touchedFields, isValid: boolean = true) => {
     const baseClass = "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors";
     if (!touchedFields[field]) return baseClass + " border-gray-300";
@@ -505,6 +502,9 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
                 src={heroImage}
                 alt={product.name}
                 className="w-full h-[400px] object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+                }}
               />
               <button
                 onClick={() => openLightbox(0)}
@@ -934,12 +934,13 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
       : null;
   const effectivePrice = activeFlashSale ? activeFlashSale.salePrice : product.price;
 
-  const heroImage = (product as any).image_url || product.image;
+  const heroImage = getImageUrl((product as any).image_url || product.image);
 
-  const galleryImages =
-    product.images && Array.isArray(product.images) && product.images.length > 0
-      ? product.images.map((x: any) => (typeof x === "string" ? x : x?.url)).filter(Boolean)
-      : [heroImage, heroImage, heroImage, heroImage, heroImage].filter(Boolean);
+  const galleryImages = product.images && Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+        .map((x: any) => getImageUrl(typeof x === "string" ? x : x?.url))
+        .filter(Boolean)
+    : [heroImage, heroImage, heroImage, heroImage, heroImage].filter(Boolean);
 
   useEffect(() => {
     if (user) {
@@ -1249,7 +1250,14 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
 
       {/* Product Hero Image */}
       <div className="h-[40vh] md:h-[60vh] relative group cursor-pointer" onClick={() => openLightbox(0)}>
-        <img src={heroImage} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+        <img 
+          src={heroImage} 
+          alt={product.name} 
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
 
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -1429,7 +1437,14 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {galleryImages.map((img, index) => (
                       <div key={index} onClick={() => openLightbox(index)} className={`relative rounded-2xl overflow-hidden group shadow-sm cursor-pointer ${index === 0 ? "md:col-span-2 md:h-80" : "h-48"}`}>
-                        <img src={img} alt={`Gallery ${index}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                        <img 
+                          src={img} 
+                          alt={`Gallery ${index}`} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
+                          }}
+                        />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="bg-black/30 backdrop-blur-sm p-3 rounded-full text-white"><Maximize2 className="w-6 h-6" /></div>

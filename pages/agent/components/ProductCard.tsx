@@ -1,6 +1,7 @@
 import { Edit3, Eye, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import React, { useMemo } from 'react';
 import type { AgentProduct } from '../../../types';
+import { getImageUrl, FALLBACK_IMAGE } from '../../../utils/imageUtils';
 
 type Props = {
   product: AgentProduct;
@@ -9,9 +10,6 @@ type Props = {
   onJoinFlashSale: () => void;
   onNavigateEdit: () => void;
 };
-
-const FALLBACK =
-  'https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=800&q=80';
 
 const ProductCard: React.FC<Props> = ({
   product,
@@ -38,12 +36,12 @@ const ProductCard: React.FC<Props> = ({
         {/* Cover */}
         <div className="relative w-28 h-28 shrink-0 rounded-xl overflow-hidden bg-gray-100">
           <img
-            src={cover}
+            src={getImageUrl(cover)}
             alt={product.name}
             className="w-full h-full object-cover"
             loading="lazy"
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = FALLBACK;
+              (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
             }}
           />
 
@@ -87,12 +85,12 @@ const ProductCard: React.FC<Props> = ({
                   className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100"
                 >
                   <img
-                    src={img.url}
+                    src={getImageUrl(img.url)}
                     alt={`thumb-${idx}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = FALLBACK;
+                      (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
                     }}
                   />
                 </div>
