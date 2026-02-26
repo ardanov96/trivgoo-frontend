@@ -197,6 +197,37 @@ const CheckoutSummary: React.FC = () => {
     try {
       setLoading(true);
       if (selectedGateway === 'midtrans') {
+        // Soft lock (booking timer) di server sebelum masuk ke Payment
+        try {
+          const cartTokenKey = 'triv_cart_token_v1';
+          let cartToken = null;
+          if (typeof window !== 'undefined') {
+            cartToken = window.localStorage.getItem(cartTokenKey);
+            if (!cartToken) {
+              cartToken = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+              window.localStorage.setItem(cartTokenKey, cartToken);
+            }
+          }
+
+          await axios.post(
+            '/api/v1/cart/lock',
+            {
+              productId: bookingData.productId,
+              quantity: 1,
+              startDate: date && date.includes(' - ') ? date.split(' - ')[0] : date,
+              endDate: date && date.includes(' - ') ? date.split(' - ')[1] : date,
+              ttlSeconds: 15 * 60,
+              metadata: {
+                isCarBooking,
+              },
+              cartToken,
+            },
+            { withCredentials: true },
+          );
+        } catch (e) {
+          console.error('Failed to create booking lock (soft lock):', e);
+        }
+
         const paymentState = {
           product: {
             id: 0,

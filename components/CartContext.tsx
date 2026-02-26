@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Product } from '../types';
 
 export interface CartItem {
@@ -19,7 +19,27 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem('triv_cart_v1');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed;
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined') return;
+      window.localStorage.setItem('triv_cart_v1', JSON.stringify(cartItems));
+    } catch {
+      // ignore storage errors
+    }
+  }, [cartItems]);
 
   const addToCart = useCallback((product: Product, quantity = 1) => {
     setCartItems((prev) => {

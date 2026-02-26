@@ -443,24 +443,22 @@ const Explore: React.FC = () => {
               See Details
             </Link>
 
-            {/* Add To Cart — only show if logged in */}
-            {isLoggedIn && (
-              <button
-                onClick={(e) => handleAddToCart(e, product)}
-                disabled={isInCart(product.id)}
-                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border-2 transform active:scale-[0.98]
-                  ${
-                    isInCart(product.id)
-                      ? "border-green-500 text-green-600 bg-green-50 cursor-default"
-                      : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
-                  }`}
-              >
-                <ShoppingCart
-                  className={`w-4 h-4 ${isInCart(product.id) ? "stroke-green-600" : ""}`}
-                />
-                {isInCart(product.id) ? "Added to Cart" : "Add to Cart"}
-              </button>
-            )}
+            {/* Add To Cart — tersedia untuk user login maupun guest */}
+            <button
+              onClick={(e) => handleAddToCart(e, product)}
+              disabled={isInCart(product.id)}
+              className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border-2 transform active:scale-[0.98]
+                ${
+                  isInCart(product.id)
+                    ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                    : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
+                }`}
+            >
+              <ShoppingCart
+                className={`w-4 h-4 ${isInCart(product.id) ? "stroke-green-600" : ""}`}
+              />
+              {isInCart(product.id) ? "Added to Cart" : "Add to Cart"}
+            </button>
           </div>
         </div>
       </Link>
@@ -545,23 +543,21 @@ const Explore: React.FC = () => {
               </Link>
 
               {/* Add To Cart */}
-              {isLoggedIn && (
-                <button
-                  onClick={(e) => handleAddToCart(e, product)}
-                  disabled={isInCart(product.id)}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border transform active:scale-[0.98]
-                    ${
-                      isInCart(product.id)
-                        ? "border-green-500 text-green-600 bg-green-50 cursor-default"
-                        : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
-                    }`}
-                >
-                  <ShoppingCart
-                    className={`w-4 h-4 ${isInCart(product.id) ? "stroke-green-600" : ""}`}
-                  />
-                  {isInCart(product.id) ? "Added" : "Add"}
-                </button>
-              )}
+              <button
+                onClick={(e) => handleAddToCart(e, product)}
+                disabled={isInCart(product.id)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border transform active:scale-[0.98]
+                  ${
+                    isInCart(product.id)
+                      ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                      : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
+                  }`}
+              >
+                <ShoppingCart
+                  className={`w-4 h-4 ${isInCart(product.id) ? "stroke-green-600" : ""}`}
+                />
+                {isInCart(product.id) ? "Added" : "Add"}
+              </button>
             </div>
           </div>
         </div>
