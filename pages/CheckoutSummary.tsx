@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import {
   CreditCard,
   MapPin,
@@ -25,6 +26,29 @@ const CheckoutSummary: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const [selectedGateway, setSelectedGateway] = useState<'xendit' | 'midtrans'>('xendit');
+
+  useEffect(() => {
+    // #region agent log
+    (()=>{const u='http://127.0.0.1:7888/ingest/5d7cc0e3-1a45-4454-a424-bdb9bbe8e778';const p={sessionId:'86ed09',runId:'pre',hypothesisId:'D',location:'pages/CheckoutSummary.tsx:component_mount',message:'CheckoutSummary mounted',data:{path:location.pathname,hasState:!!location.state},timestamp:Date.now()};try{navigator.sendBeacon?.(u,new Blob([JSON.stringify(p)],{type:'application/json'}));}catch(e){}fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'application/json','X-Debug-Session-Id':'86ed09'},body:JSON.stringify(p)}).catch(()=>{});})();
+    // #endregion agent log
+    const fetchGateway = async () => {
+      try {
+        const res = await axios.get('/api/v1/admin/payment-settings', { withCredentials: true });
+        const gw = res.data?.data?.selected_gateway || 'xendit';
+        setSelectedGateway(gw);
+        // #region agent log
+        (()=>{const u='http://127.0.0.1:7888/ingest/5d7cc0e3-1a45-4454-a424-bdb9bbe8e778';const p={sessionId:'86ed09',runId:'pre',hypothesisId:'B',location:'pages/CheckoutSummary.tsx:fetchGateway_success',message:'Fetched selected_gateway for checkout',data:{selected_gateway:gw},timestamp:Date.now()};try{navigator.sendBeacon?.(u,new Blob([JSON.stringify(p)],{type:'application/json'}));}catch(e){}fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'application/json','X-Debug-Session-Id':'86ed09'},body:JSON.stringify(p)}).catch(()=>{});})();
+        // #endregion agent log
+      } catch (error) {
+        // #region agent log
+        (()=>{const u='http://127.0.0.1:7888/ingest/5d7cc0e3-1a45-4454-a424-bdb9bbe8e778';const p={sessionId:'86ed09',runId:'pre',hypothesisId:'B',location:'pages/CheckoutSummary.tsx:fetchGateway_error',message:'Failed to fetch selected_gateway for checkout',data:{},timestamp:Date.now()};try{navigator.sendBeacon?.(u,new Blob([JSON.stringify(p)],{type:'application/json'}));}catch(e){}fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'application/json','X-Debug-Session-Id':'86ed09'},body:JSON.stringify(p)}).catch(()=>{});})();
+        // #endregion agent log
+      }
+    };
+    fetchGateway();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Data passed from ProductDetail handleBookNow
   const bookingData = location.state || {
@@ -180,9 +204,50 @@ const CheckoutSummary: React.FC = () => {
   const handlePayment = async () => {
     try {
       setLoading(true);
-      // Dummy — ganti dengan API call ke backend
+      // #region agent log
+      (()=>{const u='http://127.0.0.1:7888/ingest/5d7cc0e3-1a45-4454-a424-bdb9bbe8e778';const p={sessionId:'86ed09',runId:'pre',hypothesisId:'A',location:'pages/CheckoutSummary.tsx:handlePayment_enter',message:'handlePayment invoked',data:{loadingBefore:loading,totalPrice,vehicleType,isCarBooking,selectedGateway},timestamp:Date.now()};try{navigator.sendBeacon?.(u,new Blob([JSON.stringify(p)],{type:'application/json'}));}catch(e){}fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'application/json','X-Debug-Session-Id':'86ed09'},body:JSON.stringify(p)}).catch(()=>{});})();
+      // #endregion agent log
+      if (selectedGateway === 'midtrans') {
+        const paymentState = {
+          product: {
+            id: 0,
+            owner_id: 0,
+            owner_name: '',
+            category_id: isCarBooking ? 2 : 1,
+            name: productName,
+            description: '',
+            price: pricePerPax,
+            currency,
+            location: productLocation,
+            image,
+            images: [],
+            image_url: image,
+            rating: 0,
+            is_active: true,
+            features: [],
+          },
+          quantity: pax,
+          guestCount,
+          duration,
+          totalPrice,
+          date,
+          currency,
+          contactDetails,
+        };
+        // #region agent log
+        (()=>{const u='http://127.0.0.1:7888/ingest/5d7cc0e3-1a45-4454-a424-bdb9bbe8e778';const p={sessionId:'86ed09',runId:'pre',hypothesisId:'A',location:'pages/CheckoutSummary.tsx:handlePayment_branch_midtrans',message:'Routing checkout to internal Payment page (midtrans)',data:{selectedGateway},timestamp:Date.now()};try{navigator.sendBeacon?.(u,new Blob([JSON.stringify(p)],{type:'application/json'}));}catch(e){}fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'application/json','X-Debug-Session-Id':'86ed09'},body:JSON.stringify(p)}).catch(()=>{});})();
+        // #endregion agent log
+        navigate('/payment', { state: paymentState });
+        setLoading(false);
+        return;
+      }
+
+      // Default: Xendit (demo URL)
       setTimeout(() => {
         const xenditInvoiceUrl = 'https://checkout.xendit.co/web/609123456789';
+        // #region agent log
+        (()=>{const u='http://127.0.0.1:7888/ingest/5d7cc0e3-1a45-4454-a424-bdb9bbe8e778';const p={sessionId:'86ed09',runId:'pre',hypothesisId:'A',location:'pages/CheckoutSummary.tsx:handlePayment_branch_xendit',message:'Redirecting to Xendit checkout URL (demo)',data:{selectedGateway},timestamp:Date.now()};try{navigator.sendBeacon?.(u,new Blob([JSON.stringify(p)],{type:'application/json'}));}catch(e){}fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'application/json','X-Debug-Session-Id':'86ed09'},body:JSON.stringify(p)}).catch(()=>{});})();
+        // #endregion agent log
         window.location.href = xenditInvoiceUrl;
       }, 1500);
     } catch (error: any) {
