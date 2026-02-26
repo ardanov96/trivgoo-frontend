@@ -319,8 +319,11 @@ const AgentAddProduct: React.FC = () => {
               lng:           Number(product.lng),
             });
 
-            if (product.lat && product.lng) {
-              const pos = { lat: Number(product.lat), lng: Number(product.lng) };
+            // ✅ Use Number.isFinite() instead of && to handle 0 values correctly
+            const lat = Number(product.lat);
+            const lng = Number(product.lng);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+              const pos = { lat, lng };
               setMarkerPos(pos);
               setMapCenter(pos);
             }
@@ -814,7 +817,6 @@ const AgentAddProduct: React.FC = () => {
                   <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
                     <div className="h-64 w-full relative">
                       <MapContainer
-                        key={`${mapCenter.lat}-${mapCenter.lng}`}
                         center={[mapCenter.lat, mapCenter.lng]}
                         zoom={markerPos ? 15 : 11}
                         style={{ width: "100%", height: "100%" }}

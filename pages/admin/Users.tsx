@@ -22,11 +22,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000
 const resolveDocUrl = (url: string): string => {
   if (!url) return '';
   
-  const cleanUrl = url.replace(/^\/?public\//, '/');
+  // If already a full URL, return as-is
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
   
-  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) return cleanUrl;
+  // Clean up path: remove 'public/' prefix if present, ensure single leading slash
+  let cleanPath = url;
   
-  return `${API_BASE_URL}${cleanUrl.startsWith('/') ? '' : '/'}${cleanUrl}`;
+  // Remove 'public/' if the URL contains it (could be /public/... or public/...)
+  cleanPath = cleanPath.replace(/^\/?(public\/)?/, '');
+  
+  // Ensure we have a single leading slash for relative paths
+  if (!cleanPath.startsWith('/')) {
+    cleanPath = '/' + cleanPath;
+  }
+  
+  // Append to API base URL
+  return `${API_BASE_URL}${cleanPath}`;
 };
 
 const UsersManagement: React.FC = () => {
@@ -50,12 +61,24 @@ const UsersManagement: React.FC = () => {
 
 const handleDownloadPdf = async (url: string) => {
   try {
+    if (!url) {
+      console.error('Download failed: No URL provided');
+      return;
+    }
+    
     const filename = url.split('/').pop() || 'document.pdf';
-
-    const response = await fetch(url, { credentials: 'include' }); // ✅ kirim session cookie
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    console.log(`[PDF Download] Attempting to download from: ${url}`);
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
 
     const blob = await response.blob();
+    console.log(`[PDF Download] Successfully fetched blob, size: ${blob.size} bytes`);
+    
     const pdfBlob = new Blob([blob], { type: 'application/pdf' });
     const blobUrl = URL.createObjectURL(pdfBlob);
 
@@ -67,8 +90,10 @@ const handleDownloadPdf = async (url: string) => {
     document.body.removeChild(link);
 
     setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    console.log(`[PDF Download] Successfully downloaded: ${filename}`);
   } catch (err) {
-    console.error('Download failed:', err);
+    console.error('[PDF Download] Failed:', err);
+    alert(`Failed to download PDF: ${err instanceof Error ? err.message : String(err)}`);
   }
 };
 
