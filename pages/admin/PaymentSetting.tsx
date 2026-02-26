@@ -42,11 +42,12 @@ const PaymentSettings: React.FC = () => {
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('xendit');
 
   // Xendit Configuration
-  const [xenditApiKey, setXenditApiKey] = useState('');
+  const [xenditSecretKey, setXenditSecretKey] = useState('');
   const [xenditWebhookUrl, setXenditWebhookUrl] = useState('');
   const [xenditWebhookSecret, setXenditWebhookSecret] = useState('');
   
   // Midtrans Configuration
+  const [midtransMerchantId, setMidtransMerchantId] = useState('');
   const [midtransServerKey, setMidtransServerKey] = useState('');
   const [midtransClientKey, setMidtransClientKey] = useState('');
   const [midtransWebhookUrl, setMidtransWebhookUrl] = useState('');
@@ -149,31 +150,28 @@ const PaymentSettings: React.FC = () => {
         withCredentials: true,
       });
 
-      if (!response.data?.error) {
+      if (!response.data?.error && response.data.data) {
         const data = response.data.data;
         
-        // Gateway selection
-        setSelectedGateway(data.selectedGateway || 'xendit');
-        setIsTestMode(data.isTestMode ?? true);
+        // 1. Map General Settings
+        setSelectedGateway(data.selected_gateway || 'xendit');
+        setIsTestMode(data.is_test_mode === 1 || data.is_test_mode === true);
         
-        // Xendit config
-        if (data.xendit) {
-          setXenditApiKey(data.xendit.apiKey || '');
-          setXenditWebhookUrl(data.xendit.webhookUrl || '');
-          setXenditWebhookSecret(data.xendit.webhookSecret || '');
-          if (data.xendit.paymentMethods) {
-            setXenditPaymentMethods(data.xendit.paymentMethods);
-          }
+        // 2. Map Xendit (Ambil langsung dari root 'data')
+        setXenditSecretKey(data.xendit_secret_key || '');
+        setXenditWebhookUrl(data.xendit_webhook_url || '');
+        setXenditWebhookSecret(data.xendit_webhook_secret || '');
+        if (data.xendit_payment_methods) {
+          setXenditPaymentMethods(data.xendit_payment_methods);
         }
         
-        // Midtrans config
-        if (data.midtrans) {
-          setMidtransServerKey(data.midtrans.serverKey || '');
-          setMidtransClientKey(data.midtrans.clientKey || '');
-          setMidtransWebhookUrl(data.midtrans.webhookUrl || '');
-          if (data.midtrans.paymentMethods) {
-            setMidtransPaymentMethods(data.midtrans.paymentMethods);
-          }
+        // 3. Map Midtrans (Ambil langsung dari root 'data')
+        setMidtransMerchantId(data.midtrans_merchant_id || ''); 
+        setMidtransServerKey(data.midtrans_server_key || '');
+        setMidtransClientKey(data.midtrans_client_key || '');
+        setMidtransWebhookUrl(data.midtrans_webhook_url || '');
+        if (data.midtrans_payment_methods) {
+          setMidtransPaymentMethods(data.midtrans_payment_methods);
         }
       }
     } catch (error) {
@@ -181,12 +179,11 @@ const PaymentSettings: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+};
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
-      // Fungsi pembantu untuk menghapus properti icon
       const stripIcons = (methods: PaymentMethod[]) => 
         methods.map(({ icon, ...rest }) => rest);
 
@@ -194,19 +191,22 @@ const PaymentSettings: React.FC = () => {
         selectedGateway,
         isTestMode,
         xendit: {
-          apiKey: xenditApiKey,
+          secretKey: xenditSecretKey,
           webhookUrl: xenditWebhookUrl,
           webhookSecret: xenditWebhookSecret,
           paymentMethods: stripIcons(xenditPaymentMethods),
         },
         midtrans: {
-          server_key: midtransServerKey, // Sesuaikan key jika perlu
-          client_key: midtransClientKey,
+          // Gunakan camelCase semua di sini agar rapi
+          merchantId: midtransMerchantId,
+          serverKey: midtransServerKey, 
+          clientKey: midtransClientKey,
           webhookUrl: midtransWebhookUrl,
           paymentMethods: stripIcons(midtransPaymentMethods),
         },
       };
 
+      console.log("Payload yang dikirim ke API:", payload);
       await axios.post('/api/v1/admin/payment-settings', payload, { withCredentials: true });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -253,7 +253,7 @@ const PaymentSettings: React.FC = () => {
   };
 
   // Get current gateway config
-  const currentApiKey = selectedGateway === 'xendit' ? xenditApiKey : midtransServerKey;
+  const currentApiKey = selectedGateway === 'xendit' ? xenditSecretKey : midtransServerKey;
   const currentWebhookUrl = selectedGateway === 'xendit' ? xenditWebhookUrl : midtransWebhookUrl;
   const currentPaymentMethods = selectedGateway === 'xendit' ? xenditPaymentMethods : midtransPaymentMethods;
 
@@ -455,14 +455,14 @@ const PaymentSettings: React.FC = () => {
             // Xendit API Key
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Xendit API Key {isTestMode ? '(Test)' : '(Production)'}
+                Xendit Secret Key {isTestMode ? '(Test)' : '(Production)'}
               </label>
               <div className="relative">
                 <input
                   type={showApiKey ? 'text' : 'password'}
-                  value={xenditApiKey}
-                  onChange={(e) => setXenditApiKey(e.target.value)}
-                  placeholder={`Enter your Xendit ${isTestMode ? 'test' : 'production'} API key`}
+                  value={xenditSecretKey}
+                  onChange={(e) => setXenditSecretKey(e.target.value)}
+                  placeholder={`Enter your Xendit ${isTestMode ? 'test' : 'production'} secret key`}
                   className="w-full px-4 py-3 pr-24 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
@@ -476,9 +476,9 @@ const PaymentSettings: React.FC = () => {
                       <Eye className="w-4 h-4 text-gray-500" />
                     )}
                   </button>
-                  {xenditApiKey && (
+                  {xenditSecretKey && (
                     <button
-                      onClick={() => copyToClipboard(xenditApiKey)}
+                      onClick={() => copyToClipboard(xenditSecretKey)}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <Copy className="w-4 h-4 text-gray-500" />
@@ -487,7 +487,7 @@ const PaymentSettings: React.FC = () => {
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Get your API key from{' '}
+                Get your secret key from{' '}
                 <a
                   href="https://dashboard.xendit.co/settings/developers#api-keys"
                   target="_blank"
@@ -501,6 +501,56 @@ const PaymentSettings: React.FC = () => {
           ) : (
             // Midtrans API Keys
             <>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Midtrans Merchant ID
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={midtransMerchantId}
+                  onChange={(e) => setMidtransMerchantId(e.target.value)}
+                  placeholder="Contoh: G123456789"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Your unique Merchant ID from Midtrans Dashboard
+              </p>
+            </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Midtrans Client Key {isTestMode ? '(Sandbox)' : '(Production)'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={midtransClientKey}
+                    onChange={(e) => setMidtransClientKey(e.target.value)}
+                    placeholder={`Enter your Midtrans ${isTestMode ? 'sandbox' : 'production'} client key`}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
+                  />
+                  {midtransClientKey && (
+                    <button
+                      onClick={() => copyToClipboard(midtransClientKey)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Copy className="w-4 h-4 text-gray-500" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Client key is used for frontend integration. Get your keys from{' '}
+                  <a
+                    href="https://dashboard.midtrans.com/settings/access-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:underline"
+                  >
+                    Midtrans Dashboard
+                  </a>
+                </p>
+              </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
                   Midtrans Server Key {isTestMode ? '(Sandbox)' : '(Production)'}
@@ -539,53 +589,19 @@ const PaymentSettings: React.FC = () => {
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Midtrans Client Key {isTestMode ? '(Sandbox)' : '(Production)'}
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={midtransClientKey}
-                    onChange={(e) => setMidtransClientKey(e.target.value)}
-                    placeholder={`Enter your Midtrans ${isTestMode ? 'sandbox' : 'production'} client key`}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
-                  />
-                  {midtransClientKey && (
-                    <button
-                      onClick={() => copyToClipboard(midtransClientKey)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <Copy className="w-4 h-4 text-gray-500" />
-                    </button>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Client key is used for frontend integration. Get your keys from{' '}
-                  <a
-                    href="https://dashboard.midtrans.com/settings/access-keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary-600 hover:underline"
-                  >
-                    Midtrans Dashboard
-                  </a>
-                </p>
-              </div>
             </>
           )}
         </div>
       </div>
 
       {/* Webhook Configuration */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center mb-6">
           <Link2 className="w-5 h-5 mr-2 text-primary-600" />
           <h3 className="font-bold text-gray-900 text-lg">Webhook Configuration</h3>
         </div>
 
         <div className="space-y-6">
-          {/* Webhook URL */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">Webhook URL</label>
             <div className="relative">
@@ -615,7 +631,6 @@ const PaymentSettings: React.FC = () => {
           </div>
 
           {selectedGateway === 'xendit' && (
-            /* Webhook Secret - Only for Xendit */
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 Webhook Verification Token
@@ -655,7 +670,6 @@ const PaymentSettings: React.FC = () => {
             </div>
           )}
 
-          {/* Test Webhook */}
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -673,7 +687,7 @@ const PaymentSettings: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Payment Methods */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
