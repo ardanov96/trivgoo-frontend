@@ -15,7 +15,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useAuth } from '../../AuthContext';
 import { authService } from '../../services/authService';
 import { VerificationStatus } from '../../types';
-import axios from 'axios';
+import http from '../../services/http';
 
 type StatCardProps = {
   title: string;
@@ -61,7 +61,6 @@ const AgentDashboard: React.FC = () => {
 
   const lastFetchedLocationKeyRef = useRef<string | null>(null);
 
-  // Auto refresh user dari session
   useEffect(() => {
     if (lastFetchedLocationKeyRef.current === location.key) return;
     lastFetchedLocationKeyRef.current = location.key;
@@ -72,7 +71,6 @@ const AgentDashboard: React.FC = () => {
       try {
         const me = await authService.me();
         if (cancelled) return;
-
         updateUser({
           id: me.id,
           name: me.name,
@@ -84,7 +82,6 @@ const AgentDashboard: React.FC = () => {
         });
       } catch (err: any) {
         if (cancelled) return;
-
         const status = err?.response?.status;
         if (status === 401) {
           logout();
@@ -93,25 +90,21 @@ const AgentDashboard: React.FC = () => {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [location.key, updateUser, logout, navigate]);
 
-  // Fetch dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
         const [statsResponse, salesResponse] = await Promise.all([
-          axios.get('/api/v1/agent/dashboard/stats', { withCredentials: true }),
-          axios.get('/api/v1/agent/dashboard/weekly-sales', { withCredentials: true })
+          http.get('/agent/dashboard/stats'),
+          http.get('/agent/dashboard/weekly-sales'),
         ]);
 
         if (!statsResponse.data?.error) {
           setStats(statsResponse.data.data);
         }
-
         if (!salesResponse.data?.error) {
           setWeeklySales(salesResponse.data.data);
         }
@@ -122,7 +115,6 @@ const AgentDashboard: React.FC = () => {
       }
     };
 
-    // Hanya fetch jika user sudah verified
     if (user?.verification_status === VerificationStatus.VERIFIED) {
       fetchDashboardData();
     } else {
@@ -173,70 +165,41 @@ const AgentDashboard: React.FC = () => {
         <p className="text-gray-500">Here is your sales performance overview.</p>
       </div>
 
-      {/* Onboarding Progress Card */}
       {!isVerified && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="bg-primary-600 px-6 py-4">
-            <h3 className="text-white font-bold text-lg flex items-center">
-              🚀 Let's get you set up!
-            </h3>
+            <h3 className="text-white font-bold text-lg">🚀 Let's get you set up!</h3>
             <p className="text-primary-100 text-sm">Complete these steps to start earning.</p>
           </div>
-
           <div className="p-6">
             <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-0">
-              {/* Connector Line (Desktop) */}
               <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-100 -z-10 hidden md:block transform -translate-y-1/2" />
-
               {steps.map((step, index) => (
                 <div
                   key={index}
-                  className={`relative flex flex-row md:flex-col items-center gap-4 md:gap-0 md:text-center w-full md:w-1/3 bg-white md:bg-transparent p-2 md:p-0 rounded-lg ${
-                    step.status === 'locked' ? 'opacity-50' : ''
-                  }`}
+                  className={`relative flex flex-row md:flex-col items-center gap-4 md:gap-0 md:text-center w-full md:w-1/3 bg-white md:bg-transparent p-2 md:p-0 rounded-lg ${step.status === 'locked' ? 'opacity-50' : ''}`}
                 >
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm flex-shrink-0 z-10
-                      ${
-                        step.status === 'completed'
-                          ? 'bg-green-500 text-white'
-                          : step.status === 'pending'
-                          ? 'bg-amber-500 text-white'
-                          : step.status === 'current'
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-gray-200 text-gray-400'
-                      }`}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm flex-shrink-0 z-10
+                    ${step.status === 'completed' ? 'bg-green-500 text-white' : step.status === 'pending' ? 'bg-amber-500 text-white' : step.status === 'current' ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-400'}`}
                   >
                     <step.icon className="w-5 h-5" />
                   </div>
-
                   <div className="flex-1 md:mt-3">
-                    <h4
-                      className={`text-sm font-bold ${
-                        step.status === 'current' ? 'text-primary-700' : 'text-gray-900'
-                      }`}
-                    >
+                    <h4 className={`text-sm font-bold ${step.status === 'current' ? 'text-primary-700' : 'text-gray-900'}`}>
                       {step.title}
                     </h4>
                     <p className="text-xs text-gray-500 mb-2">{step.description}</p>
-
-                    {step.status !== 'completed' &&
-                      step.status !== 'locked' &&
-                      step.actionLabel && (
-                        <button
-                          onClick={() => navigate(step.actionLink || '#')}
-                          disabled={step.status === 'pending'}
-                          className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors inline-flex items-center
-                          ${
-                            step.status === 'pending'
-                              ? 'bg-amber-100 text-amber-700 cursor-default'
-                              : 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'
-                          }`}
-                        >
-                          {step.actionLabel}
-                          {step.status !== 'pending' && <ArrowRight className="w-3 h-3 ml-1" />}
-                        </button>
-                      )}
+                    {step.status !== 'completed' && step.status !== 'locked' && step.actionLabel && (
+                      <button
+                        onClick={() => navigate(step.actionLink || '#')}
+                        disabled={step.status === 'pending'}
+                        className={`text-xs font-bold px-4 py-1.5 rounded-full transition-colors inline-flex items-center
+                          ${step.status === 'pending' ? 'bg-amber-100 text-amber-700 cursor-default' : 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'}`}
+                      >
+                        {step.actionLabel}
+                        {step.status !== 'pending' && <ArrowRight className="w-3 h-3 ml-1" />}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -245,7 +208,6 @@ const AgentDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Stats Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
@@ -256,44 +218,15 @@ const AgentDashboard: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div
-          className={`grid grid-cols-1 md:grid-cols-4 gap-6 ${
-            !isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''
-          }`}
-        >
-          <StatCard
-            title="Total Commission"
-            value={formatIDR(stats?.total_commission || 0)}
-            icon={DollarSign}
-            color="bg-green-500"
-          />
-          <StatCard
-            title="Bookings This Month"
-            value={stats?.bookings_this_month || 0}
-            icon={TrendingUp}
-            color="bg-blue-500"
-          />
-          <StatCard
-            title="Active Customers"
-            value={stats?.active_customers || 0}
-            icon={Users}
-            color="bg-indigo-500"
-          />
-          <StatCard
-            title="Total Products"
-            value={stats?.total_products || 0}
-            icon={Package}
-            color="bg-purple-500"
-          />
+        <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 ${!isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''}`}>
+          <StatCard title="Total Commission" value={formatIDR(stats?.total_commission || 0)} icon={DollarSign} color="bg-green-500" />
+          <StatCard title="Bookings This Month" value={stats?.bookings_this_month || 0} icon={TrendingUp} color="bg-blue-500" />
+          <StatCard title="Active Customers" value={stats?.active_customers || 0} icon={Users} color="bg-indigo-500" />
+          <StatCard title="Total Products" value={stats?.total_products || 0} icon={Package} color="bg-purple-500" />
         </div>
       )}
 
-      {/* Weekly Sales Chart */}
-      <div
-        className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 ${
-          !isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''
-        }`}
-      >
+      <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 ${!isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''}`}>
         <h3 className="text-lg font-bold text-gray-900 mb-6">Weekly Sales Performance</h3>
         {isLoading ? (
           <div className="h-80 flex items-center justify-center">
@@ -308,11 +241,7 @@ const AgentDashboard: React.FC = () => {
                 <YAxis tickFormatter={(val) => formatIDR(val)} />
                 <Tooltip
                   formatter={(value: any) => [formatIDR(value), 'Sales']}
-                  contentStyle={{
-                    borderRadius: '8px',
-                    border: 'none',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                 />
                 <Bar dataKey="sales" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
               </BarChart>

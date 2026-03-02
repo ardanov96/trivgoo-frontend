@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import http from '../../services/http';
 import {
   CreditCard,
   MapPin,
@@ -13,7 +13,6 @@ import {
   Mail,
   Phone,
   Clock,
-  Car,
   Gauge,
   Briefcase,
   Award,
@@ -31,7 +30,7 @@ const CheckoutSummary: React.FC = () => {
   useEffect(() => {
     const fetchGateway = async () => {
       try {
-        const res = await axios.get('/api/v1/admin/payment-settings', { withCredentials: true });
+        const res = await http.get('/admin/payment-settings');
         const gw = res.data?.data?.selected_gateway || 'xendit';
         setSelectedGateway(gw);
       } catch (error) {
@@ -39,10 +38,8 @@ const CheckoutSummary: React.FC = () => {
       }
     };
     fetchGateway();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Data passed from ProductDetail handleBookNow
   const bookingData = location.state || {
     productName: 'Bali Tropical Tour - Nusa Penida',
     location: 'Klungkung, Bali',
@@ -56,12 +53,7 @@ const CheckoutSummary: React.FC = () => {
     guestCount: 2,
     unitLabel: 'Ticket',
     priceUnitLabel: 'person',
-    contactDetails: {
-      name: '',
-      email: '',
-      phone: '',
-    },
-    // Car-specific fields
+    contactDetails: { name: '', email: '', phone: '' },
     vehicleType: 'car',
     transmission: 'Automatic',
     seats: 7,
@@ -87,7 +79,6 @@ const CheckoutSummary: React.FC = () => {
     unitLabel = 'Ticket',
     priceUnitLabel = 'person',
     contactDetails = {},
-    // Car-specific fields
     vehicleType,
     transmission,
     seats,
@@ -101,58 +92,34 @@ const CheckoutSummary: React.FC = () => {
 
   const isCarBooking = vehicleType === 'car';
 
-  // Format date from YYYY-MM-DD to readable format
   const formatDateString = (dateStr: string) => {
     if (!dateStr) return '-';
-    
     try {
-      // Handle YYYY-MM-DD format
       if (dateStr.includes('-')) {
         const [y, m, d] = dateStr.split('-').map(Number);
         if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
-          return new Date(y, m - 1, d).toLocaleDateString('id-ID', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          });
+          return new Date(y, m - 1, d).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         }
       }
       return dateStr;
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return dateStr;
-    }
+    } catch { return dateStr; }
   };
 
-  // Format date display for non-car products
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return '-';
-    
     try {
-      // Check if it's a range
       if (dateStr.includes(' - ')) {
         const [start, end] = dateStr.split(' - ');
         return `${formatDateString(start)} – ${formatDateString(end)}`;
       }
-      
-      // Single date
       return formatDateString(dateStr);
-    } catch (error) {
-      console.error('Error formatting date display:', error);
-      return dateStr;
-    }
+    } catch { return dateStr; }
   };
 
-  // Format date range with time for car bookings
   const formatDateRangeWithTime = () => {
-    if (!date || !date.includes(' - ')) {
-      return <span>{formatDateDisplay(date)}</span>;
-    }
-    
+    if (!date || !date.includes(' - ')) return <span>{formatDateDisplay(date)}</span>;
     try {
       const [start, end] = date.split(' - ');
-      
       return (
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -167,10 +134,7 @@ const CheckoutSummary: React.FC = () => {
           </div>
         </div>
       );
-    } catch (error) {
-      console.error('Error formatting date range:', error);
-      return <span>{date}</span>;
-    }
+    } catch { return <span>{date}</span>; }
   };
 
   const formatCurrency = (amount: number) => {
@@ -178,26 +142,21 @@ const CheckoutSummary: React.FC = () => {
     return `${currency} ${amount.toLocaleString()}`;
   };
 
-  const getTransmissionLabel = (transmission?: string) => {
-    if (!transmission) return '-';
-    return transmission.toLowerCase() === 'automatic' ? 'Matic' : 'Manual';
+  const getTransmissionLabel = (t?: string) => {
+    if (!t) return '-';
+    return t.toLowerCase() === 'automatic' ? 'Matic' : 'Manual';
   };
 
   const getFuelPolicyLabel = (policy?: string) => {
     if (!policy) return 'Kebijakan Bahan Bakar';
-    const policyMap: Record<string, string> = {
-      'Full to Full': 'Full to Full',
-      'Full to Empty': 'Full to Empty',
-      'Same to Same': 'Same to Same',
-    };
-    return policyMap[policy] || policy;
+    const map: Record<string, string> = { 'Full to Full': 'Full to Full', 'Full to Empty': 'Full to Empty', 'Same to Same': 'Same to Same' };
+    return map[policy] || policy;
   };
 
   const handlePayment = async () => {
     try {
       setLoading(true);
       if (selectedGateway === 'midtrans') {
-        // Soft lock (booking timer) di server sebelum masuk ke Payment
         try {
           const cartTokenKey = 'triv_cart_token_v1';
           let cartToken = null;
@@ -208,61 +167,34 @@ const CheckoutSummary: React.FC = () => {
               window.localStorage.setItem(cartTokenKey, cartToken);
             }
           }
-
-          await axios.post(
-            '/api/v1/cart/lock',
-            {
-              productId: bookingData.productId,
-              quantity: 1,
-              startDate: date && date.includes(' - ') ? date.split(' - ')[0] : date,
-              endDate: date && date.includes(' - ') ? date.split(' - ')[1] : date,
-              ttlSeconds: 15 * 60,
-              metadata: {
-                isCarBooking,
-              },
-              cartToken,
-            },
-            { withCredentials: true },
-          );
+          await http.post('/cart/lock', {
+            productId: bookingData.productId,
+            quantity: 1,
+            startDate: date && date.includes(' - ') ? date.split(' - ')[0] : date,
+            endDate: date && date.includes(' - ') ? date.split(' - ')[1] : date,
+            ttlSeconds: 15 * 60,
+            metadata: { isCarBooking },
+            cartToken,
+          });
         } catch (e) {
-          console.error('Failed to create booking lock (soft lock):', e);
+          console.error('Failed to create booking lock:', e);
         }
 
         const paymentState = {
           product: {
-            id: 0,
-            owner_id: 0,
-            owner_name: '',
-            category_id: isCarBooking ? 2 : 1,
-            name: productName,
-            description: '',
-            price: pricePerPax,
-            currency,
-            location: productLocation,
-            image,
-            images: [],
-            image_url: image,
-            rating: 0,
-            is_active: true,
-            features: [],
+            id: 0, owner_id: 0, owner_name: '', category_id: isCarBooking ? 2 : 1,
+            name: productName, description: '', price: pricePerPax, currency,
+            location: productLocation, image, images: [], image_url: image, rating: 0, is_active: true, features: [],
           },
-          quantity: pax,
-          guestCount,
-          duration,
-          totalPrice,
-          date,
-          currency,
-          contactDetails,
+          quantity: pax, guestCount, duration, totalPrice, date, currency, contactDetails,
         };
         navigate('/payment', { state: paymentState });
         setLoading(false);
         return;
       }
 
-      // Default: Xendit (demo URL)
       setTimeout(() => {
-        const xenditInvoiceUrl = 'https://checkout.xendit.co/web/609123456789';
-        window.location.href = xenditInvoiceUrl;
+        window.location.href = 'https://checkout.xendit.co/web/609123456789';
       }, 1500);
     } catch (error: any) {
       setLoading(false);
@@ -275,107 +207,56 @@ const CheckoutSummary: React.FC = () => {
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
-          </button>
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2"><ArrowLeft className="w-6 h-6 text-gray-600" /></button>
           <h1 className="text-lg font-bold text-gray-800">Review Pesanan</h1>
           <div className="w-10"></div>
         </div>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 mt-6 space-y-4">
-
         {/* Detail Produk */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
           <div className="flex p-4 gap-4">
-            <img
-              src={image}
-              alt={productName}
-              className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
-            />
+            <img src={image} alt={productName} className="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
             <div className="flex-1">
               <h2 className="font-bold text-gray-800 leading-tight">{productName}</h2>
               <div className="flex items-center text-sm text-gray-500 mt-2">
-                <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                {productLocation}
+                <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />{productLocation}
               </div>
               {isCarBooking && (
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
-                    Rental Mobil
-                  </span>
-                  {transmission && (
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">
-                      {getTransmissionLabel(transmission)}
-                    </span>
-                  )}
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">Rental Mobil</span>
+                  {transmission && <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">{getTransmissionLabel(transmission)}</span>}
                 </div>
               )}
             </div>
           </div>
-          
+
           <div className="bg-gray-50 p-4 border-t border-gray-100">
             {isCarBooking ? (
-              // Layout khusus untuk rental mobil
               <div className="space-y-3">
-                {/* Tanggal dan Waktu */}
                 <div className="flex items-start gap-3 text-sm">
                   <Calendar className="w-4 h-4 mt-0.5 text-primary-500 flex-shrink-0" />
-                  <div className="flex-1">
-                    <div className="text-gray-600">
-                      {formatDateRangeWithTime()}
-                    </div>
-                  </div>
+                  <div className="flex-1 text-gray-600">{formatDateRangeWithTime()}</div>
                 </div>
-
-                {/* Durasi Sewa */}
                 <div className="flex items-center gap-3 text-sm">
                   <Clock className="w-4 h-4 text-primary-500 flex-shrink-0" />
-                  <span className="text-gray-600">
-                    Durasi Sewa: <span className="font-medium">{duration} Hari</span>
-                  </span>
+                  <span className="text-gray-600">Durasi Sewa: <span className="font-medium">{duration} Hari</span></span>
                 </div>
-
-                {/* Detail Mobil */}
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
-                  {seats && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Users className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">{seats} Penumpang</span>
-                    </div>
-                  )}
-                  {luggage && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Briefcase className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">{luggage} Koper</span>
-                    </div>
-                  )}
-                  {year && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Award className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">Tahun {year}</span>
-                    </div>
-                  )}
-                  {fuelPolicy && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Fuel className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">{getFuelPolicyLabel(fuelPolicy)}</span>
-                    </div>
-                  )}
+                  {seats && <div className="flex items-center gap-2 text-sm"><Users className="w-4 h-4 text-gray-500" /><span className="text-gray-600">{seats} Penumpang</span></div>}
+                  {luggage && <div className="flex items-center gap-2 text-sm"><Briefcase className="w-4 h-4 text-gray-500" /><span className="text-gray-600">{luggage} Koper</span></div>}
+                  {year && <div className="flex items-center gap-2 text-sm"><Award className="w-4 h-4 text-gray-500" /><span className="text-gray-600">Tahun {year}</span></div>}
+                  {fuelPolicy && <div className="flex items-center gap-2 text-sm"><Fuel className="w-4 h-4 text-gray-500" /><span className="text-gray-600">{getFuelPolicyLabel(fuelPolicy)}</span></div>}
                 </div>
-
-                {/* Opsi Sopir */}
                 {withDriver !== undefined && (
                   <div className="flex items-center gap-2 text-sm pt-2 border-t border-gray-200">
                     <UserCog className="w-4 h-4 text-primary-500" />
-                    <span className="text-gray-600">
-                      {withDriver ? 'Dengan Sopir' : 'Tanpa Sopir (Lepas Kunci)'}
-                    </span>
+                    <span className="text-gray-600">{withDriver ? 'Dengan Sopir' : 'Tanpa Sopir (Lepas Kunci)'}</span>
                   </div>
                 )}
               </div>
             ) : (
-              // Layout untuk produk non-mobil (tour/stay)
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-start gap-2">
                   <Calendar className="w-4 h-4 mt-0.5 text-primary-500 flex-shrink-0" />
@@ -383,12 +264,7 @@ const CheckoutSummary: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-primary-500 flex-shrink-0" />
-                  <span>
-                    {guestCount ?? pax} Tamu
-                    {duration > 1 && (
-                      <span className="ml-1 text-gray-400">· {duration} Malam</span>
-                    )}
-                  </span>
+                  <span>{guestCount ?? pax} Tamu{duration > 1 && <span className="ml-1 text-gray-400">· {duration} Malam</span>}</span>
                 </div>
                 {duration > 1 && (
                   <div className="flex items-center gap-2 col-span-2">
@@ -408,25 +284,19 @@ const CheckoutSummary: React.FC = () => {
             <div className="space-y-3">
               {contactDetails.name && (
                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-primary-500" />
-                  </div>
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-primary-500" /></div>
                   <span>{contactDetails.name}</span>
                 </div>
               )}
               {contactDetails.email && (
                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-4 h-4 text-primary-500" />
-                  </div>
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0"><Mail className="w-4 h-4 text-primary-500" /></div>
                   <span>{contactDetails.email}</span>
                 </div>
               )}
               {contactDetails.phone && (
                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-4 h-4 text-primary-500" />
-                  </div>
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0"><Phone className="w-4 h-4 text-primary-500" /></div>
                   <span>{contactDetails.phone}</span>
                 </div>
               )}
@@ -439,12 +309,9 @@ const CheckoutSummary: React.FC = () => {
           <h3 className="font-bold text-gray-800 mb-4">Rincian Harga</h3>
           <div className="space-y-3">
             {isCarBooking ? (
-              // Rincian harga untuk rental mobil
               <>
                 <div className="flex justify-between text-gray-600 text-sm">
-                  <span>
-                    {formatCurrency(pricePerPax)} / hari × {duration} hari
-                  </span>
+                  <span>{formatCurrency(pricePerPax)} / hari × {duration} hari</span>
                   <span>{formatCurrency(totalPrice)}</span>
                 </div>
                 {withDriver && (
@@ -455,18 +322,12 @@ const CheckoutSummary: React.FC = () => {
                 )}
               </>
             ) : (
-              // Rincian harga untuk produk non-mobil
               <div className="flex justify-between text-gray-600 text-sm">
-                <span>
-                  {formatCurrency(pricePerPax)} / {priceUnitLabel} × {pax} {unitLabel}
-                  {duration > 1 && ` × ${duration} ${priceUnitLabel === 'night' ? 'malam' : 'hari'}`}
-                </span>
+                <span>{formatCurrency(pricePerPax)} / {priceUnitLabel} × {pax} {unitLabel}{duration > 1 && ` × ${duration} ${priceUnitLabel === 'night' ? 'malam' : 'hari'}`}</span>
                 <span>{formatCurrency(totalPrice)}</span>
               </div>
             )}
-            
             <hr className="border-dashed" />
-            
             <div className="flex justify-between items-center pt-2">
               <span className="text-base font-bold text-gray-800">Total Pembayaran</span>
               <span className="text-lg font-bold text-primary-600">{formatCurrency(totalPrice)}</span>
@@ -474,13 +335,10 @@ const CheckoutSummary: React.FC = () => {
           </div>
         </div>
 
-        {/* Informasi Tambahan untuk Rental Mobil */}
+        {/* Info Rental */}
         {isCarBooking && (
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-            <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4" />
-              Informasi Penting
-            </h3>
+            <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2"><ShieldCheck className="w-4 h-4" />Informasi Penting</h3>
             <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
               <li>Harap bawa SIM asli dan KTP saat pengambilan mobil</li>
               <li>Deposit akan dikembalikan saat mobil dikembalikan dalam kondisi baik</li>
@@ -490,29 +348,18 @@ const CheckoutSummary: React.FC = () => {
           </div>
         )}
 
-        {/* Button Action */}
+        {/* Button */}
         <div className="pt-4">
-          <button
-            onClick={handlePayment}
-            disabled={loading}
-            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2
-              ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'}`}
-          >
+          <button onClick={handlePayment} disabled={loading}
+            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'}`}>
             {loading ? (
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <>
-                <CreditCard className="w-5 h-5" />
-                Lanjut ke Pembayaran
-                <ChevronRight className="w-5 h-5" />
-              </>
+              <><CreditCard className="w-5 h-5" />Lanjut ke Pembayaran<ChevronRight className="w-5 h-5" /></>
             )}
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">
-            Dengan mengklik tombol di atas, Anda menyetujui Syarat & Ketentuan yang berlaku.
-          </p>
+          <p className="text-center text-xs text-gray-400 mt-4">Dengan mengklik tombol di atas, Anda menyetujui Syarat & Ketentuan yang berlaku.</p>
         </div>
-
       </div>
     </div>
   );
