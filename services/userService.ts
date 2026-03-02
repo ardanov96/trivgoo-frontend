@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = '/api/v1/agent'; 
+const API_URL = '/agent';
 
 export const userService = {
   updateProfile: async (payload: {
