@@ -23,8 +23,8 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
       : [],
     details: (data as any).details ?? undefined,
     daily_capacity: (data as any).daily_capacity ?? 10,
-    lat: (data as any).lat,
-    lng: (data as any).lng,
+    lat: parseFloat(String((data as any).lat || 0)),
+    lng: parseFloat(String((data as any).lng || 0)),
     blocked_dates: Array.isArray((data as any).blocked_dates)
       ? (data as any).blocked_dates
       : [],
@@ -32,6 +32,7 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
     is_active: !!(data as any).is_active,
     created_at: (data as any).created_at,
     updated_at: (data as any).updated_at,
+    car_id: (data as any).car_id ? Number(data.car_id) : undefined,
   };
 }
 
@@ -97,6 +98,16 @@ export const agentProductService = {
     await mapOne(
       http.delete<ProductEnvelope<any>>(`/agent/products/${id}/delete`)
     );
+  },
+
+  async updateProductStatus(id: number, is_active: boolean): Promise<AgentProduct> {
+    const raw = await mapOne(
+      http.put<ProductEnvelope<AgentProduct>>(
+        `/agent/products/${id}/status`,
+        { is_active }
+      )
+    );
+    return normalizeProduct(raw);
   },
 
 async getProductById(id: number): Promise<AgentProduct> {

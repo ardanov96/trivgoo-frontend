@@ -14,28 +14,17 @@ import {
   User,
   X,
 } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Swal from 'sweetalert2';
 
 import { useAuth } from "../../AuthContext";
 import { agentProductService } from "../../services/agentProductService";
 import { mediaService } from "../../services/mediaService";
+import http from "../../services/http";
 
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+import { GoogleMap, Marker } from "@react-google-maps/api";
+import { useLoadScript } from "@react-google-maps/api";
 
 import {
   AgentProduct,
@@ -72,23 +61,7 @@ const formatRupiah = (value: string) => {
 
 type LatLng = { lat: number; lng: number };
 const DEFAULT_CENTER: LatLng = { lat: -8.409518, lng: 115.188919 };
-
-function MapUpdater({ center }: { center: LatLng }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView([center.lat, center.lng], map.getZoom());
-  }, [center, map]);
-  return null;
-}
-
-function MapClickHandler({ onClick }: { onClick: (pos: LatLng) => void }) {
-  useMapEvents({
-    click(e) {
-      onClick({ lat: e.latlng.lat, lng: e.latlng.lng });
-    },
-  });
-  return null;
-}
+const GOOGLE_MAPS_API_KEY = "AIzaSyCjp27el-7L1JOpo9HFfeJOCTBGjdR0-IY";
 
 const AgentAddProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -129,7 +102,7 @@ const AgentAddProduct: React.FC = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, ""); // hanya angka
+    const raw = e.target.value.replace(/\D/g, "");
     setFormData((prev) => ({
       ...prev,
       price: raw,
@@ -181,25 +154,43 @@ const AgentAddProduct: React.FC = () => {
   useEffect(() => { markerPosRef.current    = markerPos;    }, [markerPos]);
   // ────────────────────────────────────────────────────────────
 
+  // ── FIX: Helper untuk set marker position dan sync ref sekaligus ──
+  const setMarkerAndRef = useCallback((pos: LatLng | null) => {
+    setMarkerPos(pos);
+    markerPosRef.current = pos; // langsung update ref, tidak menunggu effect
+  }, []);
+  // ─────────────────────────────────────────────────────────────────
+
+  // ensure marker gets initialized and updated when coordinates change
+  useEffect(() => {
+    const hasLatLng =
+      Number.isFinite(formData.lat) && Number.isFinite(formData.lng) &&
+      (formData.lat !== 0 || formData.lng !== 0);
+
+    if (hasLatLng) {
+      const pos = { lat: formData.lat, lng: formData.lng };
+      console.debug('[MARKER EFFECT] Updating marker from formData:', pos);
+      setMarkerAndRef(pos); // ← gunakan helper agar ref langsung terupdate
+      setMapCenter(pos);
+    }
+  }, [formData.lat, formData.lng, setMarkerAndRef]);
+
   const isTour      = user?.specialization === AgentSpecialization.TOUR;
   const isStay      = user?.specialization === AgentSpecialization.STAY;
   const isTransport = user?.specialization === AgentSpecialization.TRANSPORT;
 
-  // ── MEDIA HANDLERS (di atas early return agar tidak stale) ──
+  // ── MEDIA HANDLERS ──────────────────────────────────────────
   const openCoverPicker   = () => coverInputRef.current?.click();
   const openGalleryPicker = () => galleryInputRef.current?.click();
 
   const onPickCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // ✅ FIX: revoke preview lama dan set state baru dalam SATU operasi
     setCoverState((prev) => {
       if (prev?.kind === "file") URL.revokeObjectURL(prev.preview);
       const preview = URL.createObjectURL(file);
       return { kind: "file", file, preview };
     });
-
     setFormData((prev) => ({ ...prev, image: URL.createObjectURL(file) }));
     e.target.value = "";
   };
@@ -207,13 +198,11 @@ const AgentAddProduct: React.FC = () => {
   const onPickGalleryFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-
     const newItems: GalleryItem[] = files.map((file) => ({
       kind: "file" as const,
       file,
       preview: URL.createObjectURL(file),
     }));
-
     setGalleryItems((prev) => [...prev, ...newItems]);
     e.target.value = "";
   };
@@ -242,7 +231,7 @@ const AgentAddProduct: React.FC = () => {
     const enumTourValues = Object.values(TourCategory);
 
     const tourExperienceTags = [
-      "Family", "Honeymoon", "Solo Travel", "Healing", 
+      "Family", "Honeymoon", "Solo Travel", "Healing",
       "Workation", "Adventure", "Cultural", "Culinary", "Eco Tourism"
     ];
 
@@ -256,14 +245,13 @@ const AgentAddProduct: React.FC = () => {
 
     return (
       <div className="space-y-4 mb-8">
-        {/* Container dengan Grid yang responsif */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {options.map((opt) => {
             const isSelected = selectedSubCategory === opt;
             return (
               <button
                 key={opt}
-                type="button" // Mencegah form submit saat diklik
+                type="button"
                 onClick={() => setSelectedSubCategory(opt)}
                 className={`group relative p-3 rounded-xl border-2 flex items-center justify-center text-center font-semibold text-xs transition-all duration-300 transform active:scale-95 ${
                   isSelected
@@ -272,8 +260,6 @@ const AgentAddProduct: React.FC = () => {
                 }`}
               >
                 {opt}
-                
-                {/* Checkmark icon kecil saat terpilih (opsional untuk mempercantik) */}
                 {isSelected && (
                   <div className="absolute -top-2 -right-2 bg-primary-600 text-white rounded-full p-0.5 shadow-sm">
                     <Check className="w-3 h-3" />
@@ -293,7 +279,7 @@ const AgentAddProduct: React.FC = () => {
       if (user.specialization === AgentSpecialization.STAY)      setSelectedSubCategory(StayCategory.HOTEL);
       if (user.specialization === AgentSpecialization.TRANSPORT) setSelectedSubCategory(TransportCategory.CAR_RENTAL);
       if (!markerPos) {
-        setMarkerPos(DEFAULT_CENTER);
+        setMarkerAndRef(DEFAULT_CENTER); // ← gunakan helper
         setMapCenter(DEFAULT_CENTER);
       }
     }
@@ -305,6 +291,22 @@ const AgentAddProduct: React.FC = () => {
           const product: AgentProduct = await agentProductService.getMyProduct(Number(id));
 
           if (product && product.owner_id === user?.id) {
+            console.debug("[LOAD PRODUCT] Full product:", product);
+            console.debug("[LOAD PRODUCT] Raw coords - lat:", product.lat, "(type:", typeof product.lat + ")", "lng:", product.lng, "(type:", typeof product.lng + ")");
+
+            if (product.car_id) {
+              setSelectedCarId(product.car_id);
+            }
+
+            const prodLat = Number(product.lat) || 0;
+            const prodLng = Number(product.lng) || 0;
+            const coordsValid = Number.isFinite(prodLat) && Number.isFinite(prodLng) && (prodLat !== 0 || prodLng !== 0);
+            console.debug('[LOAD PRODUCT] Parsed coords - lat:', prodLat, 'lng:', prodLng, 'valid:', coordsValid);
+
+            if (!coordsValid) {
+              console.warn('[LOAD PRODUCT] ⚠️ WARNING: Coordinates are invalid or zero!', { lat: prodLat, lng: prodLng });
+            }
+
             setFormData({
               name:          product.name,
               description:   product.description,
@@ -315,17 +317,25 @@ const AgentAddProduct: React.FC = () => {
               features:      product.features || [""],
               dailyCapacity: product.daily_capacity || 10,
               blockedDates:  (product as any).blocked_dates || [],
-              lat:           Number(product.lat),
-              lng:           Number(product.lng),
+              lat:           prodLat,
+              lng:           prodLng,
             });
 
-            // ✅ Use Number.isFinite() instead of && to handle 0 values correctly
-            const lat = Number(product.lat);
-            const lng = Number(product.lng);
-            if (Number.isFinite(lat) && Number.isFinite(lng)) {
-              const pos = { lat, lng };
+            // ── FIX UTAMA: Set marker dan ref LANGSUNG saat data di-load ──
+            // Tidak mengandalkan useEffect async agar handleSubmit
+            // selalu dapat marker yang valid meski tanpa interaksi map.
+            if (coordsValid) {
+              const pos = { lat: prodLat, lng: prodLng };
+              console.debug('[LOAD PRODUCT] Setting marker & ref directly:', pos);
               setMarkerPos(pos);
               setMapCenter(pos);
+              markerPosRef.current = pos; // ← KEY FIX: langsung update ref
+            }
+            // ─────────────────────────────────────────────────────────────
+
+            if (coordsValid && (!product.location || product.location.trim() === '')) {
+              console.debug('[LOAD PRODUCT] Auto-fetching location from coordinates');
+              reverseGeocode({ lat: prodLat, lng: prodLng });
             }
 
             const coverUrl = (product as any).image || (product as any).image_url || "";
@@ -342,13 +352,13 @@ const AgentAddProduct: React.FC = () => {
               if (product.details.type === "tour") {
                 setSelectedSubCategory(product.details.tourCategory);
                 setTourDetails({
-                  duration:      product.details.duration,
-                  groupSize:     product.details.groupSize,
-                  difficulty:    product.details.difficulty,
+                  duration:       product.details.duration,
+                  groupSize:      product.details.groupSize,
+                  difficulty:     product.details.difficulty,
                   ageRestriction: product.details.ageRestriction || "",
-                  meetingPoint:  product.details.meetingPoint,
-                  inclusions:    product.details.inclusions,
-                  exclusions:    product.details.exclusions,
+                  meetingPoint:   product.details.meetingPoint,
+                  inclusions:     product.details.inclusions,
+                  exclusions:     product.details.exclusions,
                 });
                 setItineraryItems(product.details.itinerary);
               } else if (product.details.type === "stay") {
@@ -370,6 +380,9 @@ const AgentAddProduct: React.FC = () => {
                   year:         product.details.year || new Date().getFullYear(),
                   driver:       product.details.driver || false,
                 });
+                if ((product.details as any).car_id) {
+                  setSelectedCarId((product.details as any).car_id);
+                }
               }
             }
           } else {
@@ -384,18 +397,22 @@ const AgentAddProduct: React.FC = () => {
   }, [id, user, navigate]);
 
   useEffect(() => {
-    if (isTransport) {
-      (async () => {
-        try {
-          const res  = await fetch('/api/v1/cars', { credentials: 'include' });
-          const json = await res.json();
-          setCarList(json.data || []);
-        } catch (err) {
-          console.error('Failed to fetch cars', err);
-        }
-      })();
+    const loadCars = async () => {
+      try {
+        const res = await http.get<any>('/cars');
+        console.debug('car fetch response', res);
+        const list = res.data && res.data.data ? res.data.data : [];
+        setCarList(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error('Failed to fetch cars', err);
+        setCarList([]);
+      }
+    };
+
+    if (user?.specialization === AgentSpecialization.TRANSPORT) {
+      loadCars();
     }
-  }, [isTransport]);
+  }, [user?.specialization]);
 
   const handleCarSelect = (carId: number) => {
     const car = carList.find((c) => c.id === carId);
@@ -419,24 +436,47 @@ const AgentAddProduct: React.FC = () => {
   const searchAddress = async (query: string) => {
     if (!query.trim()) return;
     try {
-      const res  = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      if (data.length > 0) {
-        const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        setMarkerPos(pos);
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await response.json();
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+        const pos = {
+          lat: result.geometry.location.lat,
+          lng: result.geometry.location.lng,
+        };
+        setMarkerAndRef(pos); // ← gunakan helper
         setMapCenter(pos);
-        setFormData(prev => ({ ...prev, location: data[0].display_name }));
+        setFormData((prev) => ({ ...prev, location: result.formatted_address }));
+      } else {
+        Swal.fire({
+          title: 'Location not found',
+          text: 'Please try a different search query',
+          icon: 'warning',
+          confirmButtonColor: '#0f172a',
+        });
       }
     } catch (err) {
       console.error("Search error", err);
+      Swal.fire({
+        title: 'Search failed',
+        text: 'An error occurred while searching',
+        icon: 'error',
+        confirmButtonColor: '#0f172a',
+      });
     }
   };
 
   const reverseGeocode = async (pos: LatLng) => {
     try {
-      const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`);
-      const data = await res.json();
-      if (data.display_name) setFormData(prev => ({ ...prev, location: data.display_name }));
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.lat},${pos.lng}&key=${GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await response.json();
+      if (data.results && data.results.length > 0) {
+        setFormData((prev) => ({ ...prev, location: data.results[0].formatted_address }));
+      }
     } catch (err) {
       console.error("Reverse geocode error", err);
     }
@@ -544,15 +584,15 @@ const AgentAddProduct: React.FC = () => {
     if (user.specialization === AgentSpecialization.TOUR) {
       return {
         type: "tour",
-        tourCategory:    selectedSubCategory as TourCategory,
-        duration:        tourDetails.duration || "1 Day",
-        groupSize:       tourDetails.groupSize || "Flexible",
-        difficulty:      tourDetails.difficulty,
-        meetingPoint:    tourDetails.meetingPoint,
-        ageRestriction:  tourDetails.ageRestriction,
-        itinerary:       itineraryItems,
-        inclusions:      tourDetails.inclusions.filter((i) => i),
-        exclusions:      tourDetails.exclusions.filter((i) => i),
+        tourCategory:   selectedSubCategory as TourCategory,
+        duration:       tourDetails.duration || "1 Day",
+        groupSize:      tourDetails.groupSize || "Flexible",
+        difficulty:     tourDetails.difficulty,
+        meetingPoint:   tourDetails.meetingPoint,
+        ageRestriction: tourDetails.ageRestriction,
+        itinerary:      itineraryItems,
+        inclusions:     tourDetails.inclusions.filter((i) => i),
+        exclusions:     tourDetails.exclusions.filter((i) => i),
       };
     }
     if (user.specialization === AgentSpecialization.STAY) {
@@ -570,7 +610,7 @@ const AgentAddProduct: React.FC = () => {
       };
     }
     if (user.specialization === AgentSpecialization.TRANSPORT) {
-      return {
+      const details: any = {
         type:              "car",
         transportCategory: selectedSubCategory as TransportCategory,
         transmission:      carDetails.transmission as "Automatic" | "Manual",
@@ -581,11 +621,14 @@ const AgentAddProduct: React.FC = () => {
         year:              Number(carDetails.year),
         requirements:      [],
       };
+      if (selectedCarId) {
+        details.car_id = selectedCarId;
+      }
+      return details;
     }
     return undefined;
   };
 
-  // ── collectExistingUrls baca dari REF ────────────────────────
   const collectExistingUrls = () => {
     const currentCoverState   = coverStateRef.current;
     const currentGalleryItems = galleryItemsRef.current;
@@ -603,7 +646,6 @@ const AgentAddProduct: React.FC = () => {
     return { coverUrl, galleryUrls };
   };
 
-  // ── uploadPendingMedia baca dari REF ─────────────────────────
   const uploadPendingMedia = async () => {
     const currentCoverState   = coverStateRef.current;
     const currentGalleryItems = galleryItemsRef.current;
@@ -630,16 +672,30 @@ const AgentAddProduct: React.FC = () => {
 
     return { uploadedCoverUrl, uploadedGalleryUrls };
   };
-  // ────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent | any) => {
     e.preventDefault();
     if (!user) return;
 
-    // ✅ Baca markerPos dari ref agar tidak stale
-    const currentMarkerPos = markerPosRef.current;
+    // ── FIX: Baca dari ref (selalu up-to-date, bebas stale closure) ──
+    const currentMarker = markerPosRef.current;
+    const formDataValid =
+      Number.isFinite(formData.lat) && Number.isFinite(formData.lng) &&
+      (formData.lat !== 0 || formData.lng !== 0);
 
-    if (!currentMarkerPos) {
+    // Prioritas: ref → formData coords (fallback edit mode)
+    const finalMarkerPos = currentMarker
+      || (formDataValid ? { lat: formData.lat, lng: formData.lng } : null);
+    // ────────────────────────────────────────────────────────────────
+
+    console.warn('[SUBMIT] ⚠️ VALIDATION CHECK:');
+    console.log('  markerPosRef.current:', currentMarker);
+    console.log('  formData.lat:', formData.lat, '| formData.lng:', formData.lng);
+    console.log('  formDataValid:', formDataValid);
+    console.log('  finalMarkerPos:', finalMarkerPos);
+
+    if (!finalMarkerPos) {
+      console.error('[SUBMIT] ❌ BLOCKING SUBMIT - No valid marker position found');
       await Swal.fire({
         title: 'Location Required',
         text: 'Please set location marker on the map',
@@ -691,18 +747,23 @@ const AgentAddProduct: React.FC = () => {
         price:          Number(formData.price),
         currency:       formData.currency,
         location:       formData.location,
-        image_url:      isTransport
-          ? (carList.find(c => c.id === selectedCarId)?.image || '')
-          : finalCoverUrl,
-        images:         isTransport ? [] : finalGalleryUrls,
+        image_url:      finalCoverUrl,
+        images:         finalGalleryUrls,
         features:       formData.features.filter((f) => f.trim() !== ''),
         details,
         daily_capacity: Number(formData.dailyCapacity),
         blocked_dates:  formData.blockedDates,
-        lat:            currentMarkerPos.lat,
-        lng:            currentMarkerPos.lng,
-        ...(isTransport && selectedCarId ? { car_id: selectedCarId } : {}),
+        lat:            finalMarkerPos.lat,
+        lng:            finalMarkerPos.lng,
       };
+
+      if (isTransport) {
+        payload.image_url = carList.find((c) => c.id === selectedCarId)?.image || payload.image_url;
+        payload.images = [];
+        if (selectedCarId) {
+          (payload as any).car_id = selectedCarId;
+        }
+      }
 
       if (isEditMode && id) {
         await agentProductService.updateProduct(Number(id), payload);
@@ -816,34 +877,20 @@ const AgentAddProduct: React.FC = () => {
 
                   <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
                     <div className="h-64 w-full relative">
-                      <MapContainer
-                        center={[mapCenter.lat, mapCenter.lng]}
-                        zoom={markerPos ? 15 : 11}
-                        style={{ width: "100%", height: "100%" }}
-                        scrollWheelZoom={true}
-                      >
-                        <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <MapUpdater center={mapCenter} />
-                        <MapClickHandler onClick={async (pos) => { setMarkerPos(pos); setMapCenter(pos); await reverseGeocode(pos); }} />
-                        {markerPos && (
-                          <Marker
-                            position={[markerPos.lat, markerPos.lng]}
-                            draggable={true}
-                            eventHandlers={{
-                              dragend: async (e) => {
-                                const pos = e.target.getLatLng();
-                                const newPos = { lat: pos.lat, lng: pos.lng };
-                                setMarkerPos(newPos);
-                                setMapCenter(newPos);
-                                await reverseGeocode(newPos);
-                              }
-                            }}
-                          />
-                        )}
-                      </MapContainer>
+                      <GoogleMapComponent
+                        center={mapCenter}
+                        marker={markerPos}
+                        onClickMap={(pos) => {
+                          setMarkerAndRef(pos); // ← gunakan helper
+                          setMapCenter(pos);
+                          reverseGeocode(pos);
+                        }}
+                        onMarkerDragEnd={async (pos) => {
+                          setMarkerAndRef(pos); // ← gunakan helper
+                          setMapCenter(pos);
+                          await reverseGeocode(pos);
+                        }}
+                      />
                     </div>
                     <div className="px-4 py-3 text-[11px] text-gray-500 flex items-center justify-between">
                       <span>Search location or click map to set marker. Drag marker to adjust position.</span>
@@ -851,8 +898,17 @@ const AgentAddProduct: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className={`px-4 py-3 text-xs flex items-center justify-between ${markerPos ? 'bg-green-50 text-green-700 border-t border-green-200' : 'bg-red-50 text-red-600 border-t border-red-200'}`}>
-                    <span className="font-bold">{markerPos ? <>✓ Location marked</> : <>⚠️ Click map to set location</>}</span>
+                  <div className={`px-4 py-3 text-xs flex items-center justify-between rounded-b-2xl ${
+                    markerPosRef.current || (Number.isFinite(formData.lat) && Number.isFinite(formData.lng) && (formData.lat !== 0 || formData.lng !== 0))
+                      ? 'bg-green-50 text-green-700 border-t border-green-200'
+                      : 'bg-red-50 text-red-600 border-t border-red-200'
+                  }`}>
+                    <span className="font-bold">
+                      {markerPos
+                        ? <>✓ Location marked</>
+                        : <>⚠️ Click map to set location</>
+                      }
+                    </span>
                   </div>
                 </div>
               </div>
@@ -981,28 +1037,24 @@ const AgentAddProduct: React.FC = () => {
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Vehicle Year</label>
-                    <input type="number" readOnly={!!selectedCarId} className={`w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white ${selectedCarId ? 'cursor-not-allowed text-gray-500 bg-gray-100' : ''}`} value={carDetails.year} onChange={(e) => !selectedCarId && setCarDetails({ ...carDetails, year: parseInt(e.target.value, 10) })} />
+                    <input type="number" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white" value={carDetails.year} onChange={(e) => setCarDetails({ ...carDetails, year: parseInt(e.target.value, 10) })} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Transmission</label>
-                    <select disabled={!!selectedCarId} className={`w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white ${selectedCarId ? 'cursor-not-allowed text-gray-500 bg-gray-100' : ''}`} value={carDetails.transmission} onChange={(e) => !selectedCarId && setCarDetails({ ...carDetails, transmission: e.target.value })}>
+                    <select className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white" value={carDetails.transmission} onChange={(e) => setCarDetails({ ...carDetails, transmission: e.target.value })}>
                       <option>Automatic</option><option>Manual</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Seats</label>
-                    <input type="number" readOnly={!!selectedCarId} className={`w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white ${selectedCarId ? 'cursor-not-allowed text-gray-500 bg-gray-100' : ''}`} value={carDetails.seats} onChange={(e) => !selectedCarId && setCarDetails({ ...carDetails, seats: parseInt(e.target.value, 10) })} />
+                    <input type="number" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white" value={carDetails.seats} onChange={(e) => setCarDetails({ ...carDetails, seats: parseInt(e.target.value, 10) })} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Luggage</label>
                     <input type="number" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white" value={carDetails.luggage} onChange={(e) => setCarDetails({ ...carDetails, luggage: parseInt(e.target.value, 10) })} />
                   </div>
                 </div>
-                {selectedCarId && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-600 font-medium">
-                    <span>🔒</span><span>Vehicle Year, Transmission & Seats are auto-filled from selected car and cannot be edited.</span>
-                  </div>
-                )}
+
                 <div className="flex items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <input type="checkbox" id="driver" className="w-5 h-5 text-primary-600 rounded" checked={carDetails.driver} onChange={(e) => setCarDetails({ ...carDetails, driver: e.target.checked })} />
                   <label htmlFor="driver" className="ml-3 text-sm font-bold text-gray-700 flex items-center"><User className="w-4 h-4 mr-2" /> Driver Included</label>
@@ -1022,20 +1074,16 @@ const AgentAddProduct: React.FC = () => {
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Price ({formData.currency})</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-900 font-bold">Rp.</span>
-                    <input
-                        type="text"
-                        name="price"
-                        required
-                        inputMode="numeric"
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white font-bold text-lg"
-                        placeholder="0"
-                        value={
-                          formData.price
-                            ? formatRupiah(formData.price)
-                            : ""
-                        }
-                        onChange={handlePriceChange}
-                    />
+                  <input
+                    type="text"
+                    name="price"
+                    required
+                    inputMode="numeric"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white font-bold text-lg"
+                    placeholder="0"
+                    value={formData.price ? formatRupiah(formData.price) : ""}
+                    onChange={handlePriceChange}
+                  />
                 </div>
                 <p className="text-xs text-gray-400 mt-2">Per {isTour ? "person" : isStay ? "night" : "day"}</p>
               </div>
@@ -1045,17 +1093,31 @@ const AgentAddProduct: React.FC = () => {
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Block Dates</label>
-                <div className="flex gap-2 mb-3">
-                  <input type="date" className="flex-1 px-4 py-2 rounded-xl border border-gray-200" value={newBlockedDate} onChange={(e) => setNewBlockedDate(e.target.value)} />
-                  <button type="button" onClick={handleAddBlockedDate} className="px-4 py-2 bg-red-100 text-red-600 rounded-xl font-bold">Block</button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.blockedDates.map((date) => (
-                    <div key={date} className="flex items-center px-3 py-1 bg-red-50 text-red-700 rounded-full text-xs font-bold border border-red-100">
-                      <Calendar className="w-3 h-3 mr-1" /> {date}
-                      <button type="button" onClick={() => removeBlockedDate(date)} className="ml-2 hover:bg-red-200 rounded-full"><X className="w-3 h-3" /></button>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input type="date" className="flex-1 px-4 py-2 rounded-xl border border-gray-200" value={newBlockedDate} onChange={(e) => setNewBlockedDate(e.target.value)} />
+                    <button type="button" onClick={handleAddBlockedDate} className="px-4 py-2 bg-red-100 text-red-600 rounded-xl font-bold hover:bg-red-200 transition">Block</button>
+                  </div>
+
+                  {formData.blockedDates.length > 0 && (
+                    <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                      <p className="text-xs font-bold text-red-700 mb-3">Blocked Dates ({formData.blockedDates.length})</p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.blockedDates.map((date) => {
+                          const dateObj = new Date(date + 'T00:00:00');
+                          const dayName = dateObj.toLocaleDateString('id-ID', { weekday: 'short' });
+                          const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                          return (
+                            <div key={date} className="flex items-center px-3 py-2 bg-white text-red-700 rounded-lg text-xs font-bold border border-red-200 hover:bg-red-50 transition">
+                              <Calendar className="w-3 h-3 mr-2" />
+                              <span>{dayName} {formattedDate}</span>
+                              <button type="button" onClick={() => removeBlockedDate(date)} className="ml-2 hover:text-red-900"><X className="w-3 h-3" /></button>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -1068,8 +1130,8 @@ const AgentAddProduct: React.FC = () => {
             {!isTransport && (
               <>
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Media</h3>
-                <input ref={coverInputRef}   type="file" accept="image/*"          className="hidden" onChange={onPickCoverFile} />
-                <input ref={galleryInputRef} type="file" accept="image/*" multiple  className="hidden" onChange={onPickGalleryFiles} />
+                <input ref={coverInputRef}   type="file" accept="image/*"         className="hidden" onChange={onPickCoverFile} />
+                <input ref={galleryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={onPickGalleryFiles} />
 
                 <div className="mb-6">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cover Image</label>
@@ -1107,23 +1169,34 @@ const AgentAddProduct: React.FC = () => {
               </>
             )}
 
-            {isTransport && (
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center"><Car className="w-5 h-5 mr-2 text-primary-500" />Select Vehicle</h3>
-                <select className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary-500 text-sm font-medium" value={selectedCarId ?? ''} onChange={(e) => { const val = parseInt(e.target.value, 10); if (!isNaN(val)) handleCarSelect(val); }}>
-                  <option value="" disabled>-- Select a vehicle --</option>
-                  {carList.map((car) => (<option key={car.id} value={car.id}>{car.brand} {car.name} {car.model_year ? `(${car.model_year})` : ''}</option>))}
-                </select>
-                {selectedCarId && (() => {
-                  const car = carList.find(c => c.id === selectedCarId);
-                  return car ? (
-                    <div className="mt-4 p-4 rounded-xl border border-primary-100">
-                      {car.image && <img src={car.image} alt={car.name} className="w-full h-32 object-cover rounded-lg mb-3" />}
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-            )}
+            <div className={`mb-6 ${isTransport ? '' : 'opacity-50 pointer-events-none'}`}>
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                <Car className="w-5 h-5 mr-2 text-primary-500" />Select Vehicle
+                {!isTransport && (
+                  <span className="ml-2 text-xs text-gray-400">(only for transport agents)</span>
+                )}
+              </h3>
+              <select
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary-500 text-sm font-medium"
+                value={selectedCarId ?? ''}
+                onChange={(e) => { const val = parseInt(e.target.value, 10); if (!isNaN(val)) handleCarSelect(val); }}
+              >
+                <option value="" disabled>-- Select a vehicle --</option>
+                {carList.map((car) => (
+                  <option key={car.id} value={car.id}>
+                    {car.brand} {car.name} {car.model_year ? `(${car.model_year})` : ''}
+                  </option>
+                ))}
+              </select>
+              {selectedCarId && (() => {
+                const car = carList.find(c => c.id === selectedCarId);
+                return car ? (
+                  <div className="mt-4 p-4 rounded-xl border border-primary-100">
+                    {car.image && <img src={car.image} alt={car.name} className="w-full h-32 object-cover rounded-lg mb-3" />}
+                  </div>
+                ) : null;
+              })()}
+            </div>
 
             <div className="mt-8 pt-6 border-t border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Highlights</h3>
@@ -1141,6 +1214,89 @@ const AgentAddProduct: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+interface GoogleMapComponentProps {
+  center: LatLng;
+  marker: LatLng | null;
+  onClickMap: (pos: LatLng) => void;
+  onMarkerDragEnd: (pos: LatLng) => void;
+}
+
+const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
+  center,
+  marker,
+  onClickMap,
+  onMarkerDragEnd,
+}) => {
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries: ["places"],
+  });
+
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const [zoom, setZoom] = useState(marker ? 15 : 11);
+
+  useEffect(() => {
+    if (mapRef.current && marker) {
+      setZoom(15);
+    }
+  }, [marker]);
+
+  const handleMapClick = useCallback(
+    (event: google.maps.MapMouseEvent) => {
+      if (event.latLng) {
+        const newPos: LatLng = {
+          lat: event.latLng.lat(),
+          lng: event.latLng.lng(),
+        };
+        onClickMap(newPos);
+      }
+    },
+    [onClickMap]
+  );
+
+  const handleMarkerDragEnd = useCallback(
+    (event: google.maps.marker.MarkerEvent) => {
+      if (event.latLng) {
+        const newPos: LatLng = {
+          lat: event.latLng.lat(),
+          lng: event.latLng.lng(),
+        };
+        onMarkerDragEnd(newPos);
+      }
+    },
+    [onMarkerDragEnd]
+  );
+
+  if (!isLoaded) {
+    return <div className="w-full h-full bg-gray-100 flex items-center justify-center">Loading map...</div>;
+  }
+
+  return (
+    <GoogleMap
+      mapContainerStyle={{ width: "100%", height: "100%" }}
+      center={{ lat: center.lat, lng: center.lng }}
+      zoom={zoom}
+      onClick={handleMapClick}
+      ref={mapRef}
+      options={{
+        scrollwheel: true,
+        gestureHandling: "auto",
+        streetViewControl: false,
+        mapTypeControl: true,
+        fullscreenControl: true,
+      }}
+    >
+      {marker && (
+        <Marker
+          position={{ lat: marker.lat, lng: marker.lng }}
+          draggable={true}
+          onDragEnd={handleMarkerDragEnd}
+        />
+      )}
+    </GoogleMap>
   );
 };
 

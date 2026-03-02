@@ -1,13 +1,15 @@
 import { ApiEnvelope } from "@/types";
 import axios from "axios";
 
-const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+// allow overriding via environment variable (VITE_API_BASE_URL)
+// if undefined or empty, default to a relative path so the frontend can work
+// in both development and production without hardcoding hostnames.
+const apiBase = import.meta.env.VITE_API_BASE_URL || "";
 
 const http = axios.create({
-  baseURL: `${apiBase}/api/v1`,
+  baseURL: apiBase ? `${apiBase}/api/v1` : "/api/v1",
   withCredentials: true,
   headers: { Accept: "application/json" },
-
 });
 
 http.interceptors.request.use((config) => {

@@ -66,8 +66,27 @@ const AgentProducts: React.FC = () => {
   };
 
   const handleToggleStatus = async (id: number) => {
-    await mockService.toggleProductStatus(id);
-    await loadData();
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+
+    const newStatus = !product.is_active;
+
+    // Optimistik update UI dulu
+    setProducts((cur) =>
+      cur.map((p) => (p.id === id ? { ...p, is_active: newStatus } : p))
+    );
+
+    try {
+      await agentProductService.updateProductStatus(id, newStatus);
+      showToast(`Product ${newStatus ? 'enabled' : 'disabled'}`, 'success');
+    } catch (e: any) {
+      console.error(e);
+      showToast(e?.message || 'Failed to update status', 'error');
+      // Rollback jika gagal
+      setProducts((cur) =>
+        cur.map((p) => (p.id === id ? { ...p, is_active: !newStatus } : p))
+      );
+    }
   };
 
   const handleDelete = async (id: number) => {

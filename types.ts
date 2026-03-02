@@ -147,6 +147,9 @@ export interface CarDetails {
   mileage?: number; 
   insurance?: boolean; 
   color?: string; 
+
+  // link back to selected vehicle from cars table
+  car_id?: number;
 }
 
 export type ProductDetails = TourDetails | StayDetails | CarDetails;
@@ -440,6 +443,9 @@ export interface AgentProduct {
 
   owner?: OwnerSummary;
   blocked_dates?: string[];
+
+  // when transport products are linked to a specific vehicle
+  car_id?: number;
 }
 
 export type ListAgentProductsResponse = ApiResponse<Paginated<AgentProduct>>;
