@@ -39,5 +39,19 @@ export const authService = {
     const res = await http.post<ApiEnvelope<null>>('/auth/logout');
     unwrap(res.data);
   },
+
+  async forgotPassword(email: string): Promise<string> {
+    // HAPUS /api/v1 di sini, cukup mulai dari /auth
+    const res = await http.post<ApiEnvelope<null>>('/auth/forgot-password', { email });
+    const data = unwrap(res.data);
+    return res.data.message || 'Success';
+  },
+
+  async resetPassword(payload: { token: string | null; password: string }): Promise<string> {
+    // HAPUS /api/v1 di sini juga
+    const res = await http.post<ApiEnvelope<null>>('/auth/reset-password', payload);
+    const data = unwrap(res.data);
+    return res.data.message || 'Success';
+  },
   
 };

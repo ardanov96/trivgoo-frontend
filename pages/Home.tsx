@@ -38,6 +38,8 @@ import { agentProductService } from '../services/agentProductService';
 import { useCart } from '../components/CartContext';
 import { useWishlist } from '../components/WishlistContext';
 import { useToast } from '../components/ToastContext';
+import { motion } from 'framer-motion';
+import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
 
 const POPULAR_DESTINATIONS = [
   'Bali, Indonesia',
@@ -155,6 +157,25 @@ const getSubCategoryValue = (details: any): string => {
   ).toLowerCase();
 };
 
+const formatLocation = (location: string): string => {
+  if (!location) return '';
+  const parts = location.split(',').map(p => p.trim()).filter(Boolean);
+  // Buang bagian yang mengandung angka (kode pos), "Indonesia", "Jawa", "DUSUN", dll
+  const cleaned = parts.filter(p =>
+    !/\d/.test(p) &&
+    !['indonesia', 'jawa', 'java'].includes(p.toLowerCase()) &&
+    !/^dusun/i.test(p) &&
+    !/^rt/i.test(p) &&
+    !/^rw/i.test(p) &&
+    !/^jalan/i.test(p) &&
+    !/^jl/i.test(p) &&
+    !/^gg/i.test(p) &&
+    !/^gang/i.test(p)
+  );
+  // Ambil maksimal 3 bagian terakhir yang tersisa
+  return cleaned.slice(-3).join(', ');
+};
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
   // Categories state kept if needed for other parts, but removed from main display
@@ -209,6 +230,116 @@ const Home: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2, 
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 0.5 }
+  }
+};
+
+const leftToRightVariants = {
+  hidden: { x: -100, opacity: 0 },
+  visible: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.8 }
+  }
+};
+
+const rightToLeftVariants = {
+  hidden: { x: 100, opacity: 0 },
+  visible: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.8 }
+  }
+};
+
+// Hero Section Luxury Animations
+const heroSubtitleVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, delay: 0.1 }
+  }
+};
+
+const heroTitleVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, delay: 0.3 }
+  }
+};
+
+const heroMainVariants = {
+  hidden: { opacity: 0, scale: 0.8, y: 20 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 1, delay: 0.5 }
+  }
+};
+
+const heroSearchVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.8, delay: 0.8 }
+  }
+};
+
+const heroTrustedVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, delay: 1.1 }
+  }
+};
+
+// Smart AI Trip Planner Morphing Variants
+const aiCardVariants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: { opacity: 1, scale: 1, y: 0 },
+  hover: {
+    scale: 1.05,
+    y: -10,
+    transition: {
+      duration: 0.4
+    }
+  }
+};
+
+const aiContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.2
+    }
+  }
+};
 
   // Our Travel Experience 
   const [products, setProducts] = useState<Product[]>([]);
@@ -391,20 +522,20 @@ const Home: React.FC = () => {
         promoImage: '/homepage-asset/whychoose1.png',
         title: 'Best Quality',
         description: 'We ensure every destination and activity meets our high standards for your comfort.',
-        bg: 'from-blue-50/50 to-indigo-50/50',
+        bg: 'from-orange-50/50 to-amber-50/50',
         border: 'border-emerald-100/50',
         iconColor: 'text-emerald-600',
-        accent: 'bg-blue-500',
+        accent: 'bg-red-500',
       },
       {
         id: 'price',
         promoImage: '/homepage-asset/whychoose2.png',
         title: 'Best Price',
         description: 'Get the most competitive prices and exclusive deals for your dream vacation.',
-        bg: 'from-emerald-50/50 to-teal-50/50',
+        bg: 'from-orange-50/50 to-amber-50/50',
         border: 'border-emerald-100/50',
         iconColor: 'text-emerald-600',
-        accent: 'bg-emerald-500',
+        accent: 'bg-red-500',
       },
       {
         id: 'support',
@@ -414,17 +545,17 @@ const Home: React.FC = () => {
         bg: 'from-orange-50/50 to-amber-50/50',
         border: 'border-emerald-100/50',
         iconColor: 'text-emerald-600',
-        accent: 'bg-orange-500',
+        accent: 'bg-red-500',
       },
       {
         id: 'secure',
         promoImage: '/homepage-asset/whychoose4.png',
         title: 'Secure Payment',
         description: 'Your transactions are protected with the latest security technology for peace of mind.',
-        bg: 'from-purple-50/50 to-fuchsia-50/50',
+        bg: 'from-orange-50/50 to-amber-50/50',
         border: 'border-emerald-100/50',
         iconColor: 'text-emerald-600',
-        accent: 'bg-purple-500',
+        accent: 'bg-red-500',
       },
   ];
 
@@ -644,22 +775,43 @@ const Home: React.FC = () => {
 
         {/* Hero Content - z-20 to sit above background but below search popup */}
         <div className="relative z-20 w-full max-w-7xl mx-auto text-center px-4">
-          <h1 className="font-serif font-bold text-white mb-6 leading-tight tracking-tight drop-shadow-sm">
-            <span className="block text-2xl md:text-4xl lg:text-5xl opacity-90">
+          <motion.h1 className="font-serif font-bold text-white mb-6 leading-tight tracking-tight drop-shadow-sm">
+            <motion.span 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.1 }}
+              className="block text-sm md:text-base lg:text-lg font-medium tracking-widest text-white/80 mb-2"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+              🌟Hello Triverse, Let's
+            </motion.span>
+            <motion.span 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="block text-2xl md:text-4xl lg:text-5xl opacity-90"
+              style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontWeight: 700 }}>
               Find Your
-            </span>
+            </motion.span>
 
-            <span className="block text-5xl md:text-7xl lg:text-9xl text-outlined bg-clip-text bg-gradient-to-r from-primary-200 to-white">
+            <motion.span
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.5 }}
+              className="block text-6xl md:text-8xl lg:text-[10rem] text-outlined bg-clip-text bg-gradient-to-r from-primary-200 to-white mb-10 md:mb-14"
+              style={{ fontFamily: "'Vlogger', serif" }}
+            >
               {typewriterText}
-              <span className="animate-pulse text-outlined-thin">|</span>
-            </span>
-          </h1>
-          <p className="mt-4 md:mt-6 max-w-2xl text-base md:text-xl text-gray-100 mx-auto font-light leading-relaxed mb-8 md:mb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200 px-2">
-            Travel Indonesia and Asia effortlessly with curated tours, quality stays, and complete transportation solutions.
-          </p>
+              <span className="animate-pulse text-outlined-thin" style={{ fontFamily: "'Vlogger', serif" }}>|</span>
+            </motion.span>
+          </motion.h1>
 
           {/* SEARCH WIDGET CONTAINER - VERY HIGH Z-INDEX to prevent clipping */}
-          <div className="w-full max-w-4xl mx-auto relative z-[60] animate-in zoom-in duration-500 delay-300">
+          <motion.div 
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="w-full max-w-4xl mx-auto relative z-[60]"
+          >
             {/* Category Tabs - Mobile Flex Wrap Fix */}
             <div className="flex justify-center mb-4 md:mb-6 px-4 md:px-0">
               <div className="bg-gray-900/40 backdrop-blur-md p-1.5 rounded-3xl flex flex-wrap justify-center gap-1 border border-white/10 w-full md:w-auto">
@@ -886,10 +1038,15 @@ const Home: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
 
           {/* Trusted By Section - Improved spacing for mobile */}
-          <div className="mt-12 md:mt-12 flex items-center justify-center gap-2 text-white/90 text-sm font-medium animate-in fade-in delay-500 relative z-10 pb-8 md:pb-0">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.1 }}
+            className="mt-12 md:mt-12 flex items-center justify-center gap-2 text-white/90 text-sm font-medium relative z-10 pb-8 md:pb-0"
+          >
             <div className="flex -space-x-2">
               {[1, 2, 3].map((i) => (
                 <div
@@ -905,7 +1062,7 @@ const Home: React.FC = () => {
               ))}
             </div>
             <span className="ml-2 text-xs md:text-sm">Trusted by 50,000+ travelers worldwide</span>
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -1209,137 +1366,156 @@ const Home: React.FC = () => {
 
       {/* Our Travel Experience Section */}
       <div className="bg-white py-16 md:py-24 relative overflow-hidden">
-      {/* Decorative */}
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-      <div className="absolute -right-20 top-20 w-72 h-72 bg-amber-50 rounded-full blur-3xl opacity-60"></div>
-      <div className="absolute -left-20 bottom-20 w-72 h-72 bg-primary-50 rounded-full blur-3xl opacity-60"></div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-          <div>
-            <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 leading-tight">
-              Our Travel Experience
-            </h2>
-          </div>
-          <Link
-            to="/explore"
-            className="inline-flex items-center text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors group self-start md:self-auto"
+        {/* Decorative elements tetap sama */}
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          {/* Header dengan Motion */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4"
           >
-            View All Packages
-            <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
+            <div>
+              <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 leading-tight">
+                Our Travel Experience
+              </h2>
+            </div>
+            <Link
+              to="/explore"
+              className="inline-flex items-center text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors group self-start md:self-auto"
+            >
+              View All Packages
+              <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </motion.div>
 
-        {/* Filter Buttons */}
-        <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 mb-8">
-          {TRAVEL_FILTERS.map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border
-                ${
-                  activeFilter === filter
+          {/* Filter Buttons dengan Motion */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 mb-8"
+          >
+            {TRAVEL_FILTERS.map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border
+                  ${activeFilter === filter
                     ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-600/20'
                     : 'bg-white text-gray-600 border-gray-200 hover:bg-primary-600 hover:text-white hover:border-primary-600'
-                }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
+                  }`}
+              >
+                {filter}
+              </button>
+            ))}
+          </motion.div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-          {isLoading
-            ? [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
-            : filteredProducts.length > 0
-            ? filteredProducts.map((product) => {
-                const isSaved = isInWishlist(product.id);
-                return (
-                  <Link
-                    key={product.id}
-                    to={`/product/${product.id}`}
-                    className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative"
-                  >
-                    <div className="aspect-[4/3] relative overflow-hidden">
-                      <img
-                        src={product.image_url || product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                      {/* Wishlist */}
-                      <button
-                        onClick={(e) => handleWishlist(e, product)}
-                        className="absolute top-3 left-3 bg-white/95 backdrop-blur-md p-2 rounded-full shadow-sm z-10 hover:scale-110 transition-transform group/btn active:scale-90"
+          {/* Product Grid dengan Stagger Animation */}
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }} // Animasi mulai sedikit sebelum elemen terlihat penuh
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5"
+          >
+            {isLoading
+              ? [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
+              : filteredProducts.length > 0
+              ? filteredProducts.map((product) => {
+                  const isSaved = isInWishlist(product.id);
+                  return (
+                    <motion.div key={product.id} variants={itemVariants}>
+                      <Link
+                        to={`/product/${product.id}`}
+                        className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full"
                       >
-                        <Heart
-                          className={`w-4 h-4 transition-colors ${
-                            isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400 group-hover/btn:text-red-500'
-                          }`}
-                        />
-                      </button>
-                      {/* Rating */}
-                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center text-xs font-bold text-gray-900 shadow-sm z-10">
-                        <Star className="w-3.5 h-3.5 text-amber-400 mr-1 fill-current" />
-                        {product.rating}
-                      </div>
-                    </div>
-
-                    <div className="p-4 flex-1 flex flex-col">
-                      <h3 className="font-serif font-bold text-base text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-gray-400 font-medium mb-2">Available Daily</p>
-
-                      <div className="mt-auto pt-3 border-t border-gray-100">
-                        <p className="text-xs text-gray-400 mb-0.5">From</p>
-                        <p className="text-base font-bold text-gray-900">
-                          {product.currency} {Number(product.price).toLocaleString('id-ID')}
-                          <span className="text-xs font-medium text-gray-400"> /pax</span>
-                        </p>
-
-                        <div className="flex items-center gap-2 mt-3">
-                          <Link
-                            to={`/product/${product.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex-1 border border-gray-200 text-gray-700 py-2 rounded-xl text-xs font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center"
-                          >
-                            Details
-                          </Link>
-                          <button
-                            onClick={(e) => handleAddToCart(e, product)}
-                            disabled={isInCart(product.id)}
-                            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98]
-                              ${
-                                isInCart(product.id)
-                                  ? 'border-green-500 text-green-600 bg-green-50 cursor-default'
-                                  : 'border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md'
-                              }`}
-                          >
-                            <ShoppingCart className={`w-3.5 h-3.5 ${isInCart(product.id) ? 'stroke-green-600' : ''}`} />
-                            {isInCart(product.id) ? 'Added' : 'Add'}
-                          </button>
+                        {/* Product Image */}
+                        <div className="aspect-[4/3] relative overflow-hidden">
+                          <img
+                            src={getImageUrl(product.image_url || product.image)}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                          />
+                          {isLoggedIn && (
+                            <button
+                              onClick={(e) => handleWishlist(e, product)}
+                              className="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-2 rounded-full shadow-sm z-10 hover:scale-110 transition-transform group/btn active:scale-90"
+                            >
+                              <Heart className={`w-4 h-4 transition-colors ${isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400 group-hover/btn:text-red-500'}`} />
+                            </button>
+                          )}
+                          <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center text-xs font-bold text-gray-900 shadow-sm z-10">
+                            <Star className="w-3.5 h-3.5 text-amber-400 mr-1 fill-current" />
+                            {product.rating}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })
-            : (
-              <div className="col-span-full text-center py-16 text-gray-400">
-                <p className="text-lg font-semibold">No packages found for "{activeFilter}"</p>
-                <button onClick={() => setActiveFilter('All')} className="mt-3 text-primary-600 font-bold text-sm hover:underline">
-                  Clear Filter
-                </button>
-              </div>
-            )}
+
+                        {/* Product Content */}
+                        <div className="p-4 flex-1 flex flex-col">
+                          <h3 className="font-serif font-bold text-lg text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                            {product.name}
+                          </h3>
+                          {product.location && (
+                            <p className="text-sm text-gray-500 font-medium mb-2 flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" /> {formatLocation(product.location || '')}
+                            </p>
+                          )}
+                          <div className="mt-auto pt-4 border-t border-gray-100">
+                            <p className="text-sm text-gray-500 mb-1">From</p>
+                            <p className="text-lg font-bold text-gray-900">
+                              {product.currency} {Number(product.price).toLocaleString('id-ID')}
+                              <span className="text-sm font-medium text-gray-500"> /pax</span>
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                              <Link
+                                to={`/product/${product.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center"
+                              >
+                                See Details
+                              </Link>
+                              <button
+                                onClick={(e) => handleAddToCart(e, product)}
+                                disabled={isInCart(product.id)}
+                                className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98]
+                                  ${isInCart(product.id)
+                                    ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                                    : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
+                                  }`}
+                              >
+                                <ShoppingCart className={`w-3.5 h-3.5 shrink-0 ${isInCart(product.id) ? "stroke-green-600" : ""}`} />
+                                <span className="truncate">{isInCart(product.id) ? "Added" : "Add to Cart"}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })
+              : (
+                <div className="col-span-full text-center py-16 text-gray-400">
+                  {/* ... No packages found ... */}
+                </div>
+              )}
+          </motion.div>
         </div>
       </div>
-    </div>
 
       {/* Smart AI Trip Planner Section - UI Colors Synchronized (Teal/Primary) */}
-      <div className="bg-white py-16 md:py-24 relative overflow-hidden">
+      <motion.div 
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={aiContainerVariants}
+        className="bg-white py-16 md:py-24 relative overflow-hidden"
+      >
         {/* Decorative background element */}
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary-200 to-transparent"></div>
         <div className="absolute -left-20 top-40 w-64 h-64 bg-primary-50 rounded-full blur-3xl opacity-50"></div>
@@ -1358,47 +1534,49 @@ const Home: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center hover:-translate-y-2">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 group-hover:rotate-3 ring-1 ring-gray-100">
-                <Brain className="w-8 h-8 text-primary-500" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Smart Recommendations</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                AI learns your preferences to suggest hidden gems you'll love.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center hover:-translate-y-2">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 group-hover:-rotate-3 ring-1 ring-gray-100">
-                <Clock className="w-8 h-8 text-primary-500" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Time Optimization</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Maximize your holiday with efficiently planned routes and schedules.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center hover:-translate-y-2">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 group-hover:rotate-3 ring-1 ring-gray-100">
-                <Map className="w-8 h-8 text-primary-500" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Interactive Maps</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Visualize your journey with integrated maps and navigation.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center hover:-translate-y-2">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 group-hover:-rotate-3 ring-1 ring-gray-100">
-                <Sparkles className="w-8 h-8 text-primary-500" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Personalized For You</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Every itinerary is unique, tailored specifically to your travel style.
-              </p>
-            </div>
-          </div>
+          <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {[
+              {
+                Icon: Brain,
+                title: 'Smart Recommendations',
+                desc: 'AI learns your preferences to suggest hidden gems you\'ll love.'
+              },
+              {
+                Icon: Clock,
+                title: 'Time Optimization',
+                desc: 'Maximize your holiday with efficiently planned routes and schedules.'
+              },
+              {
+                Icon: Map,
+                title: 'Interactive Maps',
+                desc: 'Visualize your journey with integrated maps and navigation.'
+              },
+              {
+                Icon: Sparkles,
+                title: 'Personalized For You',
+                desc: 'Every itinerary is unique, tailored specifically to your travel style.'
+              }
+            ].map((item, i) => (
+              <motion.div 
+                key={i}
+                variants={aiCardVariants}
+                whileHover="hover"
+                className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center cursor-pointer relative will-change-transform"
+              >
+                <motion.div 
+                  className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 ring-1 ring-gray-100"
+                  whileHover={{ rotate: 360, scale: 1.1 }}
+                  transition={{ duration: 0.8 }}
+                >
+                  <item.Icon className="w-8 h-8 text-primary-500" />
+                </motion.div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  {item.desc}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
 
           <div className="text-center">
             <Link
@@ -1410,7 +1588,7 @@ const Home: React.FC = () => {
             </Link>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Popular Destinations (Instagram Stories Style - Optimized) - Z-Index lower than Hero search */}
       <div className="relative py-8 md:py-12 border-b border-gray-100 overflow-hidden">
@@ -1467,7 +1645,13 @@ const Home: React.FC = () => {
       </div>
 
       {/* Inspiration Itinerary */}
-      <div className="bg-gray-50 py-16 md:py-24 relative overflow-hidden">
+      <motion.div 
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={leftToRightVariants}
+        className="bg-gray-50 py-16 md:py-24 relative overflow-hidden"
+      >
         {/* Subtle texture / decorative */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(224,88,69,0.05),_transparent_60%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(251,191,36,0.06),_transparent_60%)]"></div>
@@ -1513,46 +1697,46 @@ const Home: React.FC = () => {
               {ITINERARY_CARDS.map((item) => (
                 <div
                   key={item.id}
-                  /* min-w-[230px] pada md (desktop) diatur agar muat 5 card dalam container max-w-7xl */
-                  className="min-w-[260px] md:min-w-[calc((100%/5)-13px)] flex-shrink-0 bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-500 group/card hover:-translate-y-1 flex flex-col"
+                  className="min-w-[300px] md:min-w-[380px] flex-shrink-0 relative rounded-2xl overflow-hidden cursor-pointer group h-[160px] md:h-[180px]"
                 >
-                  {/* Image Section */}
-                  <div className="relative h-36 overflow-hidden">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                    <span className={`absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${item.tagColor}`}>
+                  {/* Background Image */}
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+
+                  {/* Overlay - gradient hanya 50% dari kiri */}
+                  <div
+  className="absolute inset-0"
+  style={{ background: 'linear-gradient(to right, rgba(224,88,69,0.90) 0%, rgba(224,88,69,0.75) 35%, rgba(224,88,69,0.10) 50%, transparent 75%)' }}
+></div>
+
+                  {/* Content */}
+                  <div className="relative z-10 h-full flex flex-col justify-between p-5">
+                    {/* Top: Tag */}
+                    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full w-fit ${item.tagColor}`}>
                       {item.tag}
                     </span>
-                    <div className="absolute bottom-2 left-3">
-                      <div className="flex items-center text-white/90 text-[10px] font-semibold">
-                        <MapPin className="w-3 h-3 mr-1 text-primary-300" />
-                        {item.destination}
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Content Section */}
-                  <div className="p-4 flex-1 flex flex-col">
-                    <h3 className="font-serif font-bold text-sm text-gray-900 line-clamp-2 mb-2 group-hover/card:text-primary-600 transition-colors leading-snug">
-                      {item.title}
-                    </h3>
-                    <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium mb-3">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {item.duration}</span>
-                      <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {item.pax}</span>
+                    {/* Middle: Title & subtitle */}
+                    <div>
+                      <h3 className="text-white font-bold text-lg md:text-xl leading-snug mb-1 drop-shadow-sm">
+                        {item.title}
+                      </h3>
+                      <p className="text-white/70 text-xs leading-relaxed">
+                        {item.duration} · {item.pax}
+                      </p>
                     </div>
-                    <div className="mt-auto">
-                      <Link
-                        to={`/explore?search=${item.destination}`}
-                        className="flex items-center justify-center w-full py-2 rounded-lg text-[11px] font-bold bg-gray-900 hover:bg-primary-600 text-white transition-all gap-1.5"
-                      >
-                        See Activities
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </div>
+
+                    {/* Bottom: Button */}
+                    <Link
+                      to={`/explore?search=${item.destination}`}
+                      className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg w-fit hover:bg-primary-50 transition-colors shadow-md"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      See Activities
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -1606,10 +1790,16 @@ const Home: React.FC = () => {
           </div>
 
         </div>
-      </div>
+      </motion.div>
 
       {/* Why Choose Us */}
-      <div className="bg-white py-16 md:py-24 relative overflow-hidden">
+      <motion.div 
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={rightToLeftVariants}
+        className="bg-white py-16 md:py-24 relative overflow-hidden"
+      >
         {/* Decorative blobs */}
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary-50 rounded-full blur-3xl opacity-60"></div>
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-amber-50 rounded-full blur-3xl opacity-60"></div>
@@ -1656,7 +1846,7 @@ const Home: React.FC = () => {
             })}
           </div>
         </div>
-      </div>
+      </motion.div>
 
 
       {/* Testimonials Section */}

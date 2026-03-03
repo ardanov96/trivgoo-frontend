@@ -60,33 +60,16 @@
         text-stroke: 8px white;
         color: #E05845;
         paint-order: stroke fill;
-        font-weight: 900;
+        font-weight: 400; /* ← turunkan dari 900 */
       }
-      
-      .text-outlined-medium {
-        -webkit-text-stroke: 6px white;
-        text-stroke: 6px white;
-        color: #E05845;
-        paint-order: stroke fill;
-        font-weight: 900;
-      }
-      
-      .text-outlined-thin {
-        -webkit-text-stroke: 4px white;
-        text-stroke: 4px white;
-        color: #E05845;
-        paint-order: stroke fill;
-        font-weight: 800;
-      }
-      
-      /* Responsive outline - lebih tebal di desktop */
+
       @media (min-width: 768px) {
         .text-outlined {
           -webkit-text-stroke: 10px white;
           text-stroke: 10px white;
         }
       }
-      
+
       @media (min-width: 1024px) {
         .text-outlined {
           -webkit-text-stroke: 12px white;
@@ -102,6 +85,16 @@
       @keyframes marquee-right {
         0% { transform: translateX(-50%); }
         100% { transform: translateX(0%); }
+      }
+
+      @font-face {
+        font-family: 'Vlogger';
+        src: url('/fonts/Vlogger.woff') format('woff'),
+            url('/fonts/Vlogger.ttf') format('truetype'),
+            url('/fonts/Vlogger.otf') format('opentype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
       }
 
       .marquee-left {

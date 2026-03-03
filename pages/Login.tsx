@@ -151,13 +151,12 @@ const Login: React.FC = () => {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <button
-                  type="button"
-                  onClick={() => showToast('Forgot password flow belum dibuat.', 'info')}
+                <Link
+                  to="/forgot-password"
                   className="text-sm font-medium text-primary-600 hover:text-primary-500"
                 >
                   Forgot password?
-                </button>
+                </Link>
               </div>
 
               <div className="mt-1 relative">

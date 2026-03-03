@@ -50,6 +50,8 @@ import CheckoutSummary from './pages/CheckoutSummary';
 import BookingSuccess from './pages/BookingSucess';
 import BookingFailed from './pages/BookingFailed';
 import BookingPending from './pages/BookingPending';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Route Guards
 interface ProtectedRouteProps {
@@ -103,6 +105,8 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register/agent" element={<PublicOnlyRoute><RegisterAgent /></PublicOnlyRoute>} />
+        <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+        <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/career" element={<Career />} />

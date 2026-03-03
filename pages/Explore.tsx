@@ -41,6 +41,25 @@ type CarGroup = {
   agents: Product[];
 };
 
+const formatLocation = (location: string): string => {
+  if (!location) return '';
+  const parts = location.split(',').map(p => p.trim()).filter(Boolean);
+  // Buang bagian yang mengandung angka (kode pos), "Indonesia", "Jawa", "DUSUN", dll
+  const cleaned = parts.filter(p =>
+    !/\d/.test(p) &&
+    !['indonesia', 'jawa', 'java'].includes(p.toLowerCase()) &&
+    !/^dusun/i.test(p) &&
+    !/^rt/i.test(p) &&
+    !/^rw/i.test(p) &&
+    !/^jalan/i.test(p) &&
+    !/^jl/i.test(p) &&
+    !/^gg/i.test(p) &&
+    !/^gang/i.test(p)
+  );
+  // Ambil maksimal 3 bagian terakhir yang tersisa
+  return cleaned.slice(-3).join(', ');
+};
+
 function groupCarProducts(products: Product[]): CarGroup[] {
   const map = new Map<string, Product[]>();
   products.forEach((p) => {
@@ -286,8 +305,8 @@ const Explore: React.FC = () => {
                 {product.name}
               </h3>
               <div className="flex items-center text-gray-500 text-sm">
-                <MapPin className="w-4 h-4 mr-1" />
-                {product.location}
+                <MapPin className="w-4 h-4 mr-1 shrink-0" />
+                {formatLocation(product.location || '')}
               </div>
             </div>
             <div className="text-right">
@@ -514,7 +533,7 @@ const Explore: React.FC = () => {
           </h3>
           {product.location && (
             <p className="text-sm text-gray-500 font-medium mb-2 flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5" /> {product.location}
+              <MapPin className="w-3.5 h-3.5 shrink-0" /> {formatLocation(product.location || '')}
             </p>
           )}
           <div className="mt-auto pt-4 border-t border-gray-100">
@@ -523,25 +542,25 @@ const Explore: React.FC = () => {
               {product.currency} {Number(product.price).toLocaleString('id-ID')}
               <span className="text-sm font-medium text-gray-500"> /pax</span>
             </p>
-            <div className="flex items-center gap-3 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
               <Link
                 to={`/product/${product.id}`}
                 onClick={(e) => e.stopPropagation()}
-                className={`border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center ${isLoggedIn ? 'flex-1' : 'w-full'}`}
+                className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center"
               >
                 See Details
               </Link>
               <button
                 onClick={(e) => handleAddToCart(e, product)}
                 disabled={isInCart(product.id)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border transform active:scale-[0.98]
+                className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98]
                   ${isInCart(product.id)
                     ? "border-green-500 text-green-600 bg-green-50 cursor-default"
                     : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
                   }`}
               >
-                <ShoppingCart className={`w-4 h-4 ${isInCart(product.id) ? "stroke-green-600" : ""}`} />
-                {isInCart(product.id) ? "Added" : "Add"}
+                <ShoppingCart className={`w-3.5 h-3.5 shrink-0 ${isInCart(product.id) ? "stroke-green-600" : ""}`} />
+                <span className="truncate">{isInCart(product.id) ? "Added" : "Add to Cart"}</span>
               </button>
             </div>
           </div>
