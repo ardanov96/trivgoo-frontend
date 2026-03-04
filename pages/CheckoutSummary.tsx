@@ -13,7 +13,6 @@ import {
   Mail,
   Phone,
   Clock,
-  Gauge,
   Briefcase,
   Award,
   Fuel,
@@ -25,20 +24,6 @@ const CheckoutSummary: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
-  const [selectedGateway, setSelectedGateway] = useState<'xendit' | 'midtrans'>('xendit');
-
-  useEffect(() => {
-    const fetchGateway = async () => {
-      try {
-        const res = await http.get('/admin/payment-settings');
-        const gw = res.data?.data?.selected_gateway || 'xendit';
-        setSelectedGateway(gw);
-      } catch (error) {
-        console.error('Failed to fetch payment settings:', error);
-      }
-    };
-    fetchGateway();
-  }, []);
 
   const bookingData = location.state || {
     productName: 'Bali Tropical Tour - Nusa Penida',
@@ -92,13 +77,38 @@ const CheckoutSummary: React.FC = () => {
 
   const isCarBooking = vehicleType === 'car';
 
+  // Load Midtrans Snap script dinamis sesuai environment
+  useEffect(() => {
+    const existingScript = document.getElementById('midtrans-snap');
+    if (existingScript) return;
+
+    const isProduction = import.meta.env.VITE_MIDTRANS_ENV === 'production';
+    const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY || 'Mid-client-TtUhk_BzK3mZD0yW';
+    const snapUrl = isProduction
+      ? 'https://app.midtrans.com/snap/snap.js'
+      : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
+    const script = document.createElement('script');
+    script.id = 'midtrans-snap';
+    script.src = snapUrl;
+    script.setAttribute('data-client-key', clientKey);
+    script.async = true;
+    document.head.appendChild(script);
+
+    return () => {
+      // Biarkan script tetap ada, tidak perlu cleanup
+    };
+  }, []);
+
   const formatDateString = (dateStr: string) => {
     if (!dateStr) return '-';
     try {
       if (dateStr.includes('-')) {
         const [y, m, d] = dateStr.split('-').map(Number);
         if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
-          return new Date(y, m - 1, d).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+          return new Date(y, m - 1, d).toLocaleDateString('id-ID', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+          });
         }
       }
       return dateStr;
@@ -149,53 +159,62 @@ const CheckoutSummary: React.FC = () => {
 
   const getFuelPolicyLabel = (policy?: string) => {
     if (!policy) return 'Kebijakan Bahan Bakar';
-    const map: Record<string, string> = { 'Full to Full': 'Full to Full', 'Full to Empty': 'Full to Empty', 'Same to Same': 'Same to Same' };
+    const map: Record<string, string> = {
+      'Full to Full': 'Full to Full',
+      'Full to Empty': 'Full to Empty',
+      'Same to Same': 'Same to Same'
+    };
     return map[policy] || policy;
   };
 
   const handlePayment = async () => {
     try {
       setLoading(true);
-      if (selectedGateway === 'midtrans') {
-        try {
-          const cartTokenKey = 'triv_cart_token_v1';
-          let cartToken = null;
-          if (typeof window !== 'undefined') {
-            cartToken = window.localStorage.getItem(cartTokenKey);
-            if (!cartToken) {
-              cartToken = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-              window.localStorage.setItem(cartTokenKey, cartToken);
-            }
-          }
-          await http.post('/cart/lock', {
-            productId: bookingData.productId,
-            quantity: 1,
-            startDate: date && date.includes(' - ') ? date.split(' - ')[0] : date,
-            endDate: date && date.includes(' - ') ? date.split(' - ')[1] : date,
-            ttlSeconds: 15 * 60,
-            metadata: { isCarBooking },
-            cartToken,
-          });
-        } catch (e) {
-          console.error('Failed to create booking lock:', e);
-        }
 
-        const paymentState = {
-          product: {
-            id: 0, owner_id: 0, owner_name: '', category_id: isCarBooking ? 2 : 1,
-            name: productName, description: '', price: pricePerPax, currency,
-            location: productLocation, image, images: [], image_url: image, rating: 0, is_active: true, features: [],
-          },
-          quantity: pax, guestCount, duration, totalPrice, date, currency, contactDetails,
-        };
-        navigate('/payment', { state: paymentState });
-        setLoading(false);
-        return;
+      // Buat order_id unik dengan prefix TRV
+      const orderId = `TRV-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+      // Call backend untuk dapat Snap token dari Midtrans
+      const res = await http.post('/payment/create-payment', {
+        id: orderId,
+        amount: totalPrice,
+        name: contactDetails.name || 'Guest',
+        email: contactDetails.email || 'guest@trivgoo.com',
+      });
+
+      const snapToken = res.data?.data?.token;
+      if (!snapToken) throw new Error('Snap token tidak ditemukan dari server');
+
+      // Pastikan Snap SDK sudah loaded
+      if (typeof (window as any).snap === 'undefined') {
+        throw new Error('Midtrans Snap SDK belum siap. Silakan refresh halaman.');
       }
 
-      setTimeout(() => {
-        window.location.href = 'https://checkout.xendit.co/web/609123456789';
-      }, 1500);
+      // Buka Midtrans Snap popup
+      (window as any).snap.pay(snapToken, {
+        onSuccess: (result: any) => {
+          console.log('[Midtrans] Payment success:', result);
+          navigate('/booking/success', {
+            state: { orderId, result, bookingData }
+          });
+        },
+        onPending: (result: any) => {
+          console.log('[Midtrans] Payment pending:', result);
+          navigate('/booking/pending', {
+            state: { orderId, result, bookingData }
+          });
+        },
+        onError: (result: any) => {
+          console.error('[Midtrans] Payment error:', result);
+          setLoading(false);
+          Swal.fire('Pembayaran Gagal', 'Terjadi kesalahan saat pembayaran. Silakan coba lagi.', 'error');
+        },
+        onClose: () => {
+          console.log('[Midtrans] Snap popup ditutup user');
+          setLoading(false);
+        },
+      });
+
     } catch (error: any) {
       setLoading(false);
       Swal.fire('Error', error.message || 'Gagal memproses pembayaran', 'error');
@@ -207,7 +226,9 @@ const CheckoutSummary: React.FC = () => {
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2"><ArrowLeft className="w-6 h-6 text-gray-600" /></button>
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+            <ArrowLeft className="w-6 h-6 text-gray-600" />
+          </button>
           <h1 className="text-lg font-bold text-gray-800">Review Pesanan</h1>
           <div className="w-10"></div>
         </div>
@@ -226,7 +247,11 @@ const CheckoutSummary: React.FC = () => {
               {isCarBooking && (
                 <div className="flex items-center gap-2 mt-2">
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">Rental Mobil</span>
-                  {transmission && <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">{getTransmissionLabel(transmission)}</span>}
+                  {transmission && (
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">
+                      {getTransmissionLabel(transmission)}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -284,19 +309,25 @@ const CheckoutSummary: React.FC = () => {
             <div className="space-y-3">
               {contactDetails.name && (
                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-primary-500" /></div>
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-primary-500" />
+                  </div>
                   <span>{contactDetails.name}</span>
                 </div>
               )}
               {contactDetails.email && (
                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0"><Mail className="w-4 h-4 text-primary-500" /></div>
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-4 h-4 text-primary-500" />
+                  </div>
                   <span>{contactDetails.email}</span>
                 </div>
               )}
               {contactDetails.phone && (
                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0"><Phone className="w-4 h-4 text-primary-500" /></div>
+                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-4 h-4 text-primary-500" />
+                  </div>
                   <span>{contactDetails.phone}</span>
                 </div>
               )}
@@ -323,7 +354,10 @@ const CheckoutSummary: React.FC = () => {
               </>
             ) : (
               <div className="flex justify-between text-gray-600 text-sm">
-                <span>{formatCurrency(pricePerPax)} / {priceUnitLabel} × {pax} {unitLabel}{duration > 1 && ` × ${duration} ${priceUnitLabel === 'night' ? 'malam' : 'hari'}`}</span>
+                <span>
+                  {formatCurrency(pricePerPax)} / {priceUnitLabel} × {pax} {unitLabel}
+                  {duration > 1 && ` × ${duration} ${priceUnitLabel === 'night' ? 'malam' : 'hari'}`}
+                </span>
                 <span>{formatCurrency(totalPrice)}</span>
               </div>
             )}
@@ -338,7 +372,9 @@ const CheckoutSummary: React.FC = () => {
         {/* Info Rental */}
         {isCarBooking && (
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-            <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2"><ShieldCheck className="w-4 h-4" />Informasi Penting</h3>
+            <h3 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4" />Informasi Penting
+            </h3>
             <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
               <li>Harap bawa SIM asli dan KTP saat pengambilan mobil</li>
               <li>Deposit akan dikembalikan saat mobil dikembalikan dalam kondisi baik</li>
@@ -350,15 +386,26 @@ const CheckoutSummary: React.FC = () => {
 
         {/* Button */}
         <div className="pt-4">
-          <button onClick={handlePayment} disabled={loading}
-            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'}`}>
+          <button
+            onClick={handlePayment}
+            disabled={loading}
+            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
+              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'
+            }`}
+          >
             {loading ? (
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <><CreditCard className="w-5 h-5" />Lanjut ke Pembayaran<ChevronRight className="w-5 h-5" /></>
+              <>
+                <CreditCard className="w-5 h-5" />
+                Lanjut ke Pembayaran
+                <ChevronRight className="w-5 h-5" />
+              </>
             )}
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">Dengan mengklik tombol di atas, Anda menyetujui Syarat & Ketentuan yang berlaku.</p>
+          <p className="text-center text-xs text-gray-400 mt-4">
+            Dengan mengklik tombol di atas, Anda menyetujui Syarat & Ketentuan yang berlaku.
+          </p>
         </div>
       </div>
     </div>
