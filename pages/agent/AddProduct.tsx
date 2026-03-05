@@ -23,7 +23,7 @@ import { agentProductService } from "../../services/agentProductService";
 import { mediaService } from "../../services/mediaService";
 import http from "../../services/http";
 
-import { GoogleMap, Marker } from "@react-google-maps/api";
+import { GoogleMap } from "@react-google-maps/api";
 import { useLoadScript } from "@react-google-maps/api";
 
 import {
@@ -71,13 +71,13 @@ const AgentAddProduct: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const coverInputRef    = useRef<HTMLInputElement | null>(null);
-  const galleryInputRef  = useRef<HTMLInputElement | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   // ── useRef untuk menghindari stale closure di handleSubmit ──
-  const galleryItemsRef  = useRef<GalleryItem[]>([]);
-  const coverStateRef    = useRef<CoverState>(null);
-  const markerPosRef     = useRef<LatLng | null>(null);
+  const galleryItemsRef = useRef<GalleryItem[]>([]);
+  const coverStateRef = useRef<CoverState>(null);
+  const markerPosRef = useRef<LatLng | null>(null);
   // ────────────────────────────────────────────────────────────
 
   const [formData, setFormData] = useState({
@@ -94,8 +94,8 @@ const AgentAddProduct: React.FC = () => {
     blockedDates: [] as string[],
   });
 
-  const [mapCenter, setMapCenter]   = useState<LatLng>(DEFAULT_CENTER);
-  const [markerPos, setMarkerPos]   = useState<LatLng | null>(null);
+  const [mapCenter, setMapCenter] = useState<LatLng>(DEFAULT_CENTER);
+  const [markerPos, setMarkerPos] = useState<LatLng | null>(null);
   const [coverState, setCoverState] = useState<CoverState>(null);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [newBlockedDate, setNewBlockedDate] = useState("");
@@ -145,13 +145,13 @@ const AgentAddProduct: React.FC = () => {
     driver: false,
   });
 
-  const [carList, setCarList]           = useState<any[]>([]);
+  const [carList, setCarList] = useState<any[]>([]);
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
 
   // ── Sync state → ref setiap kali state berubah ──────────────
   useEffect(() => { galleryItemsRef.current = galleryItems; }, [galleryItems]);
-  useEffect(() => { coverStateRef.current   = coverState;   }, [coverState]);
-  useEffect(() => { markerPosRef.current    = markerPos;    }, [markerPos]);
+  useEffect(() => { coverStateRef.current = coverState; }, [coverState]);
+  useEffect(() => { markerPosRef.current = markerPos; }, [markerPos]);
   // ────────────────────────────────────────────────────────────
 
   // ── FIX: Helper untuk set marker position dan sync ref sekaligus ──
@@ -175,12 +175,12 @@ const AgentAddProduct: React.FC = () => {
     }
   }, [formData.lat, formData.lng, setMarkerAndRef]);
 
-  const isTour      = user?.specialization === AgentSpecialization.TOUR;
-  const isStay      = user?.specialization === AgentSpecialization.STAY;
+  const isTour = user?.specialization === AgentSpecialization.TOUR;
+  const isStay = user?.specialization === AgentSpecialization.STAY;
   const isTransport = user?.specialization === AgentSpecialization.TRANSPORT;
 
   // ── MEDIA HANDLERS ──────────────────────────────────────────
-  const openCoverPicker   = () => coverInputRef.current?.click();
+  const openCoverPicker = () => coverInputRef.current?.click();
   const openGalleryPicker = () => galleryInputRef.current?.click();
 
   const onPickCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,8 +240,8 @@ const AgentAddProduct: React.FC = () => {
     const options = isTour
       ? tourOptions
       : isStay
-      ? Object.values(StayCategory)
-      : Object.values(TransportCategory);
+        ? Object.values(StayCategory)
+        : Object.values(TransportCategory);
 
     return (
       <div className="space-y-4 mb-8">
@@ -253,11 +253,10 @@ const AgentAddProduct: React.FC = () => {
                 key={opt}
                 type="button"
                 onClick={() => setSelectedSubCategory(opt)}
-                className={`group relative p-3 rounded-xl border-2 flex items-center justify-center text-center font-semibold text-xs transition-all duration-300 transform active:scale-95 ${
-                  isSelected
-                    ? "border-primary-600 bg-primary-50 text-primary-700 shadow-md ring-2 ring-primary-500/10"
-                    : "border-gray-100 hover:border-primary-200 bg-white text-gray-600 hover:text-primary-600 shadow-sm"
-                }`}
+                className={`group relative p-3 rounded-xl border-2 flex items-center justify-center text-center font-semibold text-xs transition-all duration-300 transform active:scale-95 ${isSelected
+                  ? "border-primary-600 bg-primary-50 text-primary-700 shadow-md ring-2 ring-primary-500/10"
+                  : "border-gray-100 hover:border-primary-200 bg-white text-gray-600 hover:text-primary-600 shadow-sm"
+                  }`}
               >
                 {opt}
                 {isSelected && (
@@ -275,8 +274,8 @@ const AgentAddProduct: React.FC = () => {
 
   useEffect(() => {
     if (!id && user?.specialization) {
-      if (user.specialization === AgentSpecialization.TOUR)      setSelectedSubCategory(TourCategory.NATURE);
-      if (user.specialization === AgentSpecialization.STAY)      setSelectedSubCategory(StayCategory.HOTEL);
+      if (user.specialization === AgentSpecialization.TOUR) setSelectedSubCategory(TourCategory.NATURE);
+      if (user.specialization === AgentSpecialization.STAY) setSelectedSubCategory(StayCategory.HOTEL);
       if (user.specialization === AgentSpecialization.TRANSPORT) setSelectedSubCategory(TransportCategory.CAR_RENTAL);
       if (!markerPos) {
         setMarkerAndRef(DEFAULT_CENTER); // ← gunakan helper
@@ -308,17 +307,17 @@ const AgentAddProduct: React.FC = () => {
             }
 
             setFormData({
-              name:          product.name,
-              description:   product.description,
-              price:         product.price.toString(),
-              currency:      product.currency,
-              location:      product.location,
-              image:         (product as any).image || "",
-              features:      product.features || [""],
+              name: product.name,
+              description: product.description,
+              price: product.price.toString(),
+              currency: product.currency,
+              location: product.location,
+              image: (product as any).image || "",
+              features: product.features || [""],
               dailyCapacity: product.daily_capacity || 10,
-              blockedDates:  (product as any).blocked_dates || [],
-              lat:           prodLat,
-              lng:           prodLng,
+              blockedDates: (product as any).blocked_dates || [],
+              lat: prodLat,
+              lng: prodLng,
             });
 
             // ── FIX UTAMA: Set marker dan ref LANGSUNG saat data di-load ──
@@ -352,33 +351,33 @@ const AgentAddProduct: React.FC = () => {
               if (product.details.type === "tour") {
                 setSelectedSubCategory(product.details.tourCategory);
                 setTourDetails({
-                  duration:       product.details.duration,
-                  groupSize:      product.details.groupSize,
-                  difficulty:     product.details.difficulty,
+                  duration: product.details.duration,
+                  groupSize: product.details.groupSize,
+                  difficulty: product.details.difficulty,
                   ageRestriction: product.details.ageRestriction || "",
-                  meetingPoint:   product.details.meetingPoint,
-                  inclusions:     product.details.inclusions,
-                  exclusions:     product.details.exclusions,
+                  meetingPoint: product.details.meetingPoint,
+                  inclusions: product.details.inclusions,
+                  exclusions: product.details.exclusions,
                 });
                 setItineraryItems(product.details.itinerary);
               } else if (product.details.type === "stay") {
                 setSelectedSubCategory(product.details.stayCategory);
                 setStayDetails({
-                  rooms:             product.details.rooms,
-                  bathrooms:         product.details.bathrooms,
-                  beds:              product.details.beds,
+                  rooms: product.details.rooms,
+                  bathrooms: product.details.bathrooms,
+                  beds: product.details.beds,
                   breakfastIncluded: product.details.breakfastIncluded,
-                  amenities:         product.details.amenities?.[0]?.items || [""],
+                  amenities: product.details.amenities?.[0]?.items || [""],
                 });
               } else if (product.details.type === "car") {
                 setSelectedSubCategory(product.details.transportCategory);
                 setCarDetails({
-                  seats:        product.details.seats,
+                  seats: product.details.seats,
                   transmission: product.details.transmission,
-                  luggage:      product.details.luggage,
-                  fuelPolicy:   product.details.fuelPolicy,
-                  year:         product.details.year || new Date().getFullYear(),
-                  driver:       product.details.driver || false,
+                  luggage: product.details.luggage,
+                  fuelPolicy: product.details.fuelPolicy,
+                  year: product.details.year || new Date().getFullYear(),
+                  driver: product.details.driver || false,
                 });
                 if ((product.details as any).car_id) {
                   setSelectedCarId((product.details as any).car_id);
@@ -419,16 +418,16 @@ const AgentAddProduct: React.FC = () => {
     if (!car) return;
     setSelectedCarId(carId);
     setCarDetails({
-      seats:        car.seats || 4,
+      seats: car.seats || 4,
       transmission: car.transmission || 'Automatic',
-      luggage:      carDetails.luggage,
-      fuelPolicy:   carDetails.fuelPolicy,
-      year:         car.model_year ? parseInt(car.model_year) : new Date().getFullYear(),
-      driver:       carDetails.driver,
+      luggage: carDetails.luggage,
+      fuelPolicy: carDetails.fuelPolicy,
+      year: car.model_year ? parseInt(car.model_year) : new Date().getFullYear(),
+      driver: carDetails.driver,
     });
     setFormData(prev => ({
       ...prev,
-      name:        `${car.brand} ${car.name}`.trim(),
+      name: `${car.brand} ${car.name}`.trim(),
       description: car.description || prev.description,
     }));
   };
@@ -517,7 +516,7 @@ const AgentAddProduct: React.FC = () => {
     setFormData((prev) => ({ ...prev, features: newFeatures }));
   };
 
-  const addFeature    = () => setFormData((prev) => ({ ...prev, features: [...prev.features, ""] }));
+  const addFeature = () => setFormData((prev) => ({ ...prev, features: [...prev.features, ""] }));
   const removeFeature = (index: number) => setFormData((prev) => ({ ...prev, features: prev.features.filter((_, i) => i !== index) }));
 
   const handleListChange = (setter: any, list: string[], index: number, value: string) => {
@@ -532,7 +531,7 @@ const AgentAddProduct: React.FC = () => {
     });
   };
 
-  const addListItem    = (setter: any, list: string[], field: string) => setter((prev: any) => ({ ...prev, [field]: [...list, ""] }));
+  const addListItem = (setter: any, list: string[], field: string) => setter((prev: any) => ({ ...prev, [field]: [...list, ""] }));
   const removeListItem = (setter: any, list: string[], field: string, index: number) =>
     setter((prev: any) => ({ ...prev, [field]: list.filter((_, i) => i !== index) }));
 
@@ -574,7 +573,7 @@ const AgentAddProduct: React.FC = () => {
 
   const getCategoryId = () => {
     if (!user) return 1;
-    if (user.specialization === AgentSpecialization.STAY)      return 2;
+    if (user.specialization === AgentSpecialization.STAY) return 2;
     if (user.specialization === AgentSpecialization.TRANSPORT) return 3;
     return 1;
   };
@@ -584,42 +583,42 @@ const AgentAddProduct: React.FC = () => {
     if (user.specialization === AgentSpecialization.TOUR) {
       return {
         type: "tour",
-        tourCategory:   selectedSubCategory as TourCategory,
-        duration:       tourDetails.duration || "1 Day",
-        groupSize:      tourDetails.groupSize || "Flexible",
-        difficulty:     tourDetails.difficulty,
-        meetingPoint:   tourDetails.meetingPoint,
+        tourCategory: selectedSubCategory as TourCategory,
+        duration: tourDetails.duration || "1 Day",
+        groupSize: tourDetails.groupSize || "Flexible",
+        difficulty: tourDetails.difficulty,
+        meetingPoint: tourDetails.meetingPoint,
         ageRestriction: tourDetails.ageRestriction,
-        itinerary:      itineraryItems,
-        inclusions:     tourDetails.inclusions.filter((i) => i),
-        exclusions:     tourDetails.exclusions.filter((i) => i),
+        itinerary: itineraryItems,
+        inclusions: tourDetails.inclusions.filter((i) => i),
+        exclusions: tourDetails.exclusions.filter((i) => i),
       };
     }
     if (user.specialization === AgentSpecialization.STAY) {
       return {
         type: "stay",
-        stayCategory:      selectedSubCategory as StayCategory,
-        checkIn:           "14:00",
-        checkOut:          "11:00",
-        rooms:             Number(stayDetails.rooms),
-        bathrooms:         Number(stayDetails.bathrooms),
-        beds:              Number(stayDetails.beds),
+        stayCategory: selectedSubCategory as StayCategory,
+        checkIn: "14:00",
+        checkOut: "11:00",
+        rooms: Number(stayDetails.rooms),
+        bathrooms: Number(stayDetails.bathrooms),
+        beds: Number(stayDetails.beds),
         breakfastIncluded: stayDetails.breakfastIncluded,
-        amenities:         [{ category: "General", items: stayDetails.amenities.filter((i) => i) }],
-        rules:             [],
+        amenities: [{ category: "General", items: stayDetails.amenities.filter((i) => i) }],
+        rules: [],
       };
     }
     if (user.specialization === AgentSpecialization.TRANSPORT) {
       const details: any = {
-        type:              "car",
+        type: "car",
         transportCategory: selectedSubCategory as TransportCategory,
-        transmission:      carDetails.transmission as "Automatic" | "Manual",
-        seats:             Number(carDetails.seats),
-        luggage:           Number(carDetails.luggage),
-        fuelPolicy:        carDetails.fuelPolicy,
-        driver:            carDetails.driver,
-        year:              Number(carDetails.year),
-        requirements:      [],
+        transmission: carDetails.transmission as "Automatic" | "Manual",
+        seats: Number(carDetails.seats),
+        luggage: Number(carDetails.luggage),
+        fuelPolicy: carDetails.fuelPolicy,
+        driver: carDetails.driver,
+        year: Number(carDetails.year),
+        requirements: [],
       };
       if (selectedCarId) {
         details.car_id = selectedCarId;
@@ -630,14 +629,14 @@ const AgentAddProduct: React.FC = () => {
   };
 
   const collectExistingUrls = () => {
-    const currentCoverState   = coverStateRef.current;
+    const currentCoverState = coverStateRef.current;
     const currentGalleryItems = galleryItemsRef.current;
 
     const coverUrl = !currentCoverState
       ? DEFAULT_COVER
       : currentCoverState.kind === "url"
-      ? currentCoverState.url || DEFAULT_COVER
-      : DEFAULT_COVER;
+        ? currentCoverState.url || DEFAULT_COVER
+        : DEFAULT_COVER;
 
     const galleryUrls = currentGalleryItems
       .filter((x): x is { kind: "url"; url: string } => x.kind === "url")
@@ -647,7 +646,7 @@ const AgentAddProduct: React.FC = () => {
   };
 
   const uploadPendingMedia = async () => {
-    const currentCoverState   = coverStateRef.current;
+    const currentCoverState = coverStateRef.current;
     const currentGalleryItems = galleryItemsRef.current;
 
     const coverFile = currentCoverState?.kind === "file" ? currentCoverState.file : null;
@@ -728,33 +727,33 @@ const AgentAddProduct: React.FC = () => {
     });
 
     try {
-      const details    = buildDetails();
+      const details = buildDetails();
       const categoryId = getCategoryId();
 
       const { coverUrl: existingCoverUrl, galleryUrls: existingGalleryUrls } = collectExistingUrls();
-      const { uploadedCoverUrl, uploadedGalleryUrls }                         = await uploadPendingMedia();
+      const { uploadedCoverUrl, uploadedGalleryUrls } = await uploadPendingMedia();
 
-      const finalCoverUrl    = uploadedCoverUrl || existingCoverUrl;
+      const finalCoverUrl = uploadedCoverUrl || existingCoverUrl;
       const finalGalleryUrls = uniq([...existingGalleryUrls, ...(uploadedGalleryUrls || [])]);
 
       console.log('[DEBUG] finalCoverUrl:', finalCoverUrl);
       console.log('[DEBUG] finalGalleryUrls:', finalGalleryUrls);
 
       const payload: AgentProductPayload = {
-        category_id:    categoryId,
-        name:           formData.name,
-        description:    formData.description,
-        price:          Number(formData.price),
-        currency:       formData.currency,
-        location:       formData.location,
-        image_url:      finalCoverUrl,
-        images:         finalGalleryUrls,
-        features:       formData.features.filter((f) => f.trim() !== ''),
+        category_id: categoryId,
+        name: formData.name,
+        description: formData.description,
+        price: Number(formData.price),
+        currency: formData.currency,
+        location: formData.location,
+        image_url: finalCoverUrl,
+        images: finalGalleryUrls,
+        features: formData.features.filter((f) => f.trim() !== ''),
         details,
         daily_capacity: Number(formData.dailyCapacity),
-        blocked_dates:  formData.blockedDates,
-        lat:            finalMarkerPos.lat,
-        lng:            finalMarkerPos.lng,
+        blocked_dates: formData.blockedDates,
+        lat: finalMarkerPos.lat,
+        lng: finalMarkerPos.lng,
       };
 
       if (isTransport) {
@@ -898,11 +897,10 @@ const AgentAddProduct: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className={`px-4 py-3 text-xs flex items-center justify-between rounded-b-2xl ${
-                    markerPosRef.current || (Number.isFinite(formData.lat) && Number.isFinite(formData.lng) && (formData.lat !== 0 || formData.lng !== 0))
-                      ? 'bg-green-50 text-green-700 border-t border-green-200'
-                      : 'bg-red-50 text-red-600 border-t border-red-200'
-                  }`}>
+                  <div className={`px-4 py-3 text-xs flex items-center justify-between rounded-b-2xl ${markerPosRef.current || (Number.isFinite(formData.lat) && Number.isFinite(formData.lng) && (formData.lat !== 0 || formData.lng !== 0))
+                    ? 'bg-green-50 text-green-700 border-t border-green-200'
+                    : 'bg-red-50 text-red-600 border-t border-red-200'
+                    }`}>
                     <span className="font-bold">
                       {markerPos
                         ? <>✓ Location marked</>
@@ -1130,7 +1128,7 @@ const AgentAddProduct: React.FC = () => {
             {!isTransport && (
               <>
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Media</h3>
-                <input ref={coverInputRef}   type="file" accept="image/*"         className="hidden" onChange={onPickCoverFile} />
+                <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={onPickCoverFile} />
                 <input ref={galleryInputRef} type="file" accept="image/*" multiple className="hidden" onChange={onPickGalleryFiles} />
 
                 <div className="mb-6">
@@ -1224,6 +1222,8 @@ interface GoogleMapComponentProps {
   onMarkerDragEnd: (pos: LatLng) => void;
 }
 
+const GMAP_LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
+
 const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   center,
   marker,
@@ -1232,17 +1232,66 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
 }) => {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ["places"],
+    libraries: GMAP_LIBRARIES,
   });
 
   const mapRef = useRef<google.maps.Map | null>(null);
+  const advancedMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
   const [zoom, setZoom] = useState(marker ? 15 : 11);
 
+  // Store callbacks in refs to avoid stale closures inside marker listeners
+  const onMarkerDragEndRef = useRef(onMarkerDragEnd);
+  useEffect(() => { onMarkerDragEndRef.current = onMarkerDragEnd; }, [onMarkerDragEnd]);
+
+  // Create / update / remove AdvancedMarkerElement
   useEffect(() => {
-    if (mapRef.current && marker) {
-      setZoom(15);
+    const map = mapRef.current;
+    if (!isLoaded || !map) return;
+
+    // If marker should not exist, clean up
+    if (!marker) {
+      if (advancedMarkerRef.current) {
+        advancedMarkerRef.current.map = null;
+        advancedMarkerRef.current = null;
+      }
+      return;
     }
-  }, [marker]);
+
+    // Create marker if it doesn't exist yet
+    if (!advancedMarkerRef.current) {
+      const am = new google.maps.marker.AdvancedMarkerElement({
+        map,
+        position: { lat: marker.lat, lng: marker.lng },
+        gmpDraggable: true,
+        title: "Product Location",
+      });
+
+      am.addListener("dragend", () => {
+        const pos = am.position;
+        if (pos) {
+          const latLng = pos as google.maps.LatLngLiteral;
+          onMarkerDragEndRef.current({ lat: latLng.lat, lng: latLng.lng });
+        }
+      });
+
+      advancedMarkerRef.current = am;
+    } else {
+      // Update existing marker position
+      advancedMarkerRef.current.position = { lat: marker.lat, lng: marker.lng };
+    }
+
+    setZoom(15);
+  }, [isLoaded, marker]);
+
+  // Clean up marker on unmount
+  useEffect(() => {
+    return () => {
+      if (advancedMarkerRef.current) {
+        advancedMarkerRef.current.map = null;
+        advancedMarkerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleMapClick = useCallback(
     (event: google.maps.MapMouseEvent) => {
@@ -1257,18 +1306,9 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     [onClickMap]
   );
 
-  const handleMarkerDragEnd = useCallback(
-    (event: google.maps.marker.MarkerEvent) => {
-      if (event.latLng) {
-        const newPos: LatLng = {
-          lat: event.latLng.lat(),
-          lng: event.latLng.lng(),
-        };
-        onMarkerDragEnd(newPos);
-      }
-    },
-    [onMarkerDragEnd]
-  );
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+  }, []);
 
   if (!isLoaded) {
     return <div className="w-full h-full bg-gray-100 flex items-center justify-center">Loading map...</div>;
@@ -1280,23 +1320,16 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
       center={{ lat: center.lat, lng: center.lng }}
       zoom={zoom}
       onClick={handleMapClick}
-      ref={mapRef}
+      onLoad={onMapLoad}
       options={{
+        mapId: "DEMO_MAP_ID",
         scrollwheel: true,
         gestureHandling: "auto",
         streetViewControl: false,
         mapTypeControl: true,
         fullscreenControl: true,
       }}
-    >
-      {marker && (
-        <Marker
-          position={{ lat: marker.lat, lng: marker.lng }}
-          draggable={true}
-          onDragEnd={handleMarkerDragEnd}
-        />
-      )}
-    </GoogleMap>
+    />
   );
 };
 
