@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import http from '../services/http';
 import {
@@ -19,6 +19,39 @@ import {
   UserCog,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+// Helper: load Midtrans Snap script dinamis sesuai environment dari backend
+const loadSnapScript = (isProduction: boolean, clientKey: string): Promise<void> => {
+  return new Promise((resolve) => {
+    const snapUrl = isProduction
+      ? 'https://app.midtrans.com/snap/snap.js'
+      : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
+    const existingScript = document.getElementById('midtrans-snap');
+
+    // Jika script sudah ada dengan URL yang sama, langsung resolve
+    if (existingScript) {
+      if (existingScript.getAttribute('src') === snapUrl) {
+        return resolve();
+      }
+      // URL berbeda (mis. pindah dari sandbox ke prod) — hapus dulu
+      existingScript.remove();
+      delete (window as any).snap;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'midtrans-snap';
+    script.src = snapUrl;
+    script.setAttribute('data-client-key', clientKey);
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      console.error('[Midtrans] Gagal load Snap script dari:', snapUrl);
+      resolve(); // tetap lanjut agar error bisa ditangkap di snap.pay()
+    };
+    document.head.appendChild(script);
+  });
+};
 
 const CheckoutSummary: React.FC = () => {
   const navigate = useNavigate();
@@ -77,29 +110,6 @@ const CheckoutSummary: React.FC = () => {
 
   const isCarBooking = vehicleType === 'car';
 
-  // Load Midtrans Snap script dinamis sesuai environment
-  useEffect(() => {
-    const existingScript = document.getElementById('midtrans-snap');
-    if (existingScript) return;
-
-    const isProduction = import.meta.env.VITE_MIDTRANS_ENV === 'production';
-    const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY || 'Mid-client-TtUhk_BzK3mZD0yW';
-    const snapUrl = isProduction
-      ? 'https://app.midtrans.com/snap/snap.js'
-      : 'https://app.sandbox.midtrans.com/snap/snap.js';
-
-    const script = document.createElement('script');
-    script.id = 'midtrans-snap';
-    script.src = snapUrl;
-    script.setAttribute('data-client-key', clientKey);
-    script.async = true;
-    document.head.appendChild(script);
-
-    return () => {
-      // Biarkan script tetap ada, tidak perlu cleanup
-    };
-  }, []);
-
   const formatDateString = (dateStr: string) => {
     if (!dateStr) return '-';
     try {
@@ -107,7 +117,7 @@ const CheckoutSummary: React.FC = () => {
         const [y, m, d] = dateStr.split('-').map(Number);
         if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
           return new Date(y, m - 1, d).toLocaleDateString('id-ID', {
-            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
           });
         }
       }
@@ -162,7 +172,7 @@ const CheckoutSummary: React.FC = () => {
     const map: Record<string, string> = {
       'Full to Full': 'Full to Full',
       'Full to Empty': 'Full to Empty',
-      'Same to Same': 'Same to Same'
+      'Same to Same': 'Same to Same',
     };
     return map[policy] || policy;
   };
@@ -171,38 +181,38 @@ const CheckoutSummary: React.FC = () => {
     try {
       setLoading(true);
 
-      // Buat order_id unik dengan prefix TRV
       const orderId = `TRV-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-      // Call backend untuk dapat Snap token dari Midtrans
+      // Call backend — dapat token + info environment dari DB payment_settings
       const res = await http.post('/payment/create-payment', {
         id: orderId,
         amount: totalPrice,
         name: contactDetails.name || 'Guest',
         email: contactDetails.email || 'guest@trivgoo.com',
+        product_name: productName,
+        quantity: pax || 1,
       });
 
-      const snapToken = res.data?.data?.token;
+      const { token: snapToken, is_production, client_key } = res.data?.data || {};
+
       if (!snapToken) throw new Error('Snap token tidak ditemukan dari server');
 
-      // Pastikan Snap SDK sudah loaded
+      // Load Snap script sesuai environment dari backend (bukan dari .env frontend)
+      await loadSnapScript(is_production, client_key || '');
+
       if (typeof (window as any).snap === 'undefined') {
-        throw new Error('Midtrans Snap SDK belum siap. Silakan refresh halaman.');
+        throw new Error('Midtrans Snap SDK belum siap. Silakan refresh halaman dan coba lagi.');
       }
 
       // Buka Midtrans Snap popup
       (window as any).snap.pay(snapToken, {
         onSuccess: (result: any) => {
           console.log('[Midtrans] Payment success:', result);
-          navigate('/booking/success', {
-            state: { orderId, result, bookingData }
-          });
+          navigate('/booking-success', { state: { orderId, result, bookingData } });
         },
         onPending: (result: any) => {
           console.log('[Midtrans] Payment pending:', result);
-          navigate('/booking/pending', {
-            state: { orderId, result, bookingData }
-          });
+          navigate('/booking-pending', { state: { orderId, result, bookingData } });
         },
         onError: (result: any) => {
           console.error('[Midtrans] Payment error:', result);
@@ -210,7 +220,7 @@ const CheckoutSummary: React.FC = () => {
           Swal.fire('Pembayaran Gagal', 'Terjadi kesalahan saat pembayaran. Silakan coba lagi.', 'error');
         },
         onClose: () => {
-          console.log('[Midtrans] Snap popup ditutup user');
+          console.log('[Midtrans] Snap popup ditutup');
           setLoading(false);
         },
       });
