@@ -880,6 +880,7 @@ const AgentAddProduct: React.FC = () => {
                         center={mapCenter}
                         marker={markerPos}
                         onClickMap={(pos) => {
+                          console.log('[MAP CLICK] Parent received click:', pos);
                           setMarkerAndRef(pos); // ← gunakan helper
                           setMapCenter(pos);
                           reverseGeocode(pos);
@@ -1237,19 +1238,29 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const advancedMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
-  const [zoom, setZoom] = useState(marker ? 15 : 11);
 
-  // Store callbacks in refs to avoid stale closures inside marker listeners
+  // Keep latest prop values in refs so they're accessible from callbacks without stale closures
   const onMarkerDragEndRef = useRef(onMarkerDragEnd);
   useEffect(() => { onMarkerDragEndRef.current = onMarkerDragEnd; }, [onMarkerDragEnd]);
 
-  // Create / update / remove AdvancedMarkerElement
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!isLoaded || !map) return;
+  const markerRef = useRef(marker);
+  useEffect(() => { markerRef.current = marker; }, [marker]);
 
-    // If marker should not exist, clean up
-    if (!marker) {
+  // ── Shared helper: create/update/remove the AdvancedMarkerElement ──
+  const syncMarker = useCallback(() => {
+    const map = mapRef.current;
+    console.log('[syncMarker] Called. mapRef:', !!map, 'markerRef:', markerRef.current, 'advancedMarkerRef:', !!advancedMarkerRef.current);
+
+    if (!map) {
+      console.warn('[syncMarker] ⚠️ No map instance yet, skipping');
+      return;
+    }
+
+    const pos = markerRef.current;
+
+    // No marker data → clean up if exists
+    if (!pos) {
+      console.log('[syncMarker] No marker position, cleaning up');
       if (advancedMarkerRef.current) {
         advancedMarkerRef.current.map = null;
         advancedMarkerRef.current = null;
@@ -1257,31 +1268,49 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
       return;
     }
 
-    // Create marker if it doesn't exist yet
+    // Create marker if doesn't exist yet
     if (!advancedMarkerRef.current) {
-      const am = new google.maps.marker.AdvancedMarkerElement({
-        map,
-        position: { lat: marker.lat, lng: marker.lng },
-        gmpDraggable: true,
-        title: "Product Location",
-      });
+      console.log('[syncMarker] 🆕 Creating NEW AdvancedMarkerElement at:', pos);
+      try {
+        const am = new google.maps.marker.AdvancedMarkerElement({
+          map,
+          position: { lat: pos.lat, lng: pos.lng },
+          gmpDraggable: true,
+          title: "Product Location",
+        });
+        console.log('[syncMarker] ✅ Marker created:', am, 'map:', am.map, 'position:', am.position);
 
-      am.addListener("dragend", () => {
-        const pos = am.position;
-        if (pos) {
-          const latLng = pos as google.maps.LatLngLiteral;
-          onMarkerDragEndRef.current({ lat: latLng.lat, lng: latLng.lng });
-        }
-      });
+        am.addListener("dragend", () => {
+          const p = am.position;
+          if (p) {
+            const latLng = p as google.maps.LatLngLiteral;
+            onMarkerDragEndRef.current({ lat: latLng.lat, lng: latLng.lng });
+          }
+        });
 
-      advancedMarkerRef.current = am;
+        advancedMarkerRef.current = am;
+      } catch (err) {
+        console.error('[syncMarker] ❌ Error creating marker:', err);
+      }
     } else {
-      // Update existing marker position
-      advancedMarkerRef.current.position = { lat: marker.lat, lng: marker.lng };
+      console.log('[syncMarker] 📍 Updating existing marker position to:', pos);
+      advancedMarkerRef.current.position = { lat: pos.lat, lng: pos.lng };
     }
+  }, []);
 
-    setZoom(15);
-  }, [isLoaded, marker]);
+  // When marker prop changes, sync it
+  useEffect(() => {
+    markerRef.current = marker;
+    syncMarker();
+  }, [marker, syncMarker]);
+
+  // Pan map when center changes
+  useEffect(() => {
+    if (mapRef.current) {
+      mapRef.current.panTo(center);
+      mapRef.current.setZoom(15);
+    }
+  }, [center]);
 
   // Clean up marker on unmount
   useEffect(() => {
@@ -1295,20 +1324,33 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
 
   const handleMapClick = useCallback(
     (event: google.maps.MapMouseEvent) => {
+      console.log('[MAP CLICK] Raw event:', event);
+      console.log('[MAP CLICK] latLng:', event.latLng?.lat(), event.latLng?.lng());
       if (event.latLng) {
         const newPos: LatLng = {
           lat: event.latLng.lat(),
           lng: event.latLng.lng(),
         };
+        console.log('[MAP CLICK] Calling onClickMap with:', newPos);
         onClickMap(newPos);
+      } else {
+        console.warn('[MAP CLICK] ⚠️ No latLng in event!');
       }
     },
     [onClickMap]
   );
 
+  // Key: when map loads, immediately sync marker + pan if data is already available
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
-  }, []);
+    // Marker data may already exist (product loaded before map) → create marker now
+    syncMarker();
+    // Center may already be set → pan now
+    if (markerRef.current) {
+      map.panTo({ lat: markerRef.current.lat, lng: markerRef.current.lng });
+      map.setZoom(15);
+    }
+  }, [syncMarker]);
 
   if (!isLoaded) {
     return <div className="w-full h-full bg-gray-100 flex items-center justify-center">Loading map...</div>;
@@ -1318,7 +1360,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     <GoogleMap
       mapContainerStyle={{ width: "100%", height: "100%" }}
       center={{ lat: center.lat, lng: center.lng }}
-      zoom={zoom}
+      zoom={marker ? 15 : 11}
       onClick={handleMapClick}
       onLoad={onMapLoad}
       options={{
