@@ -417,6 +417,16 @@ const destBubbleVariants: Variants = {
   })
   .slice(0, 4);
 
+  // Car Rental (category_id === 3)
+  const [visibleCars, setVisibleCars] = useState(4);
+  const carProducts = products.filter((p) => p.category_id === 3);
+  const visibleCarProducts = carProducts.slice(0, visibleCars);
+
+  // Hotel & Villa (category_id === 2)
+  const [visibleHotels, setVisibleHotels] = useState(4);
+  const hotelProducts = products.filter((p) => p.category_id === 2);
+  const visibleHotelProducts = hotelProducts.slice(0, visibleHotels);
+
   const SkeletonCard = () => (
     <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col animate-pulse">
       <div className="aspect-[4/3] bg-gray-200"></div>
@@ -1518,21 +1528,289 @@ const destBubbleVariants: Variants = {
                 </div>
               )}
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex justify-center mt-10"
-          >
-            <Link
-              to="/explore"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+          {/* Load More - Tour */}
+          {products.filter(p => activeFilter === 'All' || getSubCategoryValue(p.details) === activeFilter.toLowerCase()).length > 4 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex justify-center mt-10"
             >
-              Load More
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
+              <Link
+                to="/explore"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+              >
+                Explore More Tours
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
+          )}
+
+          {/* ── HOTEL & VILLA SECTION ── */}
+          {hotelProducts.length > 0 && (
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="mt-16 mb-8 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl md:text-3xl font-serif font-bold text-gray-900">Hotel & Villa</h3>
+                    <p className="text-sm text-gray-500">{hotelProducts.length} properties available</p>
+                  </div>
+                </div>
+                <Link to="/explore?category_id=2" className="text-sm font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                  View All <ArrowRight className="w-4 h-4" />
+                </Link>
+              </motion.div>
+
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5"
+              >
+                {isLoading
+                  ? [...Array(4)].map((_, i) => <SkeletonCard key={i} />)
+                  : visibleHotelProducts.map((product, index) => {
+                      const isSaved = isInWishlist(product.id);
+                      return (
+                        <motion.div
+                          key={product.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                        >
+                          <Link
+                            to={`/product/${product.id}`}
+                            className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full"
+                          >
+                            <div className="aspect-[4/3] relative overflow-hidden">
+                              <img
+                                src={getImageUrl(product.image_url || product.image)}
+                                alt={product.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                              />
+                              {isLoggedIn && (
+                                <button
+                                  onClick={(e) => handleWishlist(e, product)}
+                                  className="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-2 rounded-full shadow-sm z-10 hover:scale-110 transition-transform group/btn active:scale-90"
+                                >
+                                  <Heart className={`w-4 h-4 transition-colors ${isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400 group-hover/btn:text-red-500'}`} />
+                                </button>
+                              )}
+                              <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center text-xs font-bold text-gray-900 shadow-sm z-10">
+                                <Star className="w-3.5 h-3.5 text-amber-400 mr-1 fill-current" />
+                                {product.rating}
+                              </div>
+                            </div>
+                            <div className="p-4 flex-1 flex flex-col">
+                              <h3 className="font-serif font-bold text-lg text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                                {product.name}
+                              </h3>
+                              {product.location && (
+                                <p className="text-sm text-gray-500 font-medium mb-2 flex items-center gap-1">
+                                  <MapPin className="w-3.5 h-3.5 shrink-0" /> {formatLocation(product.location)}
+                                </p>
+                              )}
+                              <div className="mt-auto pt-4 border-t border-gray-100">
+                                <p className="text-sm text-gray-500 mb-1">From</p>
+                                <p className="text-lg font-bold text-gray-900">
+                                  {product.currency} {Number(product.price).toLocaleString('id-ID')}
+                                  <span className="text-sm font-medium text-gray-500"> /night</span>
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                                  <Link
+                                    to={`/product/${product.id}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center"
+                                  >
+                                    See Details
+                                  </Link>
+                                  <button
+                                    onClick={(e) => handleAddToCart(e, product)}
+                                    disabled={isInCart(product.id)}
+                                    className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98]
+                                      ${isInCart(product.id)
+                                        ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                                        : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
+                                      }`}
+                                  >
+                                    <ShoppingCart className={`w-3.5 h-3.5 shrink-0 ${isInCart(product.id) ? "stroke-green-600" : ""}`} />
+                                    <span className="truncate">{isInCart(product.id) ? "Added" : "Add to Cart"}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      );
+                    })
+                }
+              </motion.div>
+
+              {hotelProducts.length > visibleHotels && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="flex justify-center mt-10"
+                >
+                  <button
+                    onClick={() => setVisibleHotels(prev => prev + 4)}
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-emerald-600 text-white rounded-full font-bold text-sm shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+                  >
+                    Load More Hotels
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </motion.div>
+              )}
+            </>
+          )}
+
+          {/* ── CAR RENTAL SECTION ── */}
+          {carProducts.length > 0 && (
+            <>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="mt-16 mb-8 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <Car className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl md:text-3xl font-serif font-bold text-gray-900">Car Rental</h3>
+                    <p className="text-sm text-gray-500">{carProducts.length} vehicles available</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5"
+              >
+                {isLoading
+                  ? [...Array(4)].map((_, i) => <SkeletonCard key={i} />)
+                  : visibleCarProducts.map((product, index) => {
+                      const isSaved = isInWishlist(product.id);
+                      return (
+                        <motion.div
+                          key={product.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                        >
+                          <Link
+                            to={`/product/${product.id}`}
+                            className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full"
+                          >
+                            <div className="aspect-[4/3] relative overflow-hidden">
+                              <img
+                                src={getImageUrl(product.image_url || product.image)}
+                                alt={product.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                              />
+                              {isLoggedIn && (
+                                <button
+                                  onClick={(e) => handleWishlist(e, product)}
+                                  className="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-2 rounded-full shadow-sm z-10 hover:scale-110 transition-transform group/btn active:scale-90"
+                                >
+                                  <Heart className={`w-4 h-4 transition-colors ${isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400 group-hover/btn:text-red-500'}`} />
+                                </button>
+                              )}
+                            </div>
+                            <div className="p-4 flex-1 flex flex-col">
+                              <h3 className="font-serif font-bold text-lg text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
+                                {product.name}
+                              </h3>
+                              {product.location && (
+                                <p className="text-sm text-gray-500 font-medium mb-2 flex items-center gap-1">
+                                  <MapPin className="w-3.5 h-3.5 shrink-0" /> {formatLocation(product.location)}
+                                </p>
+                              )}
+                              <div className="mt-auto pt-4 border-t border-gray-100">
+                                <p className="text-sm text-gray-500 mb-1">From</p>
+                                <p className="text-lg font-bold text-gray-900">
+                                  {product.currency} {Number(product.price).toLocaleString('id-ID')}
+                                  <span className="text-sm font-medium text-gray-500"> /day</span>
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                                  <Link
+                                    to={`/product/${product.id}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center"
+                                  >
+                                    See Details
+                                  </Link>
+                                  <button
+                                    onClick={(e) => handleAddToCart(e, product)}
+                                    disabled={isInCart(product.id)}
+                                    className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98]
+                                      ${isInCart(product.id)
+                                        ? "border-green-500 text-green-600 bg-green-50 cursor-default"
+                                        : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"
+                                      }`}
+                                  >
+                                    <ShoppingCart className={`w-3.5 h-3.5 shrink-0 ${isInCart(product.id) ? "stroke-green-600" : ""}`} />
+                                    <span className="truncate">{isInCart(product.id) ? "Added" : "Add to Cart"}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      );
+                    })
+                }
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="flex justify-center mt-10"
+              >
+                {carProducts.length > visibleCars ? (
+                  <button
+                    onClick={() => setVisibleCars(prev => prev + 4)}
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+                  >
+                    Load More
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                ) : (
+                  <Link
+                    to="/explore?category_id=3"
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+                  >
+                    Explore More Cars
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                )}
+              </motion.div>
+            </>
+          )}
+
+          
         </div>
       </div>
 
