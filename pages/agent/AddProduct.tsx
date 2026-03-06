@@ -23,8 +23,21 @@ import { agentProductService } from "../../services/agentProductService";
 import { mediaService } from "../../services/mediaService";
 import http from "../../services/http";
 
-import { GoogleMap } from "@react-google-maps/api";
-import { useLoadScript } from "@react-google-maps/api";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix Leaflet default marker icon (known issue with bundlers)
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 import {
   AgentProduct,
@@ -61,7 +74,6 @@ const formatRupiah = (value: string) => {
 
 type LatLng = { lat: number; lng: number };
 const DEFAULT_CENTER: LatLng = { lat: -8.409518, lng: 115.188919 };
-const GOOGLE_MAPS_API_KEY = "AIzaSyCjp27el-7L1JOpo9HFfeJOCTBGjdR0-IY";
 
 const AgentAddProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -436,18 +448,19 @@ const AgentAddProduct: React.FC = () => {
     if (!query.trim()) return;
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+        { headers: { 'Accept-Language': 'id,en' } }
       );
       const data = await response.json();
-      if (data.results && data.results.length > 0) {
-        const result = data.results[0];
+      if (data && data.length > 0) {
+        const result = data[0];
         const pos = {
-          lat: result.geometry.location.lat,
-          lng: result.geometry.location.lng,
+          lat: parseFloat(result.lat),
+          lng: parseFloat(result.lon),
         };
-        setMarkerAndRef(pos); // ← gunakan helper
+        setMarkerAndRef(pos);
         setMapCenter(pos);
-        setFormData((prev) => ({ ...prev, location: result.formatted_address }));
+        setFormData((prev) => ({ ...prev, location: result.display_name }));
       } else {
         Swal.fire({
           title: 'Location not found',
@@ -470,11 +483,12 @@ const AgentAddProduct: React.FC = () => {
   const reverseGeocode = async (pos: LatLng) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.lat},${pos.lng}&key=${GOOGLE_MAPS_API_KEY}`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.lat}&lon=${pos.lng}`,
+        { headers: { 'Accept-Language': 'id,en' } }
       );
       const data = await response.json();
-      if (data.results && data.results.length > 0) {
-        setFormData((prev) => ({ ...prev, location: data.results[0].formatted_address }));
+      if (data && data.display_name) {
+        setFormData((prev) => ({ ...prev, location: data.display_name }));
       }
     } catch (err) {
       console.error("Reverse geocode error", err);
@@ -876,17 +890,16 @@ const AgentAddProduct: React.FC = () => {
 
                   <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
                     <div className="h-64 w-full relative">
-                      <GoogleMapComponent
+                      <LeafletMapComponent
                         center={mapCenter}
                         marker={markerPos}
                         onClickMap={(pos) => {
-                          console.log('[MAP CLICK] Parent received click:', pos);
-                          setMarkerAndRef(pos); // ← gunakan helper
+                          setMarkerAndRef(pos);
                           setMapCenter(pos);
                           reverseGeocode(pos);
                         }}
                         onMarkerDragEnd={async (pos) => {
-                          setMarkerAndRef(pos); // ← gunakan helper
+                          setMarkerAndRef(pos);
                           setMapCenter(pos);
                           await reverseGeocode(pos);
                         }}
@@ -1216,162 +1229,109 @@ const AgentAddProduct: React.FC = () => {
   );
 };
 
-interface GoogleMapComponentProps {
+// ── Leaflet Map Component ───────────────────────────────────────────────────
+
+interface MapComponentProps {
   center: LatLng;
   marker: LatLng | null;
   onClickMap: (pos: LatLng) => void;
   onMarkerDragEnd: (pos: LatLng) => void;
 }
 
-const GMAP_LIBRARIES: ("places" | "marker")[] = ["places", "marker"];
+// ── Custom Modern Marker ──
+const customMarkerIcon = new L.DivIcon({
+  html: `
+    <div class="relative w-full h-full flex flex-col items-center justify-end group">
+      <div class="absolute bottom-4 w-12 h-12 bg-primary-500 rounded-full opacity-20 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+      <div class="relative z-10 w-10 h-10 flex items-center justify-center bg-primary-600 rounded-full shadow-xl border-2 border-white text-white transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+      <div class="relative w-1.5 h-4 bg-primary-600 border-x border-white -mt-1 z-0"></div>
+      <div class="absolute -bottom-1 w-5 h-1.5 bg-black/30 blur-[2px] rounded-[50%]"></div>
+    </div>
+  `,
+  className: "bg-transparent border-none", // Remove default leaflet styles
+  iconSize: [48, 60],
+  iconAnchor: [24, 60], // Point of the icon which corresponds to marker's location
+});
 
-const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
+// Helper: handle map click events
+const MapClickHandler: React.FC<{ onClickMap: (pos: LatLng) => void }> = ({ onClickMap }) => {
+  useMapEvents({
+    click: (e) => {
+      onClickMap({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+  return null;
+};
+
+// Helper: re-center map when center prop changes
+const MapCenterUpdater: React.FC<{ center: LatLng; hasMarker: boolean }> = ({ center, hasMarker }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([center.lat, center.lng], hasMarker ? 15 : map.getZoom());
+  }, [center, hasMarker, map]);
+  return null;
+};
+
+const LeafletMapComponent: React.FC<MapComponentProps> = ({
   center,
   marker,
   onClickMap,
   onMarkerDragEnd,
 }) => {
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: GMAP_LIBRARIES,
-  });
-
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const advancedMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
-
-  // Keep latest prop values in refs so they're accessible from callbacks without stale closures
-  const onMarkerDragEndRef = useRef(onMarkerDragEnd);
-  useEffect(() => { onMarkerDragEndRef.current = onMarkerDragEnd; }, [onMarkerDragEnd]);
-
-  const markerRef = useRef(marker);
-  useEffect(() => { markerRef.current = marker; }, [marker]);
-
-  // ── Shared helper: create/update/remove the AdvancedMarkerElement ──
-  const syncMarker = useCallback(() => {
-    const map = mapRef.current;
-    console.log('[syncMarker] Called. mapRef:', !!map, 'markerRef:', markerRef.current, 'advancedMarkerRef:', !!advancedMarkerRef.current);
-
-    if (!map) {
-      console.warn('[syncMarker] ⚠️ No map instance yet, skipping');
-      return;
-    }
-
-    const pos = markerRef.current;
-
-    // No marker data → clean up if exists
-    if (!pos) {
-      console.log('[syncMarker] No marker position, cleaning up');
-      if (advancedMarkerRef.current) {
-        advancedMarkerRef.current.map = null;
-        advancedMarkerRef.current = null;
-      }
-      return;
-    }
-
-    // Create marker if doesn't exist yet
-    if (!advancedMarkerRef.current) {
-      console.log('[syncMarker] 🆕 Creating NEW AdvancedMarkerElement at:', pos);
-      try {
-        const am = new google.maps.marker.AdvancedMarkerElement({
-          map,
-          position: { lat: pos.lat, lng: pos.lng },
-          gmpDraggable: true,
-          title: "Product Location",
-        });
-        console.log('[syncMarker] ✅ Marker created:', am, 'map:', am.map, 'position:', am.position);
-
-        am.addListener("dragend", () => {
-          const p = am.position;
-          if (p) {
-            const latLng = p as google.maps.LatLngLiteral;
-            onMarkerDragEndRef.current({ lat: latLng.lat, lng: latLng.lng });
-          }
-        });
-
-        advancedMarkerRef.current = am;
-      } catch (err) {
-        console.error('[syncMarker] ❌ Error creating marker:', err);
-      }
-    } else {
-      console.log('[syncMarker] 📍 Updating existing marker position to:', pos);
-      advancedMarkerRef.current.position = { lat: pos.lat, lng: pos.lng };
-    }
-  }, []);
-
-  // When marker prop changes, sync it
-  useEffect(() => {
-    markerRef.current = marker;
-    syncMarker();
-  }, [marker, syncMarker]);
-
-  // Pan map when center changes
-  useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.panTo(center);
-      mapRef.current.setZoom(15);
-    }
-  }, [center]);
-
-  // Clean up marker on unmount
-  useEffect(() => {
-    return () => {
-      if (advancedMarkerRef.current) {
-        advancedMarkerRef.current.map = null;
-        advancedMarkerRef.current = null;
-      }
-    };
-  }, []);
-
-  const handleMapClick = useCallback(
-    (event: google.maps.MapMouseEvent) => {
-      console.log('[MAP CLICK] Raw event:', event);
-      console.log('[MAP CLICK] latLng:', event.latLng?.lat(), event.latLng?.lng());
-      if (event.latLng) {
-        const newPos: LatLng = {
-          lat: event.latLng.lat(),
-          lng: event.latLng.lng(),
-        };
-        console.log('[MAP CLICK] Calling onClickMap with:', newPos);
-        onClickMap(newPos);
-      } else {
-        console.warn('[MAP CLICK] ⚠️ No latLng in event!');
-      }
-    },
-    [onClickMap]
-  );
-
-  // Key: when map loads, immediately sync marker + pan if data is already available
-  const onMapLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map;
-    // Marker data may already exist (product loaded before map) → create marker now
-    syncMarker();
-    // Center may already be set → pan now
-    if (markerRef.current) {
-      map.panTo({ lat: markerRef.current.lat, lng: markerRef.current.lng });
-      map.setZoom(15);
-    }
-  }, [syncMarker]);
-
-  if (!isLoaded) {
-    return <div className="w-full h-full bg-gray-100 flex items-center justify-center">Loading map...</div>;
-  }
-
   return (
-    <GoogleMap
-      mapContainerStyle={{ width: "100%", height: "100%" }}
-      center={{ lat: center.lat, lng: center.lng }}
-      zoom={marker ? 15 : 11}
-      onClick={handleMapClick}
-      onLoad={onMapLoad}
-      options={{
-        mapId: "DEMO_MAP_ID",
-        scrollwheel: true,
-        gestureHandling: "auto",
-        streetViewControl: false,
-        mapTypeControl: true,
-        fullscreenControl: true,
-      }}
-    />
+    <div className="w-full h-full relative relative z-0">
+      <MapContainer
+        center={[center.lat, center.lng]}
+        zoom={marker ? 15 : 11}
+        style={{ width: "100%", height: "100%", zIndex: 10 }} // Next to UI overlays inside
+        scrollWheelZoom
+      >
+        {/* Modern CartoDB Voyager TileLayer */}
+        <TileLayer
+          attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        />
+        <MapClickHandler onClickMap={onClickMap} />
+        <MapCenterUpdater center={center} hasMarker={!!marker} />
+
+        {marker && (
+          <Marker
+            position={[marker.lat, marker.lng]}
+            draggable
+            icon={customMarkerIcon}
+            eventHandlers={{
+              dragend: (e) => {
+                const latlng = e.target.getLatLng();
+                onMarkerDragEnd({ lat: latlng.lat, lng: latlng.lng });
+              },
+            }}
+          />
+        )}
+      </MapContainer>
+
+      {/* Floating UI Overlays (Outside MapContainer to avoid z-index conflicts with Leaflet controls) */}
+      <div className="absolute top-4 left-4 z-[20] pointer-events-none">
+        {marker ? (
+          <div className="bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg border border-gray-100 flex flex-col transition-all duration-300 transform scale-100 opacity-100">
+            <span className="text-[10px] font-bold text-primary-600 uppercase tracking-wider mb-1 flex items-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
+              Location Pinned
+            </span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-mono font-medium text-gray-700">Lat: {marker.lat.toFixed(6)}</span>
+              <span className="text-xs font-mono font-medium text-gray-700">Lng: {marker.lng.toFixed(6)}</span>
+            </div>
+            <p className="text-[9px] text-gray-400 mt-2 mt-1 leading-tight">Drag marker to adjust</p>
+          </div>
+        ) : (
+          <div className="bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-gray-100 flex items-center text-primary-600 transition-all duration-300 animate-pulse">
+            <span className="text-xs font-bold uppercase tracking-wider">Select a location on map</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
