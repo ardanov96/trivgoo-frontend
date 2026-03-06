@@ -117,6 +117,8 @@ const Explore: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const searchQuery = searchParams.get('search') || '';
 
+  const [visibleCount, setVisibleCount] = useState(8);
+
   useEffect(() => {
     const categoryIdParam = searchParams.get('category_id');
     if (categoryIdParam) setSelectedCategory(Number(categoryIdParam));
@@ -153,12 +155,14 @@ const Explore: React.FC = () => {
     if (value) newParams.set('search', value);
     else newParams.delete('search');
     setSearchParams(newParams);
+    setVisibleCount(8); // ← tambahkan ini
   };
 
   const handleCategorySelect = (id: number | null) => {
     setSelectedCategory(id);
     setSelectedSubCategory(null);
     setRentalFilters({ transmission: '', minPrice: '', maxPrice: '', location: '', passengerCapacity: '' });
+    setVisibleCount(8);
   };
 
   const clearSearch = () => {
@@ -726,7 +730,7 @@ const Explore: React.FC = () => {
         </div>
 
         {/* Results */}
-        <div className={isCarCategory ? "flex flex-col gap-6" : "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 gap-5"}>
+        <div className={isCarCategory ? "flex flex-col gap-6" : "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"}>
           {isLoading ? (
             isCarCategory ? (
               [...Array(3)].map((_, i) => (
@@ -766,11 +770,24 @@ const Explore: React.FC = () => {
               </div>
             ))
           ) : (
-            filteredAndSortedProducts.map((product) => (
+            filteredAndSortedProducts.slice(0, visibleCount).map((product) => (
               <RegularCard key={product.id} product={product} />
             ))
           )}
         </div>
+
+        {/* Load More Button */}
+        {!isLoading && !isCarCategory && filteredAndSortedProducts.length > visibleCount && (
+          <div className="flex justify-center mt-10">
+            <button
+              onClick={() => setVisibleCount(prev => prev + 8)}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+            >
+              Load More
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        )}
 
         {/* Empty State */}
         {!isLoading && (isCarCategory ? carGroups.length === 0 : filteredAndSortedProducts.length === 0) && (

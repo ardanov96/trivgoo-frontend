@@ -38,7 +38,7 @@ import { agentProductService } from '../services/agentProductService';
 import { useCart } from '../components/CartContext';
 import { useWishlist } from '../components/WishlistContext';
 import { useToast } from '../components/ToastContext';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
 
 const POPULAR_DESTINATIONS = [
@@ -176,6 +176,58 @@ const formatLocation = (location: string): string => {
   return cleaned.slice(-3).join(', ');
 };
 
+const PROMO_BANNERS = [
+  { src: '/banner/BG_Merah.png', alt: 'Promo Banner Merah' },
+  { src: '/banner/Hitam.png',    alt: 'Promo Banner Hitam' },
+];
+
+const BannerSlider: React.FC = () => {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrent(prev => (prev + 1) % PROMO_BANNERS.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="w-full" style={{ aspectRatio: '1010/298' }}>
+      <div className="relative w-full h-full rounded-3xl overflow-hidden">
+        {PROMO_BANNERS.map((banner, i) => (
+          <div
+            key={i}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              i === current ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <img
+              src={banner.src}
+              alt={banner.alt}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ))}
+
+        {/* Dot Indicators */}
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {PROMO_BANNERS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`transition-all duration-300 rounded-full ${
+                i === current
+                  ? 'w-6 h-2 bg-white'
+                  : 'w-2 h-2 bg-white/50 hover:bg-white/80'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
   // Categories state kept if needed for other parts, but removed from main display
@@ -242,101 +294,66 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
+const destContainerVariants: Variants = {
+  hidden: {},
   visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5 }
+    transition: {
+      staggerChildren: 0.07,
+      delayChildren: 0.1
+    }
   }
 };
 
 const leftToRightVariants = {
-  hidden: { x: -100, opacity: 0 },
+  hidden: { y: 40, opacity: 0 },
   visible: {
-    x: 0,
+    y: 0,
     opacity: 1,
     transition: { duration: 0.8 }
   }
 };
 
 const rightToLeftVariants = {
-  hidden: { x: 100, opacity: 0 },
+  hidden: { y: 40, opacity: 0 },
   visible: {
-    x: 0,
+    y: 0,
     opacity: 1,
     transition: { duration: 0.8 }
   }
 };
 
-// Hero Section Luxury Animations
-const heroSubtitleVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.8, delay: 0.1 }
-  }
-};
-
-const heroTitleVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.8, delay: 0.3 }
-  }
-};
-
-const heroMainVariants = {
-  hidden: { opacity: 0, scale: 0.8, y: 20 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: { duration: 1, delay: 0.5 }
-  }
-};
-
-const heroSearchVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.8, delay: 0.8 }
-  }
-};
-
-const heroTrustedVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.8, delay: 1.1 }
-  }
-};
-
 // Smart AI Trip Planner Morphing Variants
 const aiCardVariants = {
-  hidden: { opacity: 0, scale: 0.9, y: 20 },
-  visible: { opacity: 1, scale: 1, y: 0 },
+  hidden: { opacity: 0, y: 30, scale: 0.92 },
+  visible: { 
+    opacity: 1, scale: 1, y: 0,
+    transition: { duration: 0.6, ease: 'easeOut' as const }
+  },
   hover: {
-    scale: 1.05,
-    y: -10,
-    transition: {
-      duration: 0.4
-    }
+    scale: 1.06,
+    y: -12,
+    transition: { duration: 0.35 }
   }
-};
+} as const satisfies Record<string, object>;
 
 const aiContainerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
+    transition: { staggerChildren: 0.12, delayChildren: 0.15 }
+  }
+};
+
+// Variants untuk destination bubble images:
+const destBubbleVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.5, y: 20 },
+  visible: {
+    opacity: 1, scale: 1, y: 0,
     transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.2
+      duration: 0.5,
+      type: 'spring',
+      stiffness: 200,
+      damping: 15
     }
   }
 };
@@ -351,10 +368,10 @@ const aiContainerVariants = {
 
   useEffect(() => {
     const loadProducts = async () => {
-      try {
-        setIsLoading(true);
-
-        const prods = await agentProductService.getAllProducts();
+  try {
+    setIsLoading(true);
+    const prods = await agentProductService.getAllProducts();
+    console.log('✅ Total products loaded:', prods?.length, prods);
 
         const BASE_URL =
           import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
@@ -368,6 +385,7 @@ const aiContainerVariants = {
         }));
 
         setProducts(normalizedProducts);
+        console.log('✅ Normalized products:', normalizedProducts?.length, normalizedProducts[0]);
       } catch (error) {
         console.error(error);
       } finally {
@@ -393,12 +411,11 @@ const aiContainerVariants = {
   };
 
   const filteredProducts = products
-    .filter((p) => {
-      const matchCategory = Number(p.category_id) === 1;
-      if (activeFilter === 'All') return matchCategory;
-      return matchCategory && getSubCategoryValue(p.details) === activeFilter.toLowerCase();
-    })
-  .slice(0, 8);
+  .filter((p) => {
+    if (activeFilter === 'All') return true;
+    return getSubCategoryValue(p.details) === activeFilter.toLowerCase();
+  })
+  .slice(0, 4);
 
   const SkeletonCard = () => (
     <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col animate-pulse">
@@ -798,10 +815,13 @@ const aiContainerVariants = {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.5 }}
               className="block text-6xl md:text-8xl lg:text-[10rem] text-outlined bg-clip-text bg-gradient-to-r from-primary-200 to-white mb-10 md:mb-14"
-              style={{ fontFamily: "'Vlogger', serif" }}
+              style={{ 
+                fontFamily: "'Vlogger', serif",
+                minHeight: '1.2em',
+                lineHeight: '1.2'
+              }}
             >
-              {typewriterText}
-              <span className="animate-pulse text-outlined-thin" style={{ fontFamily: "'Vlogger', serif" }}>|</span>
+              {typewriterText || '\u00A0'}
             </motion.span>
           </motion.h1>
 
@@ -1324,13 +1344,7 @@ const aiContainerVariants = {
                 );
               })
             ) : (
-              <div className="w-full text-center py-20 bg-white/50 rounded-3xl border border-orange-100 flex flex-col items-center justify-center">
-                <div className="bg-orange-100 p-4 rounded-full mb-4">
-                  <Zap className="w-8 h-8 text-orange-500" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">No Flash Sales Currently Active</h3>
-                <p className="text-gray-500">Check back later for amazing deals!</p>
-              </div>
+              <BannerSlider />
             )}
           </div>
 
@@ -1383,13 +1397,6 @@ const aiContainerVariants = {
                 Our Travel Experience
               </h2>
             </div>
-            <Link
-              to="/explore"
-              className="inline-flex items-center text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors group self-start md:self-auto"
-            >
-              View All Packages
-              <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-            </Link>
           </motion.div>
 
           {/* Filter Buttons dengan Motion */}
@@ -1426,10 +1433,16 @@ const aiContainerVariants = {
             {isLoading
               ? [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
               : filteredProducts.length > 0
-              ? filteredProducts.map((product) => {
+              ? filteredProducts.map((product, index) => {
                   const isSaved = isInWishlist(product.id);
                   return (
-                    <motion.div key={product.id} variants={itemVariants}>
+                    <motion.div 
+                      key={product.id} 
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                    >
                       <Link
                         to={`/product/${product.id}`}
                         className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full"
@@ -1505,89 +1518,104 @@ const aiContainerVariants = {
                 </div>
               )}
           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex justify-center mt-10"
+          >
+            <Link
+              to="/explore"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+            >
+              Load More
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </motion.div>
         </div>
       </div>
 
-      {/* Smart AI Trip Planner Section - UI Colors Synchronized (Teal/Primary) */}
+      {/* Smart AI Trip Planner Section - */}
       <motion.div 
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={aiContainerVariants}
-        className="bg-white py-16 md:py-24 relative overflow-hidden"
-      >
-        {/* Decorative background element */}
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary-200 to-transparent"></div>
-        <div className="absolute -left-20 top-40 w-64 h-64 bg-primary-50 rounded-full blur-3xl opacity-50"></div>
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={aiContainerVariants}
+          className="bg-white py-16 md:py-24 relative overflow-hidden"
+        >
+          {/* Decorative background element */}
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary-200 to-transparent"></div>
+          <div className="absolute -left-20 top-40 w-64 h-64 bg-primary-50 rounded-full blur-3xl opacity-50"></div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
-            <span className="text-primary-600 font-bold text-sm uppercase tracking-widest mb-3 block animate-in fade-in slide-in-from-bottom-2">
-              Future of Travel
-            </span>
-            <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-6">
-              Smart AI Trip Planner
-            </h2>
-            <p className="text-gray-500 max-w-3xl mx-auto text-lg leading-relaxed">
-              Leading AI technology that understands your preferences and creates the perfect
-              itinerary according to your wishes and budget.
-            </p>
-          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center mb-16">
+              <span className="text-primary-600 font-bold text-sm uppercase tracking-widest mb-3 block animate-in fade-in slide-in-from-bottom-2">
+                Future of Travel
+              </span>
+              <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-6">
+                Smart AI Trip Planner
+              </h2>
+              <p className="text-gray-500 max-w-3xl mx-auto text-lg leading-relaxed">
+                Leading AI technology that understands your preferences and creates the perfect
+                itinerary according to your wishes and budget.
+              </p>
+            </div>
 
-          <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {[
-              {
-                Icon: Brain,
-                title: 'Smart Recommendations',
-                desc: 'AI learns your preferences to suggest hidden gems you\'ll love.'
-              },
-              {
-                Icon: Clock,
-                title: 'Time Optimization',
-                desc: 'Maximize your holiday with efficiently planned routes and schedules.'
-              },
-              {
-                Icon: Map,
-                title: 'Interactive Maps',
-                desc: 'Visualize your journey with integrated maps and navigation.'
-              },
-              {
-                Icon: Sparkles,
-                title: 'Personalized For You',
-                desc: 'Every itinerary is unique, tailored specifically to your travel style.'
-              }
-            ].map((item, i) => (
-              <motion.div 
-                key={i}
-                variants={aiCardVariants}
-                whileHover="hover"
-                className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center cursor-pointer relative will-change-transform"
-              >
+            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+              {[
+                {
+                  Icon: Brain,
+                  title: 'Smart Recommendations',
+                  desc: 'AI learns your preferences to suggest hidden gems you\'ll love.'
+                },
+                {
+                  Icon: Clock,
+                  title: 'Time Optimization',
+                  desc: 'Maximize your holiday with efficiently planned routes and schedules.'
+                },
+                {
+                  Icon: Map,
+                  title: 'Interactive Maps',
+                  desc: 'Visualize your journey with integrated maps and navigation.'
+                },
+                {
+                  Icon: Sparkles,
+                  title: 'Personalized For You',
+                  desc: 'Every itinerary is unique, tailored specifically to your travel style.'
+                }
+              ].map((item, i) => (
                 <motion.div 
-                  className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 ring-1 ring-gray-100"
-                  whileHover={{ rotate: 360, scale: 1.1 }}
-                  transition={{ duration: 0.8 }}
+                  key={i}
+                  variants={aiCardVariants}
+                  whileHover="hover"
+                  className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center cursor-pointer relative will-change-transform"
                 >
-                  <item.Icon className="w-8 h-8 text-primary-500" />
+                  <motion.div 
+                    className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 ring-1 ring-gray-100"
+                    whileHover={{ rotate: 360, scale: 1.1 }}
+                    transition={{ duration: 0.8 }}
+                  >
+                    <item.Icon className="w-8 h-8 text-primary-500" />
+                  </motion.div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    {item.desc}
+                  </p>
                 </motion.div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  {item.desc}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
+              ))}
+            </motion.div>
 
-          <div className="text-center">
-            <Link
-              to="/ai-planner"
-              className="inline-flex items-center px-8 py-4 bg-primary-600 text-white rounded-full font-bold text-lg shadow-xl shadow-primary-600/30 hover:bg-primary-700 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary-600/40 group active:scale-95"
-            >
-              <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
-              Try AI Planner Free
-            </Link>
+            <div className="text-center">
+              <Link
+                to="/ai-planner"
+                className="inline-flex items-center px-8 py-4 bg-primary-600 text-white rounded-full font-bold text-lg shadow-xl shadow-primary-600/30 hover:bg-primary-700 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary-600/40 group active:scale-95"
+              >
+                <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" />
+                Try AI Planner Free
+              </Link>
+            </div>
           </div>
-        </div>
       </motion.div>
 
       {/* Popular Destinations (Instagram Stories Style - Optimized) - Z-Index lower than Hero search */}
@@ -1618,28 +1646,58 @@ const aiContainerVariants = {
           </div>
 
           {/* Desktop: Centered, No Wrap. Mobile: Horizontal Scroll */}
-          <div className="flex items-center justify-start md:justify-center gap-4 sm:gap-6 lg:gap-8 overflow-x-auto md:overflow-visible py-4 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar md:flex-nowrap">
+          <motion.div variants={destContainerVariants}
+  initial="hidden"
+  whileInView="visible"
+  viewport={{ once: true }}
+  className="flex items-center justify-start md:justify-center gap-4 sm:gap-6 lg:gap-8 overflow-x-auto md:overflow-visible py-4 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar md:flex-nowrap"
+>
             {DESTINATION_STORIES.map((dest, index) => (
-              <div
-                key={index}
-                onClick={() => goToExplore(dest.name)}
-                className="flex flex-col items-center flex-shrink-0 cursor-pointer group transition-all"
-              >
-                <div className="w-[70px] h-[70px] md:w-[84px] md:h-[84px] lg:w-[100px] lg:h-[100px] rounded-full p-[2px] md:p-[3px] bg-gradient-to-tr from-amber-400 via-orange-500 to-primary-600 group-hover:scale-105 group-hover:shadow-lg transition-all duration-300 relative">
-                  <div className="w-full h-full rounded-full border-[2px] md:border-[3px] border-white overflow-hidden bg-white relative z-10">
-                    <img
-                      src={dest.image}
-                      alt={dest.name}
-                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                    />
-                  </div>
-                </div>
-                <span className="mt-3 text-xs md:text-sm font-bold text-gray-700 group-hover:text-primary-600 transition-colors transform group-hover:translate-y-0.5 block">
-                  {dest.name}
-                </span>
-              </div>
-            ))}
-          </div>
+  <motion.div
+  key={index}
+  variants={destBubbleVariants}   // ← tidak pakai custom lagi
+  whileHover={{ scale: 1.12, y: -6, transition: { type: 'spring', stiffness: 300 } }}
+  onClick={() => goToExplore(dest.name)}
+  className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
+>
+    <motion.div
+      className="w-[70px] h-[70px] md:w-[84px] md:h-[84px] lg:w-[100px] lg:h-[100px] rounded-full p-[2px] md:p-[3px] bg-gradient-to-tr from-amber-400 via-orange-500 to-primary-600 relative"
+      whileHover={{
+        boxShadow: '0 0 20px rgba(224,88,69,0.6)',
+      }}
+    >
+      {/* Rotating ring */}
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+        className="absolute -inset-[3px] rounded-full border-2 border-dashed border-primary-400/40 pointer-events-none"
+      />
+      <div className="w-full h-full rounded-full border-[2px] md:border-[3px] border-white overflow-hidden bg-white relative z-10">
+        <img
+          src={dest.image}
+          alt={dest.name}
+          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+        />
+      </div>
+      {/* Pulse ring on hover */}
+      <motion.div
+        initial={{ scale: 1, opacity: 0 }}
+        whileHover={{ scale: 1.3, opacity: 0 }}
+        transition={{ duration: 0.6 }}
+        className="absolute inset-0 rounded-full bg-primary-400/30 pointer-events-none"
+      />
+    </motion.div>
+    <motion.span
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      transition={{ delay: index * 0.07 + 0.3 }}
+      className="mt-3 text-xs md:text-sm font-bold text-gray-700 group-hover:text-primary-600 transition-colors block"
+    >
+      {dest.name}
+    </motion.span>
+  </motion.div>
+))}
+          </motion.div>
 
         </div>
       </div>
