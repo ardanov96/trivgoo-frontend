@@ -1177,16 +1177,12 @@ const AgentAddProduct: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="mt-6 text-[11px] text-gray-400">* Cover/Gallery will be uploaded when you click Save.</div>
               </>
             )}
 
-            <div className={`mb-6 ${isTransport ? '' : 'opacity-50 pointer-events-none'}`}>
+            {isTransport && <div className="mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                 <Car className="w-5 h-5 mr-2 text-primary-500" />Select Vehicle
-                {!isTransport && (
-                  <span className="ml-2 text-xs text-gray-400">(only for transport agents)</span>
-                )}
               </h3>
               <select
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary-500 text-sm font-medium"
@@ -1208,7 +1204,7 @@ const AgentAddProduct: React.FC = () => {
                   </div>
                 ) : null;
               })()}
-            </div>
+            </div>}
 
             <div className="mt-8 pt-6 border-t border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Highlights</h3>

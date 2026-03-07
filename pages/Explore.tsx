@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpDown, Heart, MapPin, Search, Star, X, Users, Gauge, Briefcase, Droplet, UserCog, Award } from 'lucide-react';
+import { ArrowRight, ArrowUpDown, Heart, MapPin, Search, Star, X, Users, Gauge, Briefcase, Droplet, UserCog, Award, CheckCircle2, Tag, ShieldCheck, Ticket } from 'lucide-react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useWishlist } from '../components/WishlistContext';
@@ -44,7 +44,6 @@ type CarGroup = {
 const formatLocation = (location: string): string => {
   if (!location) return '';
   const parts = location.split(',').map(p => p.trim()).filter(Boolean);
-  // Buang bagian yang mengandung angka (kode pos), "Indonesia", "Jawa", "DUSUN", dll
   const cleaned = parts.filter(p =>
     !/\d/.test(p) &&
     !['indonesia', 'jawa', 'java'].includes(p.toLowerCase()) &&
@@ -56,7 +55,6 @@ const formatLocation = (location: string): string => {
     !/^gg/i.test(p) &&
     !/^gang/i.test(p)
   );
-  // Ambil maksimal 3 bagian terakhir yang tersisa
   return cleaned.slice(-3).join(', ');
 };
 
@@ -72,7 +70,6 @@ function groupCarProducts(products: Product[]): CarGroup[] {
 
   const groups: CarGroup[] = [];
   map.forEach((agents, groupKey) => {
-    // Representatif: produk dengan harga terendah
     const sorted = [...agents].sort((a, b) => Number(a.price) - Number(b.price));
     groups.push({ groupKey, representativeProduct: sorted[0], agents });
   });
@@ -155,7 +152,7 @@ const Explore: React.FC = () => {
     if (value) newParams.set('search', value);
     else newParams.delete('search');
     setSearchParams(newParams);
-    setVisibleCount(8); // ← tambahkan ini
+    setVisibleCount(8);
   };
 
   const handleCategorySelect = (id: number | null) => {
@@ -258,7 +255,7 @@ const Explore: React.FC = () => {
     </div>
   );
 
-  // ── RentalCarCard — wrapper adalah div, navigasi via parent onClick ──
+  // ── RentalCarCard ─────────────────────────────────────────────
   const RentalCarCard = ({ product, agentCount = 1 }: { product: Product; agentCount?: number }) => {
     const isSaved = isInWishlist(product.id);
     const details = product.details as CarDetails;
@@ -275,8 +272,6 @@ const Explore: React.FC = () => {
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
             />
           </div>
-
-          {/* Wishlist */}
           {isLoggedIn && (
             <button
               onClick={(e) => { e.stopPropagation(); handleWishlist(e, product); }}
@@ -285,14 +280,10 @@ const Explore: React.FC = () => {
               <Heart className={`w-4 h-4 transition-colors ${isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400 group-hover/btn:text-red-500'}`} />
             </button>
           )}
-
-          {/* Rating Badge */}
           <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center text-xs font-bold text-gray-900 shadow-sm z-10">
             <Star className="w-3.5 h-3.5 text-amber-400 mr-1 fill-current" />
             {product.rating || '-'}
           </div>
-
-          {/* Agent Count Badge */}
           {agentCount > 1 && (
             <div className="absolute bottom-4 left-4 bg-primary-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md z-10 flex items-center gap-1">
               <Users className="w-3 h-3" />
@@ -373,7 +364,6 @@ const Explore: React.FC = () => {
           {/* Action Buttons */}
           <div className="flex items-center gap-3 mt-auto pt-4 border-t border-gray-100">
             {agentCount > 1 ? (
-              // Multi-agent: tombol pilih agent
               <button
                 onClick={(e) => e.stopPropagation()}
                 className="flex-1 border-2 border-primary-600 text-primary-600 py-3 rounded-xl text-sm font-semibold hover:bg-primary-50 transition-all text-center flex items-center justify-center gap-2"
@@ -382,7 +372,6 @@ const Explore: React.FC = () => {
                 Pilih Agent ({agentCount})
               </button>
             ) : (
-              // Single agent: See Details
               <Link
                 to={`/product/${product.id}`}
                 onClick={(e) => e.stopPropagation()}
@@ -410,96 +399,185 @@ const Explore: React.FC = () => {
     );
   };
 
-  // ── Agent Picker Modal ───────────────────────────────────────
-  const AgentPickerModal = ({ group, onClose }: { group: CarGroup; onClose: () => void }) => (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
-    >
+  // ── Agent Picker Modal — ENHANCED ───────────────────────────
+  const AgentPickerModal = ({ group, onClose }: { group: CarGroup; onClose: () => void }) => {
+    // Hitung harga total estimasi (3 hari sebagai default preview)
+    const PREVIEW_DAYS = 2;
+
+    return (
       <div
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
       >
-        {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-extrabold text-gray-900">
-              {group.representativeProduct.name.split(' ').slice(0, 3).join(' ')}
-            </h3>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {group.agents.length} agent tersedia · {group.representativeProduct.location?.split(',').slice(-1)[0]?.trim()}
-            </p>
+        <div
+          className="bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] md:max-h-[85vh] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* ── Modal Header ── */}
+          <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between gap-4 shrink-0">
+            <div>
+              <h3 className="text-xl font-extrabold text-gray-900 leading-tight">
+                Pilih Penyedia Rental
+              </h3>
+              <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-primary-500" />
+                {group.representativeProduct.location?.split(',').slice(-2).join(',').trim()} ·{' '}
+                <span className="font-semibold text-gray-700">{group.agents.length} penyedia tersedia</span>
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors shrink-0 mt-0.5"
+            >
+              <X className="w-4 h-4 text-gray-600" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-          >
-            <X className="w-4 h-4 text-gray-600" />
-          </button>
-        </div>
 
-        {/* Agent List */}
-        <div className="overflow-y-auto flex-1 p-4 space-y-3">
-          {group.agents
-            .sort((a, b) => Number(a.price) - Number(b.price)) // sort harga terendah dulu
-            .map((agent) => {
-              const details = agent.details as CarDetails;
-              return (
-                <Link
-                  key={agent.id}
-                  to={`/product/${agent.id}`}
-                  onClick={onClose}
-                  className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 hover:border-primary-300 hover:bg-primary-50 transition-all group/item"
-                >
-                  {/* Car Image */}
-                  <div className="w-20 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                    <img
-                      src={getImageUrl(agent.image_url || agent.image)}
-                      alt={agent.name}
-                      className="w-full h-full object-cover group-hover/item:scale-105 transition-transform"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                    />
-                  </div>
+          {/* ── Agent List ── */}
+          <div className="overflow-y-auto flex-1 p-4 space-y-3">
+            {group.agents
+              .sort((a, b) => Number(a.price) - Number(b.price))
+              .map((agent) => {
+                const details = agent.details as CarDetails;
+                const totalPrice = Number(agent.price) * PREVIEW_DAYS;
+                // Mock review highlights — in production these would come from agent data
+                const reviewHighlights = ['Kemudahan Pickup', 'Kebersihan Mobil', 'Sikap Staff'];
+                // Mock badges — bisa diambil dari agent.tags atau field lain
+                const badges = [
+                  { label: 'Promo RAYA', color: 'bg-primary-600 text-white' },
+                  { label: 'Verifikasi Mudah', color: 'bg-green-500 text-white' },
+                  ...((agent as any).discount ? [{ label: `${(agent as any).discount}% Voucher`, color: 'bg-amber-400 text-gray-900' }] : [
+                    { label: `Rp 50rb Voucher`, color: 'bg-amber-400 text-gray-900' }
+                  ]),
+                ];
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-sm truncate">
-                      {(agent as any).owner?.name || 'Agent'}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-                      <span className="flex items-center gap-1">
-                        <Gauge className="w-3 h-3" /> {details?.transmission === 'Automatic' ? 'Matic' : 'Manual'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" /> {details?.seats} seats
-                      </span>
-                      {details?.driver && (
-                        <span className="flex items-center gap-1">
-                          <UserCog className="w-3 h-3" /> Driver
+                return (
+                  <div
+                    key={agent.id}
+                    className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 group/item"
+                  >
+                    {/* ── Badges Row ── */}
+                    <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 flex-wrap">
+                      {badges.map((badge, bi) => (
+                        <span
+                          key={bi}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold ${badge.color}`}
+                        >
+                          {bi === 0 && <Tag className="w-3 h-3" />}
+                          {bi === 1 && <ShieldCheck className="w-3 h-3" />}
+                          {bi === 2 && <Ticket className="w-3 h-3" />}
+                          {badge.label}
                         </span>
-                      )}
+                      ))}
+                    </div>
+
+                    {/* ── Main Content Row ── */}
+                    <div className="flex items-start gap-4 px-4 pb-4">
+
+                      {/* Car Thumbnail */}
+                      <div className="w-20 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
+                        <img
+                          src={getImageUrl(agent.image_url || agent.image)}
+                          alt={agent.name}
+                          className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                        />
+                      </div>
+
+                      {/* Provider Info */}
+                      <div className="flex-1 min-w-0">
+                        {/* Provider Name + Rating */}
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <p className="font-bold text-gray-900 text-sm truncate">
+                            {(agent as any).owner?.name || (agent as any).agentName || 'Penyedia Rental 1'}
+                          </p>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                            <span className="text-xs font-bold text-gray-800">
+                              {agent.rating ? `${agent.rating}/10.0` : '7.5/10.0'}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              ({(agent as any).reviewCount || 73})
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Review Highlights */}
+                        <div className="mb-2">
+                          <p className="text-[11px] text-gray-500 font-semibold mb-1">Yang disukai traveler</p>
+                          <div className="space-y-0.5">
+                            {reviewHighlights.map((highlight, hi) => (
+                              <div key={hi} className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                                <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
+                                <span>{highlight}</span>
+                                <span className="text-gray-400">
+                                  ({36 + hi * 3 + Math.floor(Math.random() * 5)})
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Specs Tags */}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            {details?.transmission === 'Automatic' ? 'Matic' : 'Manual'}
+                          </span>
+                          <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                            {details?.seats || 4} Penumpang
+                          </span>
+                          {details?.driver && (
+                            <span className="bg-primary-50 text-primary-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                              + Driver
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Price + CTA */}
+                      <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                        <div>
+                          {/* Total price (coret) */}
+                          <p className="text-xs text-gray-400 line-through">
+                            {agent.currency} {(totalPrice * 1.1).toLocaleString('id-ID')} Total
+                          </p>
+                          {/* Discounted total */}
+                          <p className="text-base font-extrabold text-primary-600 leading-tight">
+                            {agent.currency} {totalPrice.toLocaleString('id-ID')}
+                            <span className="text-[10px] font-bold text-primary-500 ml-0.5">Total</span>
+                          </p>
+                          {/* Per day */}
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {agent.currency} {Number(agent.price).toLocaleString('id-ID')}/hari
+                          </p>
+                        </div>
+
+                        {/* Choose Button */}
+                        <Link
+                          to={`/product/${agent.id}`}
+                          onClick={onClose}
+                          className="inline-flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-primary-600/25 transition-all active:scale-95 whitespace-nowrap"
+                        >
+                          Choose
+                          <ArrowRight className="w-3.5 h-3.5 group-hover/item:translate-x-0.5 transition-transform" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+          </div>
 
-                  {/* Price */}
-                  <div className="text-right shrink-0">
-                    <p className="font-extrabold text-gray-900 text-sm">
-                      {agent.currency} {Number(agent.price).toLocaleString('id-ID')}
-                    </p>
-                    <p className="text-xs text-gray-400">/hari</p>
-                    {agent.rating ? (
-                      <p className="text-xs text-amber-500 font-bold mt-1">⭐ {agent.rating}</p>
-                    ) : null}
-                  </div>
-
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover/item:text-primary-600 shrink-0" />
-                </Link>
-              );
-            })}
+          {/* ── Modal Footer ── */}
+          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 shrink-0">
+            <p className="text-xs text-gray-400 text-center">
+              Harga sudah termasuk estimasi {PREVIEW_DAYS} hari sewa · Tap "Choose" untuk lihat detail
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
   // ────────────────────────────────────────────────────────────
 
   // ── Regular Card ─────────────────────────────────────────────

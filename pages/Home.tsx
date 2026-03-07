@@ -362,6 +362,51 @@ const destBubbleVariants: Variants = {
   }
 };
 
+const ctaContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15, delayChildren: 0.1 },
+  },
+};
+
+const ctaLeftVariants: Variants = {
+  hidden: { opacity: 0, x: -60 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.8, ease: 'easeOut' },
+  },
+};
+
+const ctaRightVariants: Variants = {
+  hidden: { opacity: 0, x: 60, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.8, ease: 'easeOut' },
+  },
+};
+
+const ctaBadgeVariants: Variants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: 'easeOut' },
+  },
+};
+
+const ctaButtonVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, delay: i * 0.12, ease: 'easeOut' },
+  }),
+};
+
   // Our Travel Experience 
   const [products, setProducts] = useState<Product[]>([]);
   const [activeFilter, setActiveFilter] = useState('All');
@@ -1567,7 +1612,6 @@ const destBubbleVariants: Variants = {
                   </div>
                   <div>
                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-gray-900">Hotel & Villa</h3>
-                    <p className="text-sm text-gray-500">{hotelProducts.length} properties available</p>
                   </div>
                 </div>
               </motion.div>
@@ -2311,76 +2355,122 @@ const destBubbleVariants: Variants = {
         </div>
       </div>
       
-      {/* Call to Action */}
-      <div className="relative bg-primary-600 py-24 px-4 overflow-hidden">
-        {/* Luxury Glow Background */}
-        <div className="absolute -top-32 -left-32 w-[400px] h-[400px] bg-white/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-32 -right-32 w-[400px] h-[400px] bg-primary-400/40 rounded-full blur-3xl"></div>
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
+      <motion.div
+        className="relative bg-primary-600 py-24 px-4 overflow-hidden"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: '-100px' }}
+        variants={ctaContainerVariants}
+      >
+        {/* Decorative blobs */}
+        <div className="absolute -top-32 -left-32 w-[400px] h-[400px] bg-white/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-32 -right-32 w-[400px] h-[400px] bg-primary-400/40 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 pointer-events-none"></div>
 
         <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
 
-          {/* LEFT SIDE */}
-          <div className="text-white max-w-xl text-center lg:text-left">
+          {/* LEFT SIDE — slide in from left */}
+          <motion.div
+            variants={ctaLeftVariants}
+            className="text-white max-w-xl text-center lg:text-left"
+          >
+            {/* Badge */}
+            <motion.div variants={ctaBadgeVariants} className="mb-4">
+              <span className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 text-white text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full">
+                <Sparkles className="w-3.5 h-3.5" />
+                App Exclusive
+              </span>
+            </motion.div>
+
             <h2 className="text-4xl md:text-6xl font-serif font-bold mb-6 leading-tight">
               Unlock App-Only Deals
             </h2>
 
             <p className="text-primary-100 text-lg md:text-xl mb-10">
-              Save up to 
+              Save up to
               <span className="font-bold text-white"> IDR 400.000 </span>
               on your first transaction.
             </p>
 
+            {/* Buttons staggered */}
             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
-
-              {/* App Store Button */}
-              <a
+              <motion.a
                 href="#"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 bg-black px-6 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1 active:scale-95"
+                custom={0}
+                variants={ctaButtonVariants}
+                whileHover={{ y: -4, scale: 1.03, transition: { duration: 0.2 } }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-4 bg-black px-6 py-4 rounded-2xl shadow-xl"
               >
                 <img
                   src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
                   alt="App Store"
                   className="h-8"
                 />
-              </a>
+              </motion.a>
 
-              {/* Google Play Button */}
-              <a
+              <motion.a
                 href="#"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 bg-black px-6 py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1 active:scale-95"
+                custom={1}
+                variants={ctaButtonVariants}
+                whileHover={{ y: -4, scale: 1.03, transition: { duration: 0.2 } }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-4 bg-black px-6 py-4 rounded-2xl shadow-xl"
               >
                 <img
                   src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
                   alt="Google Play"
                   className="h-8"
                 />
-              </a>
-
+              </motion.a>
             </div>
-          </div>
+          </motion.div>
 
-          {/* RIGHT SIDE */}
-          <div className="flex flex-col items-center">
-            <div className="bg-white p-8 rounded-[32px] shadow-2xl">
+          {/* RIGHT SIDE — slide in from right with scale */}
+          <motion.div
+            variants={ctaRightVariants}
+            className="flex flex-col items-center"
+          >
+            <motion.div
+              className="bg-white p-8 rounded-[32px] shadow-2xl"
+              whileHover={{
+                scale: 1.05,
+                rotate: 1,
+                boxShadow: '0 30px 60px rgba(0,0,0,0.25)',
+                transition: { duration: 0.3 },
+              }}
+            >
               <img
                 src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://trivgoo.com/app"
                 alt="QR Code Download Trivgoo App"
                 className="w-56 h-56 md:w-64 md:h-64 object-contain"
               />
-            </div>
-            <span className="text-white mt-6 text-sm uppercase tracking-widest font-semibold">
-              Scan to download
-            </span>
-          </div>
+            </motion.div>
+
+            {/* Scan label with pulse dot */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="flex items-center gap-2 mt-6"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+              <span className="text-white text-sm uppercase tracking-widest font-semibold">
+                Scan to download
+              </span>
+            </motion.div>
+          </motion.div>
 
         </div>
-      </div>
+      </motion.div>
+
       <ReferralModal
         isOpen={isReferralModalOpen}
         onClose={() => setIsReferralModalOpen(false)}
