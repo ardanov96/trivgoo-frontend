@@ -40,6 +40,7 @@ import { useWishlist } from '../components/WishlistContext';
 import { useToast } from '../components/ToastContext';
 import { motion, type Variants } from 'framer-motion';
 import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
+import ReferralModal from '../components/ReferralModal';
 
 const POPULAR_DESTINATIONS = [
   'Bali, Indonesia',
@@ -241,6 +242,9 @@ const Home: React.FC = () => {
 
   // Campaign State
   const [activeCampaign, setActiveCampaign] = useState<FlashSaleCampaign | null>(null);
+
+  // Referral Modal State
+  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
 
   // Search State
   const [searchCategory, setSearchCategory] = useState('tours');
@@ -508,7 +512,7 @@ const destBubbleVariants: Variants = {
     title: 'Check out the Trivgoo Blog',
     description: 'Follow the latest travel trends, tips, and stories and plan your next unforgettable trip.',
     buttonLabel: 'Read Now',
-    buttonLink: '/blog',
+    buttonLink: '/travel-blog',
     bg: 'from-primary-50/50 to-rose-50/50',
     border: 'border-primary-100/50',
     iconColor: 'text-primary-600',
@@ -1566,9 +1570,6 @@ const destBubbleVariants: Variants = {
                     <p className="text-sm text-gray-500">{hotelProducts.length} properties available</p>
                   </div>
                 </div>
-                <Link to="/explore?category_id=2" className="text-sm font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                  View All <ArrowRight className="w-4 h-4" />
-                </Link>
               </motion.div>
 
               <motion.div
@@ -1647,7 +1648,7 @@ const destBubbleVariants: Variants = {
                                       }`}
                                   >
                                     <ShoppingCart className={`w-3.5 h-3.5 shrink-0 ${isInCart(product.id) ? "stroke-green-600" : ""}`} />
-                                    <span className="truncate">{isInCart(product.id) ? "Added" : "Add to Cart"}</span>
+                                    <span className="truncate">{isInCart(product.id) ? "Added" : "Book Now"}</span>
                                   </button>
                                 </div>
                               </div>
@@ -1659,22 +1660,30 @@ const destBubbleVariants: Variants = {
                 }
               </motion.div>
 
-              {hotelProducts.length > visibleHotels && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className="flex justify-center mt-10"
-                >
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="flex justify-center mt-10"
+              >
+                {hotelProducts.length > visibleHotels ? (
                   <button
                     onClick={() => setVisibleHotels(prev => prev + 4)}
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-emerald-600 text-white rounded-full font-bold text-sm shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
                   >
-                    Load More Hotels
+                    Load More
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
-                </motion.div>
-              )}
+                ) : (
+                  <Link
+                    to="/explore?category_id=2"
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+                  >
+                    Explore More Hotels & Villa
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                )}
+              </motion.div>
             </>
           )}
 
@@ -1694,7 +1703,6 @@ const destBubbleVariants: Variants = {
                   </div>
                   <div>
                     <h3 className="text-2xl md:text-3xl font-serif font-bold text-gray-900">Car Rental</h3>
-                    <p className="text-sm text-gray-500">{carProducts.length} vehicles available</p>
                   </div>
                 </div>
               </motion.div>
@@ -2112,13 +2120,23 @@ const destBubbleVariants: Variants = {
                       {card.description}
                     </p>
                     
-                    <Link
-                      to={card.buttonLink}
-                      className={`inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 group/btn w-full md:w-auto ${card.buttonStyle}`}
-                    >
-                      {card.buttonLabel}
-                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </Link>
+                    {card.id === 'referral' ? (
+                      <button
+                        onClick={() => setIsReferralModalOpen(true)}
+                        className={`inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 group/btn w-full md:w-auto ${card.buttonStyle}`}
+                      >
+                        {card.buttonLabel}
+                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
+                      </button>
+                    ) : (
+                      <Link
+                        to={card.buttonLink}
+                        className={`inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 group/btn w-full md:w-auto ${card.buttonStyle}`}
+                      >
+                        {card.buttonLabel}
+                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
+                      </Link>
+                    )}
                   </div>
                 </div>
               );
@@ -2363,6 +2381,11 @@ const destBubbleVariants: Variants = {
 
         </div>
       </div>
+      <ReferralModal
+        isOpen={isReferralModalOpen}
+        onClose={() => setIsReferralModalOpen(false)}
+        referralCode="TRIVGOO2025"
+      />
     </div>
   );
 };
