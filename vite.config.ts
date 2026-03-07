@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         // Proxy semua request /api ke backend
         '/api': {
-          target: 'http://localhost:4000', // ← Backend port
+          target: 'http://localhost:4001', // ← Backend port (matches .env.development PORT=4001)
           changeOrigin: true,
           secure: false,
           configure: (proxy, _options) => {
