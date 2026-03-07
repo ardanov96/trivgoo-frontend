@@ -53,5 +53,10 @@ export const authService = {
     const data = unwrap(res.data);
     return res.data.message || 'Success';
   },
-  
+
+  async validateResetToken(token: string): Promise<{ email: string }> {
+    const res = await http.get<ApiEnvelope<{ email: string }>>(`/auth/reset-password?token=${token}`);
+    return unwrap(res.data);
+  },
+
 };
