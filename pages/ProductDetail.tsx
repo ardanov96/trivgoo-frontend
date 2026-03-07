@@ -262,8 +262,8 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
           className={`h-9 w-9 text-xs font-medium rounded-lg flex items-center justify-center transition-all
             ${isPast || blocked ? "text-gray-300 cursor-not-allowed bg-gray-50"
               : isSelected ? "bg-primary-600 text-white shadow-md"
-              : isInRange ? "bg-primary-50 text-primary-700"
-              : "text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                : isInRange ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-primary-600"
             }`}
         >
           {day}
@@ -434,10 +434,10 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
         image: heroImage,
         currency: product.currency,
         duration: duration,
-        contactDetails: { 
-          name: contactName, 
-          email: contactEmail, 
-          phone: contactPhone 
+        contactDetails: {
+          name: contactName,
+          email: contactEmail,
+          phone: contactPhone
         },
         vehicleType: "car",
         transmission: details.transmission,
@@ -544,11 +544,10 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
               <div className="flex gap-2">
                 <button
                   onClick={handleToggleLike}
-                  className={`p-3 rounded-full transition-colors border ${
-                    isLiked 
-                      ? "bg-red-50 border-red-200 text-red-500" 
+                  className={`p-3 rounded-full transition-colors border ${isLiked
+                      ? "bg-red-50 border-red-200 text-red-500"
                       : "bg-gray-50 border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200"
-                  }`}
+                    }`}
                 >
                   <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
                 </button>
@@ -709,11 +708,10 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
                       setIsCalendarOpen(true);
                       setCalendarMode("pickup");
                     }}
-                    className={`w-full px-4 py-3 border rounded-lg flex items-center justify-between cursor-pointer hover:border-primary-400 transition-colors ${
-                      touchedFields.pickupDate && !pickupDate 
-                        ? "border-red-500 bg-red-50" 
+                    className={`w-full px-4 py-3 border rounded-lg flex items-center justify-between cursor-pointer hover:border-primary-400 transition-colors ${touchedFields.pickupDate && !pickupDate
+                        ? "border-red-500 bg-red-50"
                         : "border-gray-300"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-gray-400" />
@@ -735,11 +733,10 @@ const CarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
                       setIsCalendarOpen(true);
                       setCalendarMode("return");
                     }}
-                    className={`w-full px-4 py-3 border rounded-lg flex items-center justify-between cursor-pointer hover:border-primary-400 transition-colors ${
-                      touchedFields.returnDate && !returnDate 
-                        ? "border-red-500 bg-red-50" 
+                    className={`w-full px-4 py-3 border rounded-lg flex items-center justify-between cursor-pointer hover:border-primary-400 transition-colors ${touchedFields.returnDate && !returnDate
+                        ? "border-red-500 bg-red-50"
                         : "border-gray-300"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-gray-400" />
@@ -938,8 +935,8 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
 
   const galleryImages = product.images && Array.isArray(product.images) && product.images.length > 0
     ? product.images
-        .map((x: any) => getImageUrl(typeof x === "string" ? x : x?.url))
-        .filter(Boolean)
+      .map((x: any) => getImageUrl(typeof x === "string" ? x : x?.url))
+      .filter(Boolean)
     : [heroImage, heroImage, heroImage, heroImage, heroImage].filter(Boolean);
 
   useEffect(() => {
@@ -962,7 +959,7 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -1069,8 +1066,8 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
           className={`h-9 w-9 text-xs font-bold rounded-full flex items-center justify-center transition-all relative
             ${disabled ? "text-gray-300 cursor-not-allowed bg-gray-50"
               : selected ? "bg-primary-600 text-white shadow-md z-10"
-              : inRange ? "bg-primary-50 text-primary-700 rounded-none"
-              : "text-gray-700 hover:bg-gray-100 hover:text-primary-600"}
+                : inRange ? "bg-primary-50 text-primary-700 rounded-none"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-primary-600"}
             ${showBlockedStyle ? "bg-orange-50 text-orange-400 ring-1 ring-orange-200" : ""}`}
           title={blocked ? (calendarMode === "checkOut" && !isSingleDaySelection ? "Available for Checkout" : "Fully Booked") : isPast ? "Past Date" : "Available"}
         >
@@ -1159,6 +1156,7 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
 
     navigate("/checkout-summary", {
       state: {
+        productId: product.id,
         productName: product.name,
         location: product.location,
         date: isSingleDaySelection ? checkIn : `${checkIn} - ${checkOut}`,
@@ -1250,9 +1248,9 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
 
       {/* Product Hero Image */}
       <div className="h-[40vh] md:h-[60vh] relative group cursor-pointer" onClick={() => openLightbox(0)}>
-        <img 
-          src={heroImage} 
-          alt={product.name} 
+        <img
+          src={heroImage}
+          alt={product.name}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
@@ -1270,9 +1268,8 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
         <div className="absolute top-24 right-4 md:right-8 flex gap-2 z-10">
           <button
             onClick={handleToggleLike}
-            className={`bg-white/90 backdrop-blur-sm hover:bg-white p-3 rounded-full transition-all shadow-lg ${
-              isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
-            }`}
+            className={`bg-white/90 backdrop-blur-sm hover:bg-white p-3 rounded-full transition-all shadow-lg ${isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
+              }`}
           >
             <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
           </button>
@@ -1331,11 +1328,10 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
                     <button
                       key={tab!}
                       onClick={() => setActiveTab(tab!)}
-                      className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${
-                        activeTab === tab
+                      className={`pb-4 text-sm font-bold uppercase tracking-wide whitespace-nowrap ${activeTab === tab
                           ? "text-primary-600 border-b-2 border-primary-600"
                           : "text-gray-400 hover:text-gray-600"
-                      }`}
+                        }`}
                     >
                       {tab === "itinerary" ? "Itinerary" : tab!.charAt(0).toUpperCase() + tab!.slice(1)}
                     </button>
@@ -1437,9 +1433,9 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {galleryImages.map((img, index) => (
                       <div key={index} onClick={() => openLightbox(index)} className={`relative rounded-2xl overflow-hidden group shadow-sm cursor-pointer ${index === 0 ? "md:col-span-2 md:h-80" : "h-48"}`}>
-                        <img 
-                          src={img} 
-                          alt={`Gallery ${index}`} 
+                        <img
+                          src={img}
+                          alt={`Gallery ${index}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE;
@@ -1562,7 +1558,7 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
                         <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-600"><ChevronRight className="w-4 h-4" /></button>
                       </div>
                       <div className="grid grid-cols-7 gap-1 text-center mb-1">
-                        {["S","M","T","W","T","F","S"].map((d, i) => <div key={i} className="text-[10px] font-bold text-gray-400">{d}</div>)}
+                        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => <div key={i} className="text-[10px] font-bold text-gray-400">{d}</div>)}
                       </div>
                       <div className="grid grid-cols-7 gap-1 place-items-center">{renderCalendar()}</div>
                       <div className="mt-4 pt-3 border-t border-gray-100 text-center">
@@ -1633,11 +1629,10 @@ const NonCarProductDetail: React.FC<{ product: Product }> = ({ product }) => {
                     type="button"
                     onClick={handleAddToCart}
                     disabled={inCart}
-                    className={`w-full py-4 rounded-xl font-bold text-lg transition-all border-2 flex justify-center items-center gap-3 transform active:scale-[0.98] ${
-                      inCart
+                    className={`w-full py-4 rounded-xl font-bold text-lg transition-all border-2 flex justify-center items-center gap-3 transform active:scale-[0.98] ${inCart
                         ? "border-green-500 text-green-600 bg-green-50 cursor-default"
                         : "border-gray-200 text-gray-700 bg-white hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50"
-                    }`}
+                      }`}
                   >
                     <ShoppingCart className={`w-5 h-5 ${inCart ? "fill-green-100 stroke-green-600" : ""}`} />
                     {inCart ? "✓ Sudah di Keranjang" : "Tambah ke Keranjang"}
@@ -1708,7 +1703,7 @@ const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -1718,10 +1713,10 @@ const ProductDetail: React.FC = () => {
     (async () => {
       try {
         const pid = Number(id);
-        if (!Number.isFinite(pid) || pid <= 0) { 
-          showToast("Invalid product id", "error"); 
+        if (!Number.isFinite(pid) || pid <= 0) {
+          showToast("Invalid product id", "error");
           setLoading(false);
-          return; 
+          return;
         }
         const p = await agentProductService.getProductById(pid);
         setProduct(p);

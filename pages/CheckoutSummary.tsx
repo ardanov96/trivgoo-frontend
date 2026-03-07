@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
+import { useCart } from '../components/CartContext';
 import http from '../services/http';
 import {
   CreditCard,
@@ -56,6 +58,8 @@ const loadSnapScript = (isProduction: boolean, clientKey: string): Promise<void>
 const CheckoutSummary: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const { removeFromCart } = useCart();
   const [loading, setLoading] = useState(false);
 
   const bookingData = location.state || {
@@ -191,6 +195,8 @@ const CheckoutSummary: React.FC = () => {
         email: contactDetails.email || 'guest@trivgoo.com',
         product_name: productName,
         quantity: pax || 1,
+        user_id: user?.id || null,
+        product_id: bookingData.productId || null,
       });
 
       const { token: snapToken, is_production, client_key } = res.data?.data || {};
@@ -208,11 +214,17 @@ const CheckoutSummary: React.FC = () => {
       (window as any).snap.pay(snapToken, {
         onSuccess: (result: any) => {
           console.log('[Midtrans] Payment success:', result);
-          navigate('/booking-success', { state: { orderId, result, bookingData } });
+          if (bookingData.productId) {
+            removeFromCart(bookingData.productId);
+          }
+          navigate('/my-bookings');
         },
         onPending: (result: any) => {
           console.log('[Midtrans] Payment pending:', result);
-          navigate('/booking-pending', { state: { orderId, result, bookingData } });
+          if (bookingData.productId) {
+            removeFromCart(bookingData.productId);
+          }
+          navigate('/my-bookings');
         },
         onError: (result: any) => {
           console.error('[Midtrans] Payment error:', result);
@@ -399,9 +411,8 @@ const CheckoutSummary: React.FC = () => {
           <button
             onClick={handlePayment}
             disabled={loading}
-            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${
-              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'
-            }`}
+            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'
+              }`}
           >
             {loading ? (
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
