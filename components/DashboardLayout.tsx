@@ -14,6 +14,11 @@ import {
   Users,
   X,
   Wallet2,
+  Gift,
+  Award,
+  Share2,
+  Megaphone,
+  LineChart,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -55,6 +60,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
     </Link>
   );
 
+  const NavSectionLabel = ({ label }: { label: string }) => (
+    <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mt-4 mb-1">
+      {label}
+    </div>
+  );
+
   useEffect(() => {
     if (didFetchMeRef.current) return;
     didFetchMeRef.current = true;
@@ -62,7 +73,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
     (async () => {
       try {
         const me = await authService.me();
-
         updateUser({
           id: me.id,
           name: me.name,
@@ -95,13 +105,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } flex flex-col`}
       >
+        {/* Logo */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100">
           <Link to="/" className="flex items-center">
-            <img
-              src="/inline_trp.png"
-              alt="Trivgoo Logo"
-              className="h-10 w-auto"
-            />
+            <img src="/inline_trp.png" alt="Trivgoo Logo" className="h-10 w-auto" />
           </Link>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
@@ -111,35 +118,48 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        {/* Nav */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+
+          {/* ── ADMIN ── */}
           {role === UserRole.ADMIN && (
             <>
+              <NavSectionLabel label="Overview" />
               <NavItem to="/admin" icon={LayoutDashboard} label="Dashboard" />
               <NavItem to="/admin/bookings" icon={BarChart2} label="Bookings" />
+
+              <NavSectionLabel label="Catalog" />
               <NavItem to="/admin/products" icon={Package} label="Products" />
               <NavItem to="/admin/users" icon={Users} label="Users & Verification" />
               <NavItem to="/admin/payouts" icon={CreditCard} label="Payout Requests" />
+
+              <NavSectionLabel label="Promo & Voucher" />
+              <NavItem to="/admin/vouchers" icon={Gift} label="Vouchers" />
+              <NavItem to="/admin/promo/campaigns" icon={Megaphone} label="Promo Campaign" />
+              <NavItem to="/admin/promo/analytics" icon={LineChart} label="Promo Analytics" />
+
+              <NavSectionLabel label="Loyalty" />
+              <NavItem to="/admin/membership/tiers" icon={Award} label="Membership Tiers" />
+              <NavItem to="/admin/referral/stats" icon={Share2} label="Referral Stats" />
+
+              <NavSectionLabel label="Config" />
               <NavItem to="/admin/settings" icon={Settings} label="Settings" />
               <NavItem to="/admin/payment-settings" icon={Wallet2} label="Payment Settings" />
             </>
           )}
 
+          {/* ── AGENT ── */}
           {role === UserRole.AGENT && (
             <>
-              <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Overview
-              </div>
+              <NavSectionLabel label="Overview" />
               <NavItem to="/agent" icon={LayoutDashboard} label="Dashboard" />
               <NavItem to="/agent/commissions" icon={DollarSign} label="Commissions" />
               <NavItem to="/agent/customers" icon={UserCheck} label="Customer List" />
 
-              <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mt-6">
-                Management
-              </div>
+              <NavSectionLabel label="Management" />
               {user?.verification_status !== VerificationStatus.VERIFIED && (
                 <NavItem to="/agent/verification" icon={ShieldCheck} label="Verify Account" />
               )}
-
               <NavItem to="/agent/products" icon={ShoppingBag} label="My Products" />
               <NavItem to="/agent/products/new" icon={PlusCircle} label="Add Product" />
               <NavItem to="/agent/profile/settings" icon={Settings} label="Profile Settings" />
@@ -147,6 +167,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
           )}
         </nav>
 
+        {/* User footer */}
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center mb-4 px-2">
             <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mr-3 flex-shrink-0">
@@ -172,6 +193,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden w-full">
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-4 lg:px-8 z-10 shrink-0">
           <div className="flex items-center">
