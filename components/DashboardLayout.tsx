@@ -1,15 +1,19 @@
 import {
   BarChart2,
+  Code2,
   CreditCard,
   DollarSign,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
+  Megaphone,
   Menu,
   Package,
   PlusCircle,
   Settings,
   ShieldCheck,
   ShoppingBag,
+  Star,
   UserCheck,
   Users,
   X,
@@ -17,7 +21,6 @@ import {
   Gift,
   Award,
   Share2,
-  Megaphone,
   LineChart,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
@@ -163,6 +166,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               <NavItem to="/agent/products" icon={ShoppingBag} label="My Products" />
               <NavItem to="/agent/products/new" icon={PlusCircle} label="Add Product" />
               <NavItem to="/agent/profile/settings" icon={Settings} label="Profile Settings" />
+
+              <NavSectionLabel label="Grow & Quality" />
+              <NavItem to="/agent/marketing" icon={Megaphone} label="Marketing Tools" />
+              <NavItem to="/agent/loyalty"   icon={Award}     label="Loyalty & Member" />
+              <NavItem to="/agent/rating"    icon={Star}      label="Rating & Review" />
+
+              <NavSectionLabel label="Developer" />
+              <NavItem to="/agent/api" icon={Code2} label="API & Integrasi" />
+
+              <NavSectionLabel label="Bantuan" />
+              <NavItem to="/agent/support" icon={LifeBuoy} label="Support & Training" />
             </>
           )}
         </nav>

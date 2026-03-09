@@ -49,6 +49,13 @@ import AgentProducts from './pages/agent/products/MyProducts';
 import AgentVerification from './pages/agent/Verification';
 import ProfileSetting from './pages/agent/ProfileSetting';
 
+// ── J. Agent Advanced Modules ─────────────────────────────────────────────────
+import AgentMarketing from './pages/agent/AgentMarketing';   // J.6
+import AgentLoyalty   from './pages/agent/AgentLoyalty';     // J.9
+import AgentAPI       from './pages/agent/AgentAPI';         // J.10
+import AgentSupport   from './pages/agent/AgentSupport';     // J.11
+import AgentRating    from './pages/agent/AgentRating';      // J.12
+
 // Customer Pages
 import CustomerBookings from './pages/customer/Bookings';
 
@@ -216,6 +223,13 @@ const AppRoutes = () => {
         <Route path="commissions" element={<AgentCommissions />} />
         <Route path="verification" element={<AgentVerification />} />
         <Route path="profile/settings" element={<ProfileSetting />} />
+
+        {/* ── J. Agent Advanced Modules ── */}
+        <Route path="marketing" element={<AgentMarketing />} />
+        <Route path="loyalty" element={<AgentLoyalty />} />
+        <Route path="api" element={<AgentAPI />} />
+        <Route path="support" element={<AgentSupport />} />
+        <Route path="rating" element={<AgentRating />} />
       </Route>
 
     </Routes>
