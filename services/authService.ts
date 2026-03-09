@@ -59,4 +59,9 @@ export const authService = {
     return unwrap(res.data);
   },
 
+  async verifyEmail(token: string): Promise<string> {
+    const res = await http.get<ApiEnvelope<null>>(`/auth/verify-email?token=${token}`);
+    return res.data.message || 'Email verified successfully';
+  },
+
 };

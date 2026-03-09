@@ -95,11 +95,11 @@ export type UploadedMediaItem = {
 };
 
 export type UploadMediaResponse = {
-  url?: string;       
-  filename?: string;   
-  urls?: string[];   
+  url?: string;
+  filename?: string;
+  urls?: string[];
   filenames?: string[];
-  items?: UploadedMediaItem[]; 
+  items?: UploadedMediaItem[];
 };
 
 export interface TourDetails {
@@ -132,21 +132,21 @@ export interface StayDetails {
 export interface CarDetails {
   type: "car";
   transportCategory: TransportCategory;
-  transmission: "Automatic" | "Manual" | "Matic" | "Manual"; 
-  seats: number; 
+  transmission: "Automatic" | "Manual" | "Matic" | "Manual";
+  seats: number;
   luggage?: number;
   fuelPolicy?: string;
   year?: number;
   driverLanguages?: string[];
   requirements: string[];
   driver?: boolean;
-  location?: string; 
-  priceUnit?: "hari" | "jam" | "bulan"; 
-  fuelType?: "bensin" | "diesel" | "listrik" | "hybrid"; 
-  hasAC?: boolean; 
-  mileage?: number; 
-  insurance?: boolean; 
-  color?: string; 
+  location?: string;
+  priceUnit?: "hari" | "jam" | "bulan";
+  fuelType?: "bensin" | "diesel" | "listrik" | "hybrid";
+  hasAC?: boolean;
+  mileage?: number;
+  insurance?: boolean;
+  color?: string;
 
   // link back to selected vehicle from cars table
   car_id?: number;
@@ -165,6 +165,7 @@ export interface RegisterPayload {
   password: string;
   role?: "CUSTOMER" | "AGENT" | "ADMIN";
   specialization?: string;
+  phone_number?: string;
 }
 
 export interface FlashSaleCampaign {
