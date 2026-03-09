@@ -20,6 +20,7 @@ import Payment from './pages/Payment';
 import ProductDetail from './pages/ProductDetail';
 import Wishlist from './pages/Wishlist';
 import TrivPay from './pages/TrivPay';
+import VerifyEmail from './pages/VerifyEmail';
 
 // Protected Pages
 import AdminBookings from './pages/admin/Bookings';
@@ -129,6 +130,7 @@ const AppRoutes = () => {
         <Route path="/register/agent" element={<PublicOnlyRoute><RegisterAgent /></PublicOnlyRoute>} />
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
         <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
+        <Route path="/verify-email" element={<PublicOnlyRoute><VerifyEmail /></PublicOnlyRoute>} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/career" element={<Career />} />
