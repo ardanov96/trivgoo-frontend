@@ -2,8 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../AuthContext';
 import http from '../../services/http';
+import { loyaltyService } from '../../services/loyaltyService';
 import { Booking, BookingStatus } from '../../types';
-import { Calendar, Edit2, Package, History, ChevronRight, TrendingUp, Award, Wallet, Camera, Shield, QrCode, MessageSquare, MessageCircle, Star, X, CreditCard } from 'lucide-react';
+import { Calendar, Edit2, Package, History, ChevronRight, TrendingUp, Award, Wallet, Camera, Shield, QrCode, MessageSquare, MessageCircle, Star, X, CreditCard, Gift, Coins } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import { useCart } from '../../components/CartContext';
@@ -103,6 +104,8 @@ const CustomerBookings: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [membershipTier, setMembershipTier] = useState<{ name: string; color: string | null } | null>(null);
+  const [pointBalance, setPointBalance] = useState<number>(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,12 +149,19 @@ const CustomerBookings: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      loadBookings();
-      setProfileName(user.name);
-      setProfileEmail(user.email);
-    }
-  }, [user]);
+  if (user) {
+    loadBookings();
+    setProfileName(user.name);
+    setProfileEmail(user.email);
+    // Fetch loyalty data
+    loyaltyService.getMembership()
+      .then(mem => setMembershipTier({ name: mem.tier.name, color: mem.tier.color }))
+      .catch(() => {}); // silent — jika user belum punya membership
+    loyaltyService.getBalance()
+      .then(bal => setPointBalance(bal.balance))
+      .catch(() => {});
+  }
+}, [user]);
 
   // Handle Midtrans Redirect Flow (Simulator)
   useEffect(() => {
@@ -432,11 +442,21 @@ const CustomerBookings: React.FC = () => {
                   <>
                     <h2 className="text-xl font-bold text-gray-900 mb-1">{user?.name}</h2>
                     <p className="text-gray-400 text-sm font-medium mb-4">{user?.email}</p>
-                    <div className="flex gap-2">
-                      <span className="px-3 py-1 bg-yellow-50 text-yellow-700 text-[10px] font-bold uppercase tracking-wider rounded-full border border-yellow-100 flex items-center">
-                        <Award className="w-3 h-3 mr-1" /> Gold Member
+                    <div className="flex flex-col items-center gap-2">
+                    {membershipTier && (
+                      <span
+                        className="px-3 py-1 text-white text-[10px] font-bold uppercase tracking-wider rounded-full flex items-center"
+                        style={{ backgroundColor: membershipTier.color ?? '#cd7f32' }}
+                      >
+                        <Award className="w-3 h-3 mr-1" /> {membershipTier.name}
                       </span>
-                    </div>
+                    )}
+                    {pointBalance > 0 && (
+                      <span className="px-3 py-1 bg-gray-900 text-yellow-400 text-[10px] font-bold rounded-full flex items-center gap-1">
+                        <Coins className="w-3 h-3" /> {pointBalance.toLocaleString('id-ID')} pts
+                      </span>
+                    )}
+                  </div>
                     <button onClick={() => setIsEditingProfile(true)} className="mt-6 flex items-center text-gray-400 text-xs font-bold hover:text-primary-600 transition-colors uppercase tracking-wide">
                       <Edit2 className="w-3 h-3 mr-1.5" /> Edit Profile
                     </button>
@@ -464,6 +484,18 @@ const CustomerBookings: React.FC = () => {
                   <History className={`w-5 h-5 mr-3 ${activeTab === 'history' ? 'text-primary-600' : 'text-gray-400'}`} />
                   Trip History
                 </button>
+                <Link
+                  to="/loyalty"
+                  className="w-full flex items-center px-4 py-3.5 rounded-2xl transition-all text-sm text-gray-500 hover:bg-gray-50 font-medium"
+                >
+                  <Gift className="w-5 h-5 mr-3 text-gray-400" />
+                  Loyalty & Points
+                  {pointBalance > 0 && (
+                    <span className="ml-auto bg-yellow-50 text-yellow-700 py-0.5 px-2 rounded-md text-xs font-bold">
+                      {pointBalance.toLocaleString('id-ID')} pts
+                    </span>
+                  )}
+                </Link>
               </div>
 
               <div className="mt-8 pt-6 border-t border-gray-50">

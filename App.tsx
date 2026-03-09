@@ -10,7 +10,6 @@ import { CartProvider } from './components/CartContext';
 import DashboardLayout from './components/DashboardLayout';
 import PublicLayout from './components/PublicLayout';
 
-
 // Public Pages
 import AITripPlanner from './pages/AITripPlanner';
 import Explore from './pages/Explore';
@@ -31,13 +30,34 @@ import AdminProducts from './pages/admin/Products';
 import AdminSettings from './pages/admin/Settings';
 import PaymentSetting from './pages/admin/PaymentSetting';
 import AdminUsers from './pages/admin/Users';
+
+// ── G. Promo & Voucher (Admin) ────────────────────────────────────────────────
+import AdminVouchers from './pages/admin/AdminVouchers';
+import AdminPromoCampaigns from './pages/admin/AdminPromoCampaigns';
+import AdminPromoAnalytics from './pages/admin/AdminPromoAnalytics';
+
+// ── H. Loyalty & Membership (Admin) ──────────────────────────────────────────
+import AdminMembershipTiers from './pages/admin/AdminMembershipTiers';
+import AdminReferralStats from './pages/admin/AdminReferralStats';
+
+// Agent Pages
 import AgentAddProduct from './pages/agent/AddProduct';
 import AgentCommissions from './pages/agent/Commissions';
 import AgentCustomerBookings from './pages/agent/CustomerBookings';
 import AgentDashboard from './pages/agent/Dashboard';
 import AgentProducts from './pages/agent/products/MyProducts';
 import AgentVerification from './pages/agent/Verification';
+import ProfileSetting from './pages/agent/ProfileSetting';
+
+// Customer Pages
 import CustomerBookings from './pages/customer/Bookings';
+
+// ── H. Loyalty & Membership (Customer) ───────────────────────────────────────
+import LoyaltyPage from './pages/customer/LoyaltyPage';
+import RedeemPointPage from './pages/customer/RedeemPointPage';
+import MembershipPage from './pages/customer/MembershipPage';
+
+// Misc Pages
 import Register from './pages/Register';
 import RegisterAgent from './pages/RegisterAgent';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -47,7 +67,6 @@ import AboutUs from './pages/AboutUs';
 import Career from './pages/Career';
 import PressAndMedia from './pages/PressAndMedia';
 import TravelBlog from './pages/TravelBlog';
-import ProfileSetting from './pages/agent/ProfileSetting';
 import CheckoutSummary from './pages/CheckoutSummary';
 import BookingSuccess from './pages/BookingSucess';
 import BookingFailed from './pages/BookingFailed';
@@ -55,7 +74,8 @@ import BookingPending from './pages/BookingPending';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
-// Route Guards
+// ── Route Guards ──────────────────────────────────────────────────────────────
+
 interface ProtectedRouteProps {
   children?: React.ReactNode;
   allowedRoles: UserRole[];
@@ -71,17 +91,6 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   return <>{children}</>;
 };
 
-// ScrollToTop Component
-const ScrollToTop = () => {
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  return null;
-};
-
 const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
@@ -91,10 +100,21 @@ const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// ── ScrollToTop ───────────────────────────────────────────────────────────────
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+};
+
+// ── Routes ────────────────────────────────────────────────────────────────────
+
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Routes */}
+
+      {/* ── Public Routes ── */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<Explore />} />
@@ -121,27 +141,38 @@ const AppRoutes = () => {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/contact-us" element={<ContactUs />} />
 
-        {/* Customer Protected Route - Nested in Public Layout for consistency */}
-        <Route
-          path="/payment"
-          element={
-            <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
-              <Payment />
-            </ProtectedRoute>
-          }
-        />
+        {/* ── Customer Protected Routes (dalam PublicLayout) ── */}
+        <Route path="/payment" element={
+          <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
+            <Payment />
+          </ProtectedRoute>
+        } />
 
-        <Route
-          path="/my-bookings"
-          element={
-            <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
-              <CustomerBookings />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/my-bookings" element={
+          <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
+            <CustomerBookings />
+          </ProtectedRoute>
+        } />
+
+        {/* ── H. Loyalty & Membership (Customer) ── */}
+        <Route path="/loyalty" element={
+          <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
+            <LoyaltyPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/loyalty/redeem" element={
+          <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
+            <RedeemPointPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/loyalty/membership" element={
+          <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
+            <MembershipPage />
+          </ProtectedRoute>
+        } />
       </Route>
 
-      {/* Dashboard Routes (Admin & Agent) */}
+      {/* ── Admin Dashboard Routes ── */}
       <Route
         path="/admin"
         element={
@@ -157,8 +188,18 @@ const AppRoutes = () => {
         <Route path="users" element={<AdminUsers />} />
         <Route path="settings" element={<AdminSettings />} />
         <Route path="payment-settings" element={<PaymentSetting />} />
+
+        {/* ── G. Promo & Voucher ── */}
+        <Route path="vouchers" element={<AdminVouchers />} />
+        <Route path="promo/campaigns" element={<AdminPromoCampaigns />} />
+        <Route path="promo/analytics" element={<AdminPromoAnalytics />} />
+
+        {/* ── H. Loyalty & Membership ── */}
+        <Route path="membership/tiers" element={<AdminMembershipTiers />} />
+        <Route path="referral/stats" element={<AdminReferralStats />} />
       </Route>
 
+      {/* ── Agent Dashboard Routes ── */}
       <Route
         path="/agent"
         element={
@@ -176,9 +217,12 @@ const AppRoutes = () => {
         <Route path="verification" element={<AgentVerification />} />
         <Route path="profile/settings" element={<ProfileSetting />} />
       </Route>
+
     </Routes>
   );
 };
+
+// ── App ───────────────────────────────────────────────────────────────────────
 
 const App: React.FC = () => {
   return (

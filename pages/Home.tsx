@@ -459,8 +459,10 @@ const ctaButtonVariants: Variants = {
     showToast(`${product.name} ditambahkan ke keranjang!`, 'success');
   };
 
+  // GANTI dengan ini:
   const filteredProducts = products
   .filter((p) => {
+    if (Number(p.category_id) !== 1) return false; // hanya Tour
     if (activeFilter === 'All') return true;
     return getSubCategoryValue(p.details) === activeFilter.toLowerCase();
   })
@@ -1578,7 +1580,7 @@ const ctaButtonVariants: Variants = {
               )}
           </motion.div>
           {/* Load More - Tour */}
-          {products.filter(p => activeFilter === 'All' || getSubCategoryValue(p.details) === activeFilter.toLowerCase()).length > 4 && (
+          {products.filter(p => Number(p.category_id) === 1 && (activeFilter === 'All' || getSubCategoryValue(p.details) === activeFilter.toLowerCase())).length > 4 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1841,23 +1843,13 @@ const ctaButtonVariants: Variants = {
                 viewport={{ once: true }}
                 className="flex justify-center mt-10"
               >
-                {carProducts.length > visibleCars ? (
-                  <button
-                    onClick={() => setVisibleCars(prev => prev + 4)}
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
-                  >
-                    Load More
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                ) : (
-                  <Link
-                    to="/explore?category_id=3"
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
-                  >
-                    Explore More Cars
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                )}
+                <Link
+                  to="/explore?category_id=3"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+                >
+                  Explore More Cars
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </motion.div>
             </>
           )}

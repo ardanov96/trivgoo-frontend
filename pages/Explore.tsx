@@ -1,6 +1,7 @@
 import { ArrowRight, ArrowUpDown, Heart, MapPin, Search, Star, X, Users, Gauge, Briefcase, Droplet, UserCog, Award, CheckCircle2, Tag, ShieldCheck, Ticket } from 'lucide-react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { motion, type Variants } from 'framer-motion';
 import { useWishlist } from '../components/WishlistContext';
 import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
 import { 
@@ -18,6 +19,85 @@ import { ShoppingCart, Car } from "lucide-react";
 import { useCart } from "../components/CartContext";
 import { useToast } from "../components/ToastContext";
 import { useAuth } from "../AuthContext";
+
+// ── Framer Motion Variants (konsisten dengan Home.tsx) ───────
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: 'easeOut' },
+  },
+};
+
+const fadeUpVariants: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: 'easeOut' },
+  },
+};
+
+const fadeInVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.5 },
+  },
+};
+
+const slideLeftVariants: Variants = {
+  hidden: { opacity: 0, x: -24 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.5, ease: 'easeOut' },
+  },
+};
+
+const filterContainerVariants: Variants = {
+  hidden: { opacity: 0, y: -16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      staggerChildren: 0.05,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const filterItemVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.88 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.3, ease: 'easeOut' },
+  },
+};
+
+const carCardVariants: Variants = {
+  hidden: { opacity: 0, y: 32 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: 'easeOut' },
+  },
+};
+// ────────────────────────────────────────────────────────────
 
 // Type guard functions
 const isTour = (details: any): details is TourDetails => details?.type === "tour";
@@ -399,21 +479,28 @@ const Explore: React.FC = () => {
     );
   };
 
-  // ── Agent Picker Modal — ENHANCED ───────────────────────────
+  // ── Agent Picker Modal ───────────────────────────────────────
   const AgentPickerModal = ({ group, onClose }: { group: CarGroup; onClose: () => void }) => {
-    // Hitung harga total estimasi (3 hari sebagai default preview)
     const PREVIEW_DAYS = 2;
 
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       >
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: 60, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 40, scale: 0.96 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
           className="bg-white rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] md:max-h-[85vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* ── Modal Header ── */}
+          {/* Modal Header */}
           <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between gap-4 shrink-0">
             <div>
               <h3 className="text-xl font-extrabold text-gray-900 leading-tight">
@@ -433,16 +520,14 @@ const Explore: React.FC = () => {
             </button>
           </div>
 
-          {/* ── Agent List ── */}
+          {/* Agent List */}
           <div className="overflow-y-auto flex-1 p-4 space-y-3">
             {group.agents
               .sort((a, b) => Number(a.price) - Number(b.price))
-              .map((agent) => {
+              .map((agent, idx) => {
                 const details = agent.details as CarDetails;
                 const totalPrice = Number(agent.price) * PREVIEW_DAYS;
-                // Mock review highlights — in production these would come from agent data
                 const reviewHighlights = ['Kemudahan Pickup', 'Kebersihan Mobil', 'Sikap Staff'];
-                // Mock badges — bisa diambil dari agent.tags atau field lain
                 const badges = [
                   { label: 'Promo RAYA', color: 'bg-primary-600 text-white' },
                   { label: 'Verifikasi Mudah', color: 'bg-green-500 text-white' },
@@ -452,17 +537,17 @@ const Explore: React.FC = () => {
                 ];
 
                 return (
-                  <div
+                  <motion.div
                     key={agent.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: idx * 0.07 }}
                     className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:border-primary-300 hover:shadow-md transition-all duration-200 group/item"
                   >
-                    {/* ── Badges Row ── */}
+                    {/* Badges Row */}
                     <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 flex-wrap">
                       {badges.map((badge, bi) => (
-                        <span
-                          key={bi}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold ${badge.color}`}
-                        >
+                        <span key={bi} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold ${badge.color}`}>
                           {bi === 0 && <Tag className="w-3 h-3" />}
                           {bi === 1 && <ShieldCheck className="w-3 h-3" />}
                           {bi === 2 && <Ticket className="w-3 h-3" />}
@@ -471,10 +556,8 @@ const Explore: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* ── Main Content Row ── */}
+                    {/* Main Content Row */}
                     <div className="flex items-start gap-4 px-4 pb-4">
-
-                      {/* Car Thumbnail */}
                       <div className="w-20 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
                         <img
                           src={getImageUrl(agent.image_url || agent.image)}
@@ -484,9 +567,7 @@ const Explore: React.FC = () => {
                         />
                       </div>
 
-                      {/* Provider Info */}
                       <div className="flex-1 min-w-0">
-                        {/* Provider Name + Rating */}
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           <p className="font-bold text-gray-900 text-sm truncate">
                             {(agent as any).owner?.name || (agent as any).agentName || 'Penyedia Rental 1'}
@@ -502,7 +583,6 @@ const Explore: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Review Highlights */}
                         <div className="mb-2">
                           <p className="text-[11px] text-gray-500 font-semibold mb-1">Yang disukai traveler</p>
                           <div className="space-y-0.5">
@@ -518,7 +598,6 @@ const Explore: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Specs Tags */}
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
                             {details?.transmission === 'Automatic' ? 'Matic' : 'Manual'}
@@ -534,25 +613,20 @@ const Explore: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Price + CTA */}
                       <div className="text-right shrink-0 flex flex-col items-end gap-2">
                         <div>
-                          {/* Total price (coret) */}
                           <p className="text-xs text-gray-400 line-through">
                             {agent.currency} {(totalPrice * 1.1).toLocaleString('id-ID')} Total
                           </p>
-                          {/* Discounted total */}
                           <p className="text-base font-extrabold text-primary-600 leading-tight">
                             {agent.currency} {totalPrice.toLocaleString('id-ID')}
                             <span className="text-[10px] font-bold text-primary-500 ml-0.5">Total</span>
                           </p>
-                          {/* Per day */}
                           <p className="text-xs text-gray-500 mt-0.5">
                             {agent.currency} {Number(agent.price).toLocaleString('id-ID')}/hari
                           </p>
                         </div>
 
-                        {/* Choose Button */}
                         <Link
                           to={`/product/${agent.id}`}
                           onClick={onClose}
@@ -563,19 +637,19 @@ const Explore: React.FC = () => {
                         </Link>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
           </div>
 
-          {/* ── Modal Footer ── */}
+          {/* Modal Footer */}
           <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 shrink-0">
             <p className="text-xs text-gray-400 text-center">
               Harga sudah termasuk estimasi {PREVIEW_DAYS} hari sewa · Tap "Choose" untuk lihat detail
             </p>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   };
   // ────────────────────────────────────────────────────────────
@@ -658,17 +732,34 @@ const Explore: React.FC = () => {
     <div className="bg-gray-50 min-h-screen pt-24 pb-12">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div className="mb-8">
+        {/* ── Page Header ── */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeUpVariants}
+          className="mb-8"
+        >
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-2">Explore the World</h1>
           <p className="text-gray-500">Discover unique experiences and hidden gems.</p>
-        </div>
+        </motion.div>
 
-        {/* Filter Container */}
-        <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 mb-12">
+        {/* ── Filter Container ── */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeUpVariants}
+          transition={{ delay: 0.1 }}
+          className="bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 mb-12"
+        >
           <div className="flex flex-col gap-8">
 
             {/* Category Buttons */}
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+            <motion.div
+              variants={filterContainerVariants}
+              initial="hidden"
+              animate="visible"
+              className="flex gap-3 overflow-x-auto no-scrollbar pb-2"
+            >
               {[
                 { label: "Travel", id: 1 },
                 { label: "Hotel & Villa", id: 2 },
@@ -676,9 +767,11 @@ const Explore: React.FC = () => {
                 { label: "Airport Transfer", id: 4 },
                 { label: "Event", id: 5 },
               ].map((item) => (
-                <button
+                <motion.button
                   key={item.label}
+                  variants={filterItemVariants}
                   onClick={() => handleCategorySelect(item.id)}
+                  whileTap={{ scale: 0.95 }}
                   className={`px-6 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all border
                     ${selectedCategory === item.id
                       ? "bg-gray-900 text-white border-gray-900 shadow-md"
@@ -686,12 +779,18 @@ const Explore: React.FC = () => {
                     }`}
                 >
                   {item.label}
-                </button>
+                </motion.button>
               ))}
-            </div>
+            </motion.div>
 
             {/* Search + Sort */}
-            <div className="flex flex-col lg:flex-row gap-4">
+            <motion.div
+              variants={slideLeftVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ delay: 0.15 }}
+              className="flex flex-col lg:flex-row gap-4"
+            >
               <div className="flex-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-gray-400" />
@@ -739,11 +838,16 @@ const Explore: React.FC = () => {
                 </select>
                 <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
-            </div>
+            </motion.div>
 
             {/* Rental Filters */}
             {isCarCategory && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+              >
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Gauge className="h-5 w-5 text-gray-400" /></div>
                   <select value={rentalFilters.transmission} onChange={(e) => handleRentalFilterChange('transmission', e.target.value)}
@@ -776,12 +880,17 @@ const Explore: React.FC = () => {
                   <input type="number" placeholder="Max Price" value={rentalFilters.maxPrice} onChange={(e) => handleRentalFilterChange('maxPrice', e.target.value)} min="0"
                     className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500" />
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Experience Tags */}
             {(selectedCategory === 1 || selectedCategory === 2) && (
-              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 animate-in fade-in slide-in-from-left-4 duration-500">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
+                className="flex gap-3 overflow-x-auto no-scrollbar pb-2"
+              >
                 <button
                   onClick={() => setSelectedSubCategory(null)}
                   className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all border
@@ -802,15 +911,22 @@ const Explore: React.FC = () => {
                     {tag}
                   </button>
                 ))}
-              </div>
+              </motion.div>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Results */}
-        <div className={isCarCategory ? "flex flex-col gap-6" : "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"}>
-          {isLoading ? (
-            isCarCategory ? (
+        {/* ── Results ── */}
+        {isCarCategory ? (
+          /* Car Layout — staggered vertical list */
+          <motion.div
+            key={`car-${selectedCategory}`}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col gap-6"
+          >
+            {isLoading ? (
               [...Array(3)].map((_, i) => (
                 <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
                   <div className="md:flex">
@@ -826,64 +942,120 @@ const Explore: React.FC = () => {
                 </div>
               ))
             ) : (
-              [...Array(8)].map((_, i) => <SkeletonCard key={i} />)
-            )
-          ) : isCarCategory ? (
-            carGroups.map((group) => (
-              <div
-                key={group.groupKey}
-                onClick={() => {
-                  if (group.agents.length > 1) {
-                    setAgentPickerGroup(group);
-                  } else {
-                    navigate(`/product/${group.representativeProduct.id}`);
-                  }
-                }}
-                className="cursor-pointer"
-              >
-                <RentalCarCard
-                  product={group.representativeProduct}
-                  agentCount={group.agents.length}
-                />
-              </div>
-            ))
-          ) : (
-            filteredAndSortedProducts.slice(0, visibleCount).map((product) => (
-              <RegularCard key={product.id} product={product} />
-            ))
-          )}
-        </div>
+              carGroups.map((group, index) => (
+                <motion.div
+                  key={group.groupKey}
+                  variants={carCardVariants}
+                  onClick={() => {
+                    if (group.agents.length > 1) {
+                      setAgentPickerGroup(group);
+                    } else {
+                      navigate(`/product/${group.representativeProduct.id}`);
+                    }
+                  }}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                  className="cursor-pointer"
+                >
+                  <RentalCarCard
+                    product={group.representativeProduct}
+                    agentCount={group.agents.length}
+                  />
+                </motion.div>
+              ))
+            )}
+          </motion.div>
+        ) : (
+          /* Regular Grid Layout */
+          <motion.div
+            key={`grid-${selectedCategory}-${selectedSubCategory}`}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
+          >
+            {isLoading
+              ? [...Array(8)].map((_, i) => (
+                  <motion.div key={i} variants={cardVariants}>
+                    <SkeletonCard />
+                  </motion.div>
+                ))
+              : filteredAndSortedProducts.slice(0, visibleCount).map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    variants={cardVariants}
+                    whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                  >
+                    <RegularCard product={product} />
+                  </motion.div>
+                ))
+            }
+          </motion.div>
+        )}
 
-        {/* Load More Button */}
+        {/* ── Load More Button ── */}
         {!isLoading && !isCarCategory && filteredAndSortedProducts.length > visibleCount && (
-          <div className="flex justify-center mt-10">
-            <button
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex justify-center mt-10"
+          >
+            <motion.button
               onClick={() => setVisibleCount(prev => prev + 8)}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+              whileHover={{ y: -3, scale: 1.03, transition: { duration: 0.2 } }}
+              whileTap={{ scale: 0.96 }}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-colors duration-300 group"
             >
               Load More
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
 
-        {/* Empty State */}
+        {/* ── Empty State ── */}
         {!isLoading && (isCarCategory ? carGroups.length === 0 : filteredAndSortedProducts.length === 0) && (
-          <div className="text-center py-24 bg-white rounded-3xl shadow-sm border border-gray-100 animate-in fade-in zoom-in duration-300">
-            <div className="mx-auto w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="text-center py-24 bg-white rounded-3xl shadow-sm border border-gray-100"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="mx-auto w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6"
+            >
               <Search className="w-10 h-10 text-gray-300" />
-            </div>
-            <h3 className="text-2xl font-serif font-bold text-gray-900 mb-3">No results found</h3>
-            <p className="text-gray-500 mb-8 max-w-md mx-auto text-lg">
+            </motion.div>
+            <motion.h3
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-2xl font-serif font-bold text-gray-900 mb-3"
+            >
+              No results found
+            </motion.h3>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="text-gray-500 mb-8 max-w-md mx-auto text-lg"
+            >
               We couldn't find any {selectedCategory === 3 ? 'rental cars' : 'items'} matching your search.
-            </p>
-            <button
+            </motion.p>
+            <motion.button
               onClick={clearSearch}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              whileHover={{ y: -2, scale: 1.03 }}
+              whileTap={{ scale: 0.96 }}
               className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20"
             >
               Clear All Filters
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
       </div>
 
