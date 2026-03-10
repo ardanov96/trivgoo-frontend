@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Category, FlashSaleCampaign, Product } from '../types';
+import { Category, Product } from '../types';
 import { useAuth } from '../AuthContext';
 import { agentProductService } from '../services/agentProductService';
 import { useCart } from '../components/CartContext';
@@ -41,6 +41,8 @@ import { useToast } from '../components/ToastContext';
 import { motion, type Variants } from 'framer-motion';
 import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
 import ReferralModal from '../components/ReferralModal';
+import { useActiveCampaigns } from '../src/hooks/useActiveCampaigns';
+import BannerSlider from '../components/BannerSlider';
 
 const POPULAR_DESTINATIONS = [
   'Bali, Indonesia',
@@ -177,58 +179,6 @@ const formatLocation = (location: string): string => {
   return cleaned.slice(-3).join(', ');
 };
 
-const PROMO_BANNERS = [
-  { src: '/banner/BG_Merah.png', alt: 'Promo Banner Merah' },
-  { src: '/banner/Hitam.png',    alt: 'Promo Banner Hitam' },
-];
-
-const BannerSlider: React.FC = () => {
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrent(prev => (prev + 1) % PROMO_BANNERS.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="w-full" style={{ aspectRatio: '1010/298' }}>
-      <div className="relative w-full h-full rounded-3xl overflow-hidden">
-        {PROMO_BANNERS.map((banner, i) => (
-          <div
-            key={i}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              i === current ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            <img
-              src={banner.src}
-              alt={banner.alt}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ))}
-
-        {/* Dot Indicators */}
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-          {PROMO_BANNERS.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrent(i)}
-              className={`transition-all duration-300 rounded-full ${
-                i === current
-                  ? 'w-6 h-2 bg-white'
-                  : 'w-2 h-2 bg-white/50 hover:bg-white/80'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const Home: React.FC = () => {
   const navigate = useNavigate();
   // Categories state kept if needed for other parts, but removed from main display
@@ -241,7 +191,10 @@ const Home: React.FC = () => {
   const isLoggedIn = !!user;
 
   // Campaign State
-  const [activeCampaign, setActiveCampaign] = useState<FlashSaleCampaign | null>(null);
+    const {
+      campaigns: activeCampaigns,
+      primaryCampaign: activeCampaign,
+    } = useActiveCampaigns();
 
   // Referral Modal State
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
@@ -668,8 +621,17 @@ const ctaButtonVariants: Variants = {
   }, [typewriterText, isDeleting, wordIndex]);
 
   useEffect(() => {
+    if (activeCampaign?.ends_at) {
+      const ms = new Date(activeCampaign.ends_at).getTime() - Date.now();
+      setExpiryTime(Math.max(0, Math.floor(ms / 1000)));
+    } else {
+      setExpiryTime(24 * 60 * 60); // default 24 jam jika tidak ada campaign
+    }
+  }, [activeCampaign?.ends_at]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      setExpiryTime((prev: number) => (prev > 0 ? prev - 1 : 86400));
+      setExpiryTime((prev: number) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -1405,7 +1367,7 @@ const ctaButtonVariants: Variants = {
                 );
               })
             ) : (
-              <BannerSlider />
+              <BannerSlider campaigns={activeCampaigns} /> 
             )}
           </div>
 

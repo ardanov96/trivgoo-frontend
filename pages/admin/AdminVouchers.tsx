@@ -428,7 +428,7 @@ const AdminVouchers: React.FC = () => {
                               v.scope === 'category' ? 'bg-purple-50 text-purple-700' :
                               'bg-amber-50 text-amber-700'}`}>
                             {SCOPE_LABELS[v.scope]}
-                            {v.scope_ids && ` (${JSON.parse(v.scope_ids as any).join(',')})`}
+                            {v.scope_ids && ` (${(Array.isArray(v.scope_ids) ? v.scope_ids : JSON.parse(v.scope_ids as any)).join(',')})`}
                           </span>
                         </td>
 
