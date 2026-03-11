@@ -1,130 +1,298 @@
-// src/components/BannerSlider.tsx
-// Gantikan komponen BannerSlider inline di Home.tsx dengan komponen ini.
-// Mendukung banner dari DB (campaign.banner_image) dengan fallback ke banner statis.
+// components/BannerSlider.tsx
+// Full-width banner (1010x298 ratio) dengan overlay info dinamis
+// Navigasi prev/next/dots di pojok kanan bawah — tidak overlap konten utama
 
-import React, { useEffect, useState } from 'react';
-import type { PromoCampaign } from '../services/promoService';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Sparkles, Zap, Tag, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { type PromoCampaign, resolveBannerUrl } from '../services/promoService';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4001';
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-// ── Fallback banners statis (tidak berubah dari sebelumnya) ───────────────────
-const STATIC_BANNERS = [
-  { src: '/banner/BG_Merah.png', alt: 'Promo Banner Merah' },
-  { src: '/banner/Hitam.png',    alt: 'Promo Banner Hitam' },
+const TYPE_BADGE: Record<string, {
+  label: string;
+  icon: React.ReactNode;
+  bg: string;
+  text: string;
+}> = {
+  flash_sale:     { label: 'Flash Sale',       icon: <Zap className="w-3 h-3" />,      bg: 'bg-red-500',    text: 'text-white' },
+  seasonal:       { label: 'Special Season',   icon: <Sparkles className="w-3 h-3" />, bg: 'bg-blue-500',   text: 'text-white' },
+  member_only:    { label: 'Member Eksklusif', icon: <Sparkles className="w-3 h-3" />, bg: 'bg-purple-600', text: 'text-white' },
+  referral_bonus: { label: 'Referral Bonus',   icon: <Sparkles className="w-3 h-3" />, bg: 'bg-green-500',  text: 'text-white' },
+  bundle:         { label: 'Bundle Deal',      icon: <Tag className="w-3 h-3" />,       bg: 'bg-amber-500',  text: 'text-white' },
+};
+
+const GRADIENT_FALLBACKS = [
+  'from-primary-600 via-primary-700 to-rose-800',
+  'from-blue-700 via-indigo-700 to-purple-800',
+  'from-emerald-600 via-teal-700 to-cyan-800',
+  'from-amber-600 via-orange-700 to-red-800',
+  'from-violet-600 via-purple-700 to-pink-800',
 ];
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-interface Slide {
-  src: string;
-  alt: string;
-  campaign?: PromoCampaign;
+function formatDiscount(c: PromoCampaign): string {
+  if (c.discount_type === 'percent') return `${c.discount_value}%`;
+  return `Rp ${Number(c.discount_value).toLocaleString('id-ID')}`;
 }
 
-interface Props {
-  campaigns?: PromoCampaign[];
-  interval?: number; // ms, default 4000
+// ── Motion Variants ───────────────────────────────────────────────────────────
+
+const bannerVariants = {
+  enter:  (d: number) => ({ x: d > 0 ? '100%' : '-100%', opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit:   (d: number) => ({ x: d > 0 ? '-100%' : '100%', opacity: 0 }),
+};
+
+const infoVariants = {
+  enter:  (d: number) => ({ opacity: 0, y: d > 0 ? 12 : -12 }),
+  center: { opacity: 1, y: 0 },
+  exit:   (d: number) => ({ opacity: 0, y: d > 0 ? -12 : 12 }),
+};
+
+const slideTransition = { duration: 0.5, ease: [0.32, 0.72, 0, 1] as const };
+const infoTransition  = { duration: 0.35, ease: 'easeOut' as const };
+
+// ── Inject keyframes ──────────────────────────────────────────────────────────
+
+const STYLE_ID = 'banner-glow-styles';
+
+function injectStyles() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    @keyframes borderGlow {
+      0%, 100% { box-shadow: 0 0 0 1px rgba(251,191,36,0.25), 0 0 10px rgba(251,191,36,0.10); }
+      50%       { box-shadow: 0 0 0 1px rgba(251,191,36,0.60), 0 0 22px rgba(251,191,36,0.25); }
+    }
+    @keyframes edgeSweep {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    .banner-border-glow {
+      animation: borderGlow 3s ease-in-out infinite;
+    }
+    .banner-top-line {
+      background: linear-gradient(
+        to right,
+        transparent,
+        rgba(251,191,36,0.40) 25%,
+        rgba(255,240,160,0.90) 50%,
+        rgba(251,191,36,0.40) 75%,
+        transparent
+      );
+      background-size: 200% 100%;
+      animation: edgeSweep 2.8s linear infinite;
+    }
+    .banner-bottom-line {
+      background: linear-gradient(
+        to right,
+        transparent,
+        rgba(251,191,36,0.20) 30%,
+        rgba(251,191,36,0.45) 50%,
+        rgba(251,191,36,0.20) 70%,
+        transparent
+      );
+      background-size: 200% 100%;
+      animation: edgeSweep 3.4s linear infinite reverse;
+    }
+  `;
+  document.head.appendChild(style);
 }
 
-// ── Helper: resolve URL banner ────────────────────────────────────────────────
-function resolve_banner(src: string | null | undefined): string | null {
-  if (!src) return null;
-  if (src.startsWith('http://') || src.startsWith('https://')) return src;
-  return `${BASE_URL}/${src.replace(/^\//, '')}`;
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface BannerSliderProps {
+  campaigns: PromoCampaign[];
+  autoplay?: boolean;
+  autoplay_interval?: number;
+  onSlideChange?: (index: number) => void;
 }
 
-// ── Build slides dari campaigns atau fallback statis ─────────────────────────
-function build_slides(campaigns: PromoCampaign[]): Slide[] {
-  const campaign_slides: Slide[] = campaigns
-    .map((c) => {
-      const src = resolve_banner(c.banner_image);
-      return src ? { src, alt: c.name, campaign: c } : null;
-    })
-    .filter((s): s is NonNullable<typeof s> => s !== null);
+// ── Component ─────────────────────────────────────────────────────────────────
 
-  if (campaign_slides.length > 0) return campaign_slides;
+const BannerSlider: React.FC<BannerSliderProps> = ({
+  campaigns,
+  autoplay = true,
+  autoplay_interval = 5000,
+  onSlideChange,
+}) => {
+  const [current, setCurrent]     = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const [paused, setPaused]       = useState(false);
 
-  return STATIC_BANNERS.map((b) => ({ src: b.src, alt: b.alt }));
-}
+  useEffect(() => { injectStyles(); }, []);
 
-// ── Component ──────────────────────────────────────────────────────────────────
-const BannerSlider: React.FC<Props> = ({ campaigns = [], interval = 4000 }) => {
-  const [current, setCurrent] = useState(0);
-  const slides = build_slides(campaigns);
+  const active = campaigns.filter(c => c.is_active === 1);
 
-  // Reset ke slide 0 saat campaigns berubah
-  useEffect(() => { setCurrent(0); }, [campaigns.length]);
+  const go_to = useCallback((idx: number, dir: 1 | -1) => {
+    setDirection(dir);
+    setCurrent(idx);
+    onSlideChange?.(idx);
+  }, [onSlideChange]);
+
+  const prev = () => go_to((current - 1 + active.length) % active.length, -1);
+  const next = useCallback(
+    () => go_to((current + 1) % active.length, 1),
+    [current, active.length, go_to],
+  );
 
   useEffect(() => {
-    if (slides.length <= 1) return;
-    const timer = setInterval(() => setCurrent((p) => (p + 1) % slides.length), interval);
-    return () => clearInterval(timer);
-  }, [slides.length, interval]);
+    if (!autoplay || paused || active.length <= 1) return;
+    const t = setTimeout(next, autoplay_interval);
+    return () => clearTimeout(t);
+  }, [autoplay, paused, active.length, next, autoplay_interval]);
 
-  if (!slides.length) return null;
+  if (!active.length) return null;
+
+  const c         = active[current];
+  const badge     = TYPE_BADGE[c.type] ?? TYPE_BADGE.seasonal;
+  const fallback  = GRADIENT_FALLBACKS[current % GRADIENT_FALLBACKS.length];
+  const hasBanner = !!c.banner_image;
 
   return (
-    <div className="w-full" style={{ aspectRatio: '1010/298' }}>
-      <div className="relative w-full h-full rounded-3xl overflow-hidden">
+    <div
+      className="relative w-full select-none rounded-2xl overflow-hidden banner-border-glow"
+      style={{ aspectRatio: '1010 / 298' }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
 
-        {slides.map((slide, i) => (
-          <div
-            key={i}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              i === current ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            <img src={slide.src} alt={slide.alt} className="w-full h-full object-cover" />
+      {/* ── Animated gold top edge ─────────────────────────────────────── */}
+      <div className="banner-top-line absolute top-0 left-0 w-full h-[2px] z-20 pointer-events-none" />
 
-            {/* Overlay info campaign jika tersedia */}
-            {slide.campaign && (
-              <div className="absolute bottom-0 left-0 right-0 p-6
-                              bg-gradient-to-t from-black/70 to-transparent">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest
-                                     text-yellow-400 mb-1 block">
-                      {slide.campaign.type.replace('_', ' ')}
-                    </span>
-                    <h3 className="text-white text-xl md:text-3xl font-bold font-serif
-                                   leading-tight line-clamp-1">
-                      {slide.campaign.name}
-                    </h3>
-                    {slide.campaign.description && (
-                      <p className="text-white/70 text-sm mt-1 max-w-lg line-clamp-1">
-                        {slide.campaign.description}
-                      </p>
-                    )}
-                  </div>
-                  {slide.campaign.discount_value > 0 && (
-                    <div className="bg-red-500 text-white text-lg md:text-2xl font-extrabold
-                                    px-4 py-2 rounded-xl shadow-lg flex-shrink-0 ml-4">
-                      {slide.campaign.discount_type === 'percent'
-                        ? `${slide.campaign.discount_value}% OFF`
-                        : `Hemat Rp ${Number(slide.campaign.discount_value)
-                            .toLocaleString('id-ID')}`}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+      {/* ── Animated gold bottom edge ──────────────────────────────────── */}
+      <div className="banner-bottom-line absolute bottom-0 left-0 w-full h-[2px] z-20 pointer-events-none" />
+
+      {/* ══ LAYER 1: Banner image ══ */}
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
+        <motion.div
+          key={`banner-${c.id}`}
+          custom={direction}
+          variants={bannerVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={slideTransition}
+          className="absolute inset-0"
+        >
+          {hasBanner ? (
+            <img
+              src={resolveBannerUrl(c.banner_image)}
+              alt={c.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className={`w-full h-full bg-gradient-to-br ${fallback}`} />
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ══ LAYER 2: Konten info — pojok KIRI ══ */}
+      <AnimatePresence mode="wait" custom={direction}>
+        <motion.div
+          key={`info-${c.id}`}
+          custom={direction}
+          variants={infoVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={infoTransition}
+          className="absolute inset-0 flex flex-col justify-center px-6 md:px-10 py-4 pointer-events-none"
+        >
+          {/* Badge */}
+          <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest w-fit mb-2 ${badge.bg} ${badge.text}`}>
+            {badge.icon}
+            {badge.label}
           </div>
-        ))}
 
-        {/* Dot indicators */}
-        {slides.length > 1 && (
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-            {slides.map((_, i) => (
+          {/* Discount */}
+          <div className="flex items-baseline gap-3 flex-wrap mb-1">
+            <span className="text-white text-2xl md:text-4xl font-black tracking-tight leading-none drop-shadow-sm">
+              {formatDiscount(c)}
+            </span>
+            <span className="text-white/80 text-sm md:text-base font-semibold">OFF</span>
+          </div>
+
+          {/* Nama campaign */}
+          <h3 className="text-white font-bold text-sm md:text-lg leading-snug line-clamp-1 drop-shadow-sm mb-0.5">
+            {c.name}
+          </h3>
+
+          {/* Deskripsi */}
+          {c.description && (
+            <p className="hidden md:block text-white/65 text-xs leading-relaxed line-clamp-1">
+              {c.description}
+            </p>
+          )}
+
+          {/* Min transaksi */}
+          {c.min_transaction > 0 && (
+            <p className="text-white/45 text-[10px] mt-1 font-medium hidden md:block">
+              Min. Rp {Number(c.min_transaction).toLocaleString('id-ID')}
+              {c.min_tier_name ? ` · Member ${c.min_tier_name}` : ''}
+            </p>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ══ LAYER 3: CTA button — kiri bawah ══ */}
+      <div className="absolute bottom-3 left-6 md:bottom-4 md:left-10 pointer-events-auto z-10">
+        <Link
+          to="/explore"
+          className="inline-flex items-center gap-1.5 bg-white text-gray-900 font-bold text-xs px-4 py-2 rounded-lg hover:bg-primary-50 hover:text-primary-700 transition-all shadow-lg active:scale-95 group"
+        >
+          Lihat Promo
+          <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+      </div>
+
+      {/* ══ LAYER 4: Navigasi — pojok KANAN BAWAH ══ */}
+      {active.length > 1 && (
+        <div className="absolute bottom-3 right-4 md:bottom-4 md:right-6 flex items-center gap-2 pointer-events-auto z-10">
+          <button
+            onClick={prev}
+            className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all active:scale-90"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
+          </button>
+
+          <div className="flex gap-1">
+            {active.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setCurrent(i)}
-                className={`transition-all duration-300 rounded-full ${
-                  i === current ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/50 hover:bg-white/80'
+                onClick={() => go_to(i, i > current ? 1 : -1)}
+                aria-label={`Slide ${i + 1}`}
+                className={`h-1 rounded-full transition-all duration-300 ${
+                  i === current ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
                 }`}
               />
             ))}
           </div>
-        )}
-      </div>
+
+          <button
+            onClick={next}
+            className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all active:scale-90"
+            aria-label="Next"
+          >
+            <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ══ LAYER 5: Progress bar ══ */}
+      {autoplay && !paused && active.length > 1 && (
+        <motion.div
+          key={`${c.id}-progress`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: autoplay_interval / 1000, ease: 'linear' }}
+          className="absolute bottom-0 left-0 h-[2px] bg-white/50 origin-left w-full pointer-events-none"
+        />
+      )}
     </div>
   );
 };

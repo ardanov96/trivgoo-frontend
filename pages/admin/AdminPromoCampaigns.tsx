@@ -1,13 +1,20 @@
-// pages/admin/AdminPromoCampaigns.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+// pages/admin/AdminPromoCampaigns.tsx  — UPDATED dengan fitur upload banner
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Search, RefreshCw, Edit2, Trash2, Eye,
   Megaphone, Calendar, Tag, Zap, ChevronRight,
   XCircle, CheckCircle2, Loader2, AlertCircle,
+  ImageIcon, Upload, X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { promoService, type PromoCampaign, type PromoCampaignPayload, type CampaignType } from '../../services/promoService';
+import {
+  promoService,
+  resolveBannerUrl,
+  type PromoCampaign,
+  type PromoCampaignPayload,
+  type CampaignType,
+} from '../../services/promoService';
 import { loyaltyService, type MembershipTier } from '../../services/loyaltyService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -38,9 +45,168 @@ const EMPTY_FORM: PromoCampaignPayload = {
   min_transaction: 0, scope: 'all', scope_ids: [],
   min_tier_id: null, starts_at: '', ends_at: '',
   max_usage: null, per_user: 1, is_active: 1,
+  banner_image: null,
 };
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── BannerUploader component ──────────────────────────────────────────────────
+
+interface BannerUploaderProps {
+  value: string | null;
+  onChange: (url: string | null) => void;
+}
+
+const BannerUploader: React.FC<BannerUploaderProps> = ({ value, onChange }) => {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(value ? resolveBannerUrl(value) : null);
+
+  // Sync preview jika value berubah dari luar (misalnya saat edit campaign)
+  useEffect(() => {
+    setPreview(value ? resolveBannerUrl(value) : null);
+  }, [value]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validasi sisi client
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+    if (file.size > MAX_SIZE) {
+      setError('Ukuran file maksimal 5 MB');
+      return;
+    }
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      setError('Format file harus JPG, PNG, atau WebP');
+      return;
+    }
+
+    setError(null);
+    // Tampilkan preview lokal dulu (responsif)
+    const local_preview = URL.createObjectURL(file);
+    setPreview(local_preview);
+
+    setUploading(true);
+    try {
+      const result = await promoService.uploadBanner(file);
+      onChange(result.url);        // simpan path relatif ke form
+      setPreview(resolveBannerUrl(result.url)); // resolve via helper, konsisten dengan app
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Upload gagal, coba lagi');
+      setPreview(value ? resolveBannerUrl(value) : null); // rollback preview
+    } finally {
+      setUploading(false);
+      // Reset input agar bisa upload ulang file yang sama
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const handleRemove = () => {
+    setPreview(null);
+    setError(null);
+    onChange(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+        Banner Gambar
+        <span className="text-gray-400 font-normal normal-case ml-1">(JPG/PNG/WebP, max 5 MB · dimensi ideal <strong className="text-gray-500">1010 × 298 px</strong>)</span>
+      </label>
+
+      {preview ? (
+        /* ── Preview Mode ── */
+        <div className="relative rounded-2xl overflow-hidden border border-gray-200 group">
+          <img
+            src={preview}
+            alt="Banner preview"
+            className="w-full h-40 object-cover"
+          />
+          {/* Overlay buttons */}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-800 rounded-xl text-xs font-bold hover:bg-gray-50 transition-all"
+            >
+              {uploading
+                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</>
+                : <><Upload className="w-3.5 h-3.5" /> Ganti</>
+              }
+            </button>
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={uploading}
+              className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 transition-all"
+            >
+              <X className="w-3.5 h-3.5" /> Hapus
+            </button>
+          </div>
+          {/* Uploading spinner overlay */}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="bg-white rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
+                Mengupload...
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── Empty / Upload Mode ── */
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className={`w-full h-36 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-all
+            ${uploading
+              ? 'border-primary-300 bg-primary-50 cursor-not-allowed'
+              : 'border-gray-200 bg-gray-50 hover:border-primary-400 hover:bg-primary-50 cursor-pointer'
+            }`}
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+              <span className="text-sm font-semibold text-primary-600">Mengupload...</span>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+                <ImageIcon className="w-6 h-6 text-gray-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-gray-700">Klik untuk upload banner</p>
+                <p className="text-xs text-gray-400 mt-0.5">atau drag & drop di sini</p>
+              </div>
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <p className="text-xs text-red-600 flex items-center gap-1.5 mt-1.5">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {error}
+        </p>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+    </div>
+  );
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 const AdminPromoCampaigns: React.FC = () => {
   const [campaigns, setCampaigns] = useState<PromoCampaign[]>([]);
@@ -69,7 +235,7 @@ const AdminPromoCampaigns: React.FC = () => {
       ]);
       setCampaigns(res.campaigns);
       setTiers(tierRes);
-    } catch (e) {
+    } catch {
       showToast('Gagal memuat data', 'error');
     } finally {
       setLoading(false);
@@ -87,13 +253,22 @@ const AdminPromoCampaigns: React.FC = () => {
   const openEdit = (c: PromoCampaign) => {
     setEditingId(c.id);
     setForm({
-      name: c.name, description: c.description, type: c.type,
-      discount_type: c.discount_type, discount_value: c.discount_value,
-      max_discount: c.max_discount, min_transaction: c.min_transaction,
-      scope: c.scope, scope_ids: [], min_tier_id: c.min_tier_id,
+      name: c.name,
+      description: c.description,
+      type: c.type,
+      discount_type: c.discount_type,
+      discount_value: c.discount_value,
+      max_discount: c.max_discount,
+      min_transaction: c.min_transaction,
+      scope: c.scope,
+      scope_ids: [],
+      min_tier_id: c.min_tier_id,
       starts_at: c.starts_at?.slice(0, 16) ?? '',
       ends_at: c.ends_at?.slice(0, 16) ?? '',
-      max_usage: c.max_usage, per_user: c.per_user, is_active: c.is_active,
+      max_usage: c.max_usage,
+      per_user: c.per_user,
+      is_active: c.is_active,
+      banner_image: c.banner_image,
     });
     setModalOpen(true);
   };
@@ -127,7 +302,7 @@ const AdminPromoCampaigns: React.FC = () => {
       showToast('Campaign dihapus');
       setDeleteConfirmId(null);
       load();
-    } catch (e) {
+    } catch {
       showToast('Gagal menghapus', 'error');
     }
   };
@@ -235,7 +410,7 @@ const AdminPromoCampaigns: React.FC = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    {['Campaign', 'Tipe', 'Diskon', 'Periode', 'Pemakaian', 'Status', 'Aksi'].map(h => (
+                    {['Banner', 'Campaign', 'Tipe', 'Diskon', 'Periode', 'Pemakaian', 'Status', 'Aksi'].map(h => (
                       <th key={h} className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">{h}</th>
                     ))}
                   </tr>
@@ -246,6 +421,20 @@ const AdminPromoCampaigns: React.FC = () => {
                     const typeMeta = TYPE_META[c.type];
                     return (
                       <motion.tr key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                        {/* Banner thumbnail */}
+                        <td className="px-4 py-4">
+                          {c.banner_image ? (
+                            <img
+                              src={resolveBannerUrl(c.banner_image)}
+                              alt="banner"
+                              className="w-16 h-10 object-cover rounded-lg border border-gray-100"
+                            />
+                          ) : (
+                            <div className="w-16 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                              <ImageIcon className="w-4 h-4 text-gray-300" />
+                            </div>
+                          )}
+                        </td>
                         <td className="px-4 py-4">
                           <p className="font-semibold text-gray-900 text-sm">{c.name}</p>
                           {c.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{c.description}</p>}
@@ -322,6 +511,13 @@ const AdminPromoCampaigns: React.FC = () => {
               </div>
 
               <div className="px-8 py-6 space-y-5">
+
+                {/* ── BANNER UPLOAD ── */}
+                <BannerUploader
+                  value={form.banner_image ?? null}
+                  onChange={(url) => setForm(f => ({ ...f, banner_image: url }))}
+                />
+
                 {/* Nama */}
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Nama Campaign *</label>

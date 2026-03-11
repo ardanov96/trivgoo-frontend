@@ -4,7 +4,6 @@ import { promoService, type PromoCampaign } from '../../services/promoService';
 
 interface UseActiveCampaignsResult {
   campaigns: PromoCampaign[];
-  /** Kampanye utama: flash_sale diprioritaskan, fallback ke index 0 */
   primaryCampaign: PromoCampaign | null;
   loading: boolean;
   refetch: () => void;
@@ -18,19 +17,15 @@ export function useActiveCampaigns(): UseActiveCampaignsResult {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-
     promoService.getActiveCampaigns()
       .then((data) => { if (!cancelled) setCampaigns(data); })
       .catch((err) => { console.warn('[useActiveCampaigns]', err?.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
-
     return () => { cancelled = true; };
   }, [tick]);
 
   const primaryCampaign =
-    campaigns.find((c) => c.type === 'flash_sale') ??
-    campaigns[0] ??
-    null;
+    campaigns.find((c) => c.type === 'flash_sale') ?? campaigns[0] ?? null;
 
   return {
     campaigns,
