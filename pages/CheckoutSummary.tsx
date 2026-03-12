@@ -22,38 +22,8 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
-// Helper: load Midtrans Snap script dinamis sesuai environment dari backend
-const loadSnapScript = (isProduction: boolean, clientKey: string): Promise<void> => {
-  return new Promise((resolve) => {
-    const snapUrl = isProduction
-      ? 'https://app.midtrans.com/snap/snap.js'
-      : 'https://app.sandbox.midtrans.com/snap/snap.js';
-
-    const existingScript = document.getElementById('midtrans-snap');
-
-    // Jika script sudah ada dengan URL yang sama, langsung resolve
-    if (existingScript) {
-      if (existingScript.getAttribute('src') === snapUrl) {
-        return resolve();
-      }
-      // URL berbeda (mis. pindah dari sandbox ke prod) — hapus dulu
-      existingScript.remove();
-      delete (window as any).snap;
-    }
-
-    const script = document.createElement('script');
-    script.id = 'midtrans-snap';
-    script.src = snapUrl;
-    script.setAttribute('data-client-key', clientKey);
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      console.error('[Midtrans] Gagal load Snap script dari:', snapUrl);
-      resolve(); // tetap lanjut agar error bisa ditangkap di snap.pay()
-    };
-    document.head.appendChild(script);
-  });
-};
+// DOKU Checkout flow does not require an external SDK script.
+// The user will be redirected directly to the DOKU Jokul Checkout URL.
 
 const CheckoutSummary: React.FC = () => {
   const navigate = useNavigate();
@@ -187,7 +157,7 @@ const CheckoutSummary: React.FC = () => {
 
       const orderId = `TRV-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-      // Call backend — dapat token + info environment dari DB payment_settings
+      // Call backend — dapat DOKU payment_url
       const res = await http.post('/payment/create-payment', {
         id: orderId,
         amount: totalPrice,
@@ -199,43 +169,33 @@ const CheckoutSummary: React.FC = () => {
         product_id: bookingData.productId || null,
       });
 
-      const { token: snapToken, is_production, client_key } = res.data?.data || {};
+      const { payment_url } = res.data?.data || {};
 
-      if (!snapToken) throw new Error('Snap token tidak ditemukan dari server');
-
-      // Load Snap script sesuai environment dari backend (bukan dari .env frontend)
-      await loadSnapScript(is_production, client_key || '');
-
-      if (typeof (window as any).snap === 'undefined') {
-        throw new Error('Midtrans Snap SDK belum siap. Silakan refresh halaman dan coba lagi.');
+      if (!payment_url) {
+        throw new Error('Payment URL tidak terdeteksi dari server. Pastikan API DOKU dikonfigurasi dengan benar.');
       }
 
-      // Buka Midtrans Snap popup
-      (window as any).snap.pay(snapToken, {
-        onSuccess: (result: any) => {
-          console.log('[Midtrans] Payment success:', result);
-          if (bookingData.productId) {
-            removeFromCart(bookingData.productId);
+      console.log('[DOKU] Redirecting to Checkout:', payment_url);
+      
+      // Clear Cart jika booking berasal dari keranjang
+      if (bookingData.productId) {
+        removeFromCart(bookingData.productId);
+        
+        // Force synchronous update to localStorage to avoid race condition on redirect
+        try {
+          const raw = window.localStorage.getItem('triv_cart_v1');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const newCart = parsed.filter((item: any) => item.product.id !== bookingData.productId);
+            window.localStorage.setItem('triv_cart_v1', JSON.stringify(newCart));
           }
-          navigate('/my-bookings');
-        },
-        onPending: (result: any) => {
-          console.log('[Midtrans] Payment pending:', result);
-          if (bookingData.productId) {
-            removeFromCart(bookingData.productId);
-          }
-          navigate('/my-bookings');
-        },
-        onError: (result: any) => {
-          console.error('[Midtrans] Payment error:', result);
-          setLoading(false);
-          Swal.fire('Pembayaran Gagal', 'Terjadi kesalahan saat pembayaran. Silakan coba lagi.', 'error');
-        },
-        onClose: () => {
-          console.log('[Midtrans] Snap popup ditutup');
-          setLoading(false);
-        },
-      });
+        } catch (e) {
+          console.error('Failed to clear cart item in localStorage', e);
+        }
+      }
+
+      // REDIRECT KE HALAMAN DOKU CHECKOUT
+      window.location.href = payment_url;
 
     } catch (error: any) {
       setLoading(false);
