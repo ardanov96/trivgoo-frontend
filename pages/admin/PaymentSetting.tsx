@@ -22,7 +22,7 @@ interface PaymentMethod {
   icon: React.ReactNode;
 }
 
-type PaymentGateway = 'xendit' | 'midtrans';
+type PaymentGateway = 'xendit' | 'doku';
 
 const PaymentSettings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -35,10 +35,9 @@ const PaymentSettings: React.FC = () => {
   const [xenditSecretKey, setXenditSecretKey] = useState('');
   const [xenditWebhookUrl, setXenditWebhookUrl] = useState('');
   const [xenditWebhookSecret, setXenditWebhookSecret] = useState('');
-  const [midtransMerchantId, setMidtransMerchantId] = useState('');
-  const [midtransServerKey, setMidtransServerKey] = useState('');
-  const [midtransClientKey, setMidtransClientKey] = useState('');
-  const [midtransWebhookUrl, setMidtransWebhookUrl] = useState('');
+  const [dokuClientId, setDokuClientId] = useState('');
+  const [dokuSecretKey, setDokuSecretKey] = useState('');
+  const [dokuWebhookUrl, setDokuWebhookUrl] = useState('');
   const [isTestMode, setIsTestMode] = useState(true);
 
   const [xenditPaymentMethods, setXenditPaymentMethods] = useState<PaymentMethod[]>([
@@ -48,14 +47,12 @@ const PaymentSettings: React.FC = () => {
     { id: 'qris', name: 'QRIS', type: 'QRIS', enabled: false, icon: <CreditCard className="w-5 h-5" /> },
   ]);
 
-  const [midtransPaymentMethods, setMidtransPaymentMethods] = useState<PaymentMethod[]>([
+  const [dokuPaymentMethods, setDokuPaymentMethods] = useState<PaymentMethod[]>([
     { id: 'credit_card', name: 'Credit/Debit Card', type: 'CARD', enabled: true, icon: <CreditCard className="w-5 h-5" /> },
-    { id: 'gopay', name: 'GoPay', type: 'EWALLET', enabled: true, icon: <Wallet className="w-5 h-5" /> },
-    { id: 'shopeepay', name: 'ShopeePay', type: 'EWALLET', enabled: true, icon: <Wallet className="w-5 h-5" /> },
-    { id: 'bank_transfer', name: 'Bank Transfer (Permata VA, BCA VA, BNI VA)', type: 'BANK_TRANSFER', enabled: true, icon: <DollarSign className="w-5 h-5" /> },
-    { id: 'qris', name: 'QRIS', type: 'QRIS', enabled: false, icon: <CreditCard className="w-5 h-5" /> },
-    { id: 'indomaret', name: 'Indomaret', type: 'CSTORE', enabled: false, icon: <DollarSign className="w-5 h-5" /> },
-    { id: 'alfamart', name: 'Alfamart', type: 'CSTORE', enabled: false, icon: <DollarSign className="w-5 h-5" /> },
+    { id: 'virtual_account', name: 'Virtual Account (BCA, Mandiri, BRI, BNI, etc)', type: 'BANK_TRANSFER', enabled: true, icon: <DollarSign className="w-5 h-5" /> },
+    { id: 'qris', name: 'QRIS', type: 'QRIS', enabled: true, icon: <CreditCard className="w-5 h-5" /> },
+    { id: 'ovo', name: 'OVO', type: 'EWALLET', enabled: false, icon: <Wallet className="w-5 h-5" /> },
+    { id: 'shopeepay', name: 'ShopeePay', type: 'EWALLET', enabled: false, icon: <Wallet className="w-5 h-5" /> },
   ]);
 
   useEffect(() => { fetchPaymentSettings(); }, []);
@@ -72,11 +69,10 @@ const PaymentSettings: React.FC = () => {
         setXenditWebhookUrl(data.xendit_webhook_url || '');
         setXenditWebhookSecret(data.xendit_webhook_secret || '');
         if (data.xendit_payment_methods) setXenditPaymentMethods(data.xendit_payment_methods);
-        setMidtransMerchantId(data.midtrans_merchant_id || '');
-        setMidtransServerKey(data.midtrans_server_key || '');
-        setMidtransClientKey(data.midtrans_client_key || '');
-        setMidtransWebhookUrl(data.midtrans_webhook_url || '');
-        if (data.midtrans_payment_methods) setMidtransPaymentMethods(data.midtrans_payment_methods);
+        setDokuClientId(data.doku_client_id || '');
+        setDokuSecretKey(data.doku_secret_key || '');
+        setDokuWebhookUrl(data.doku_webhook_url || '');
+        if (data.doku_payment_methods) setDokuPaymentMethods(data.doku_payment_methods);
       }
     } catch (error) {
       console.error('Failed to fetch payment settings:', error);
@@ -98,12 +94,11 @@ const PaymentSettings: React.FC = () => {
           webhookSecret: xenditWebhookSecret,
           paymentMethods: stripIcons(xenditPaymentMethods),
         },
-        midtrans: {
-          merchantId: midtransMerchantId,
-          serverKey: midtransServerKey,
-          clientKey: midtransClientKey,
-          webhookUrl: midtransWebhookUrl,
-          paymentMethods: stripIcons(midtransPaymentMethods),
+        doku: {
+          clientId: dokuClientId,
+          secretKey: dokuSecretKey,
+          webhookUrl: dokuWebhookUrl,
+          paymentMethods: stripIcons(dokuPaymentMethods),
         },
       };
       await http.post('/admin/payment-settings', payload);
@@ -120,7 +115,7 @@ const PaymentSettings: React.FC = () => {
     if (selectedGateway === 'xendit') {
       setXenditPaymentMethods((prev) => prev.map((m) => m.id === methodId ? { ...m, enabled: !m.enabled } : m));
     } else {
-      setMidtransPaymentMethods((prev) => prev.map((m) => m.id === methodId ? { ...m, enabled: !m.enabled } : m));
+      setDokuPaymentMethods((prev) => prev.map((m) => m.id === methodId ? { ...m, enabled: !m.enabled } : m));
     }
   };
 
@@ -135,7 +130,7 @@ const PaymentSettings: React.FC = () => {
     }
   };
 
-  const currentPaymentMethods = selectedGateway === 'xendit' ? xenditPaymentMethods : midtransPaymentMethods;
+  const currentPaymentMethods = selectedGateway === 'xendit' ? xenditPaymentMethods : dokuPaymentMethods;
 
   if (isLoading) {
     return (
@@ -196,31 +191,31 @@ const PaymentSettings: React.FC = () => {
             </div>
           </button>
 
-          {/* Midtrans */}
-          <button onClick={() => setSelectedGateway('midtrans')}
-            className={`relative p-6 rounded-xl border-2 transition-all ${selectedGateway === 'midtrans' ? 'border-primary-500 bg-primary-50 shadow-lg' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+          {/* DOKU */}
+          <button onClick={() => setSelectedGateway('doku')}
+            className={`relative p-6 rounded-xl border-2 transition-all ${selectedGateway === 'doku' ? 'border-primary-500 bg-primary-50 shadow-lg' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-xl ${selectedGateway === 'midtrans' ? 'bg-primary-500' : 'bg-gray-100'}`}>
-                  <CreditCard className={`w-6 h-6 ${selectedGateway === 'midtrans' ? 'text-white' : 'text-gray-600'}`} />
+                <div className={`p-3 rounded-xl ${selectedGateway === 'doku' ? 'bg-primary-500' : 'bg-gray-100'}`}>
+                  <CreditCard className={`w-6 h-6 ${selectedGateway === 'doku' ? 'text-white' : 'text-gray-600'}`} />
                 </div>
                 <div className="text-left">
-                  <h4 className={`font-bold text-lg ${selectedGateway === 'midtrans' ? 'text-primary-700' : 'text-gray-900'}`}>Midtrans</h4>
+                  <h4 className={`font-bold text-lg ${selectedGateway === 'doku' ? 'text-primary-700' : 'text-gray-900'}`}>DOKU Jokul</h4>
                   <p className="text-xs text-gray-500">Leading payment gateway</p>
                 </div>
               </div>
-              {selectedGateway === 'midtrans' && <CheckCircle2 className="w-6 h-6 text-primary-600" />}
+              {selectedGateway === 'doku' && <CheckCircle2 className="w-6 h-6 text-primary-600" />}
             </div>
             <div className="text-left text-sm text-gray-600 space-y-1">
               <div>✓ Credit/Debit Cards</div>
-              <div>✓ GoPay, ShopeePay</div>
-              <div>✓ Bank Transfer (Permata, BCA, BNI)</div>
-              <div>✓ QRIS, Indomaret, Alfamart</div>
+              <div>✓ Virtual Accounts (VA)</div>
+              <div>✓ OVO, ShopeePay</div>
+              <div>✓ QRIS</div>
             </div>
           </button>
         </div>
         <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <p className="text-blue-800 text-sm">💡 <strong>Selected:</strong> {selectedGateway === 'xendit' ? 'Xendit' : 'Midtrans'} - Configure the settings below.</p>
+          <p className="text-blue-800 text-sm">💡 <strong>Selected:</strong> {selectedGateway === 'xendit' ? 'Xendit' : 'DOKU'} - Configure the settings below.</p>
         </div>
       </div>
 
@@ -251,7 +246,7 @@ const PaymentSettings: React.FC = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center mb-6">
           <Key className="w-5 h-5 mr-2 text-primary-600" />
-          <h3 className="font-bold text-gray-900 text-lg">{selectedGateway === 'xendit' ? 'Xendit' : 'Midtrans'} API Configuration</h3>
+          <h3 className="font-bold text-gray-900 text-lg">{selectedGateway === 'xendit' ? 'Xendit' : 'DOKU'} API Configuration</h3>
         </div>
         <div className="space-y-6">
           {selectedGateway === 'xendit' ? (
@@ -277,35 +272,30 @@ const PaymentSettings: React.FC = () => {
           ) : (
             <>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Midtrans Merchant ID</label>
-                <input type="text" value={midtransMerchantId} onChange={(e) => setMidtransMerchantId(e.target.value)} placeholder="Contoh: G123456789"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 font-mono text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Midtrans Client Key {isTestMode ? '(Sandbox)' : '(Production)'}</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">DOKU Client ID</label>
                 <div className="relative">
-                  <input type="text" value={midtransClientKey} onChange={(e) => setMidtransClientKey(e.target.value)}
-                    placeholder={`Enter your Midtrans ${isTestMode ? 'sandbox' : 'production'} client key`}
+                  <input type="text" value={dokuClientId} onChange={(e) => setDokuClientId(e.target.value)}
+                    placeholder={`Enter your DOKU Client ID`}
                     className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 font-mono text-sm" />
-                  {midtransClientKey && (
-                    <button onClick={() => copyToClipboard(midtransClientKey)} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  {dokuClientId && (
+                    <button onClick={() => copyToClipboard(dokuClientId)} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
                       <Copy className="w-4 h-4 text-gray-500" />
                     </button>
                   )}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Midtrans Server Key {isTestMode ? '(Sandbox)' : '(Production)'}</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">DOKU Secret Key</label>
                 <div className="relative">
-                  <input type={showApiKey ? 'text' : 'password'} value={midtransServerKey} onChange={(e) => setMidtransServerKey(e.target.value)}
-                    placeholder={`Enter your Midtrans ${isTestMode ? 'sandbox' : 'production'} server key`}
+                  <input type={showApiKey ? 'text' : 'password'} value={dokuSecretKey} onChange={(e) => setDokuSecretKey(e.target.value)}
+                    placeholder={`Enter your DOKU Secret Key`}
                     className="w-full px-4 py-3 pr-24 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 font-mono text-sm" />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
                     <button onClick={() => setShowApiKey(!showApiKey)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                       {showApiKey ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
                     </button>
-                    {midtransServerKey && (
-                      <button onClick={() => copyToClipboard(midtransServerKey)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    {dokuSecretKey && (
+                      <button onClick={() => copyToClipboard(dokuSecretKey)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <Copy className="w-4 h-4 text-gray-500" />
                       </button>
                     )}
@@ -321,7 +311,7 @@ const PaymentSettings: React.FC = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center mb-6">
           <CreditCard className="w-5 h-5 mr-2 text-primary-600" />
-          <h3 className="font-bold text-gray-900 text-lg">Payment Methods - {selectedGateway === 'xendit' ? 'Xendit' : 'Midtrans'}</h3>
+          <h3 className="font-bold text-gray-900 text-lg">Payment Methods - {selectedGateway === 'xendit' ? 'Xendit' : 'DOKU'}</h3>
         </div>
         <div className="space-y-4">
           {currentPaymentMethods.map((method) => (
@@ -341,7 +331,7 @@ const PaymentSettings: React.FC = () => {
           ))}
         </div>
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <p className="text-blue-800 text-sm">💡 <strong>Note:</strong> Make sure to enable these payment methods in your {selectedGateway === 'xendit' ? 'Xendit' : 'Midtrans'} dashboard as well.</p>
+          <p className="text-blue-800 text-sm">💡 <strong>Note:</strong> Make sure to enable these payment methods in your {selectedGateway === 'xendit' ? 'Xendit' : 'DOKU'} dashboard as well.</p>
         </div>
       </div>
     </div>

@@ -83,7 +83,7 @@ const BookingSuccess: React.FC = () => {
 
       <p className="mt-8 text-gray-400 text-sm flex items-center gap-2">
         <CreditCard className="w-4 h-4" />
-        Secure payment processed by Midtrans
+        Secure payment processed by DOKU
       </p>
     </div>
   );
