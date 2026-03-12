@@ -180,6 +180,18 @@ const CheckoutSummary: React.FC = () => {
       // Clear Cart jika booking berasal dari keranjang
       if (bookingData.productId) {
         removeFromCart(bookingData.productId);
+        
+        // Force synchronous update to localStorage to avoid race condition on redirect
+        try {
+          const raw = window.localStorage.getItem('triv_cart_v1');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const newCart = parsed.filter((item: any) => item.product.id !== bookingData.productId);
+            window.localStorage.setItem('triv_cart_v1', JSON.stringify(newCart));
+          }
+        } catch (e) {
+          console.error('Failed to clear cart item in localStorage', e);
+        }
       }
 
       // REDIRECT KE HALAMAN DOKU CHECKOUT

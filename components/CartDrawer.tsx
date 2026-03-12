@@ -47,6 +47,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
     onClose();
     navigate('/checkout-summary', {
       state: {
+        productId: item.product.id,
         productName: item.product.name,
         location: item.product.location,
         date: '',           // user belum pilih tanggal — akan diisi di ProductDetail
