@@ -20,7 +20,7 @@ const TYPE_BADGE: Record<string, {
   seasonal:       { label: 'Special Season',   icon: <Sparkles className="w-3 h-3" />, bg: 'bg-blue-500',   text: 'text-white' },
   member_only:    { label: 'Member Eksklusif', icon: <Sparkles className="w-3 h-3" />, bg: 'bg-purple-600', text: 'text-white' },
   referral_bonus: { label: 'Referral Bonus',   icon: <Sparkles className="w-3 h-3" />, bg: 'bg-green-500',  text: 'text-white' },
-  bundle:         { label: 'Bundle Deal',      icon: <Tag className="w-3 h-3" />,       bg: 'bg-amber-500',  text: 'text-white' },
+  bundle:         { label: 'Bundle Deal',      icon: <Tag className="w-3 h-3" />,      bg: 'bg-amber-500',  text: 'text-white' },
 };
 
 const GRADIENT_FALLBACKS = [
@@ -147,9 +147,9 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
 
   if (!active.length) return null;
 
-  const c         = active[current];
-  const badge     = TYPE_BADGE[c.type] ?? TYPE_BADGE.seasonal;
-  const fallback  = GRADIENT_FALLBACKS[current % GRADIENT_FALLBACKS.length];
+  const c        = active[current];
+  const badge    = TYPE_BADGE[c.type] ?? TYPE_BADGE.seasonal;
+  const fallback = GRADIENT_FALLBACKS[current % GRADIENT_FALLBACKS.length];
   const hasBanner = !!c.banner_image;
 
   return (
@@ -159,14 +159,13 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-
       {/* ── Animated gold top edge ─────────────────────────────────────── */}
       <div className="banner-top-line absolute top-0 left-0 w-full h-[2px] z-20 pointer-events-none" />
 
       {/* ── Animated gold bottom edge ──────────────────────────────────── */}
       <div className="banner-bottom-line absolute bottom-0 left-0 w-full h-[2px] z-20 pointer-events-none" />
 
-      {/* ══ LAYER 1: Banner image ══ */}
+      {/* ══ LAYER 1: Banner image ══════════════════════════════════════════ */}
       <AnimatePresence initial={false} custom={direction} mode="popLayout">
         <motion.div
           key={`banner-${c.id}`}
@@ -190,7 +189,15 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* ══ LAYER 2: Konten info — pojok KIRI ══ */}
+      {/* ══ LAYER 2: Left-to-right dark gradient — teks selalu terbaca ════ */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[1]"
+        style={{
+          background: 'linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.15) 60%, transparent 80%)',
+        }}
+      />
+
+      {/* ══ LAYER 3: Konten info — pojok KIRI ════════════════════════════ */}
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={`info-${c.id}`}
@@ -200,7 +207,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
           animate="center"
           exit="exit"
           transition={infoTransition}
-          className="absolute inset-0 flex flex-col justify-center px-6 md:px-10 py-4 pointer-events-none"
+          className="absolute inset-0 flex flex-col justify-center px-6 md:px-10 py-4 pointer-events-none z-[2]"
         >
           {/* Badge */}
           <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest w-fit mb-2 ${badge.bg} ${badge.text}`}>
@@ -210,27 +217,50 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
 
           {/* Discount */}
           <div className="flex items-baseline gap-3 flex-wrap mb-1">
-            <span className="text-white text-2xl md:text-4xl font-black tracking-tight leading-none drop-shadow-sm">
+            <span
+              className="text-white text-2xl md:text-4xl font-black tracking-tight leading-none"
+              style={{
+                textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 3px 10px rgba(0,0,0,0.8)',
+                WebkitTextStroke: '1px rgba(0,0,0,0.6)',
+              }}
+            >
               {formatDiscount(c)}
             </span>
-            <span className="text-white/80 text-sm md:text-base font-semibold">OFF</span>
+            <span
+              className="text-white text-sm md:text-base font-semibold"
+              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)' }}
+            >
+              OFF
+            </span>
           </div>
 
           {/* Nama campaign */}
-          <h3 className="text-white font-bold text-sm md:text-lg leading-snug line-clamp-1 drop-shadow-sm mb-0.5">
+          <h3
+            className="text-white font-bold text-sm md:text-lg leading-snug line-clamp-1 mb-0.5"
+            style={{
+              textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 8px rgba(0,0,0,0.9)',
+              WebkitTextStroke: '0.5px rgba(0,0,0,0.5)',
+            }}
+          >
             {c.name}
           </h3>
 
           {/* Deskripsi */}
           {c.description && (
-            <p className="hidden md:block text-white/65 text-xs leading-relaxed line-clamp-1">
+            <p
+              className="hidden md:block text-white text-xs leading-relaxed line-clamp-1"
+              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.8)' }}
+            >
               {c.description}
             </p>
           )}
 
           {/* Min transaksi */}
           {c.min_transaction > 0 && (
-            <p className="text-white/45 text-[10px] mt-1 font-medium hidden md:block">
+            <p
+              className="text-white/80 text-[10px] mt-1 font-medium hidden md:block"
+              style={{ textShadow: '0 1px 3px rgba(0,0,0,0.95)' }}
+            >
               Min. Rp {Number(c.min_transaction).toLocaleString('id-ID')}
               {c.min_tier_name ? ` · Member ${c.min_tier_name}` : ''}
             </p>
@@ -238,8 +268,8 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* ══ LAYER 3: CTA button — kiri bawah ══ */}
-      <div className="absolute bottom-3 left-6 md:bottom-4 md:left-10 pointer-events-auto z-10">
+      {/* ══ LAYER 4: CTA button — kiri bawah ════════════════════════════ */}
+      <div className="absolute bottom-3 left-6 md:bottom-4 md:left-10 pointer-events-auto z-[3]">
         <Link
           to="/explore"
           className="inline-flex items-center gap-1.5 bg-white text-gray-900 font-bold text-xs px-4 py-2 rounded-lg hover:bg-primary-50 hover:text-primary-700 transition-all shadow-lg active:scale-95 group"
@@ -249,9 +279,9 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </Link>
       </div>
 
-      {/* ══ LAYER 4: Navigasi — pojok KANAN BAWAH ══ */}
+      {/* ══ LAYER 5: Navigasi — pojok KANAN BAWAH ════════════════════════ */}
       {active.length > 1 && (
-        <div className="absolute bottom-3 right-4 md:bottom-4 md:right-6 flex items-center gap-2 pointer-events-auto z-10">
+        <div className="absolute bottom-3 right-4 md:bottom-4 md:right-6 flex items-center gap-2 pointer-events-auto z-[3]">
           <button
             onClick={prev}
             className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all active:scale-90"
@@ -283,14 +313,14 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </div>
       )}
 
-      {/* ══ LAYER 5: Progress bar ══ */}
+      {/* ══ LAYER 6: Progress bar ════════════════════════════════════════ */}
       {autoplay && !paused && active.length > 1 && (
         <motion.div
           key={`${c.id}-progress`}
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: autoplay_interval / 1000, ease: 'linear' }}
-          className="absolute bottom-0 left-0 h-[2px] bg-white/50 origin-left w-full pointer-events-none"
+          className="absolute bottom-0 left-0 h-[2px] bg-white/50 origin-left w-full pointer-events-none z-[4]"
         />
       )}
     </div>

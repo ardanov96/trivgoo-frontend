@@ -841,7 +841,13 @@ const Home: React.FC = () => {
                   <div className="relative z-10 h-full flex flex-col justify-between p-5">
                     <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full w-fit ${item.tagColor}`}>{item.tag}</span>
                     <div><h3 className="text-white font-bold text-lg md:text-xl leading-snug mb-1 drop-shadow-sm">{item.title}</h3><p className="text-white/70 text-xs leading-relaxed">{item.duration} · {item.pax}</p></div>
-                    <Link to={`/explore?search=${item.destination}`} className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg w-fit hover:bg-primary-50 transition-colors shadow-md" onClick={e=>e.stopPropagation()}>See Activities</Link>
+                    <Link 
+                      to={`/explore?search=${encodeURIComponent(item.destination)}&category_id=1&from=itinerary`} 
+                      className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg w-fit hover:bg-primary-50 transition-colors shadow-md" 
+                      onClick={e=>e.stopPropagation()}
+                    >
+                      See Activities
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -923,19 +929,38 @@ const Home: React.FC = () => {
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 pointer-events-none" />
         <div className="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
           <motion.div variants={ctaLeftVariants} className="text-white max-w-xl text-center lg:text-left">
-            <motion.div variants={ctaBadgeVariants} className="mb-4">
-              <span className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 text-white text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full"><Sparkles className="w-3.5 h-3.5" /> App Exclusive</span>
+            <motion.div variants={ctaBadgeVariants} className="mb-4 flex flex-wrap gap-2 justify-center lg:justify-start">
+              <span className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 text-white text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full">
+                <Sparkles className="w-3.5 h-3.5" /> App Exclusive
+              </span>
             </motion.div>
+
             <h2 className="text-4xl md:text-6xl font-serif font-bold mb-6 leading-tight">Unlock App-Only Deals</h2>
-            <p className="text-primary-100 text-lg md:text-xl mb-10">Save up to <span className="font-bold text-white">IDR 400.000</span> on your first transaction.</p>
+            <p className="text-primary-100 text-lg md:text-xl mb-3">
+              Save up to <span className="font-bold text-white">IDR 400.000</span> on your first transaction.
+            </p>
+
             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
               {[
-                {src:'https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg',alt:'App Store',i:0},
-                {src:'https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg',alt:'Google Play',i:1},
-              ].map(({src,alt,i})=>(
-                <motion.a key={alt} href="#" target="_blank" rel="noopener noreferrer" custom={i} variants={ctaButtonVariants} whileHover={{y:-4,scale:1.03,transition:{duration:0.2}}} whileTap={{scale:0.95}} className="flex items-center gap-4 bg-black px-6 py-4 rounded-2xl shadow-xl">
-                  <img src={src} alt={alt} className="h-8" />
-                </motion.a>
+                { src: 'https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg', alt: 'App Store', i: 0 },
+                { src: 'https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg', alt: 'Google Play', i: 1 },
+              ].map(({ src, alt, i }) => (
+                <motion.div
+                  key={alt}
+                  custom={i}
+                  variants={ctaButtonVariants}
+                  className="relative flex flex-col items-center gap-2 cursor-not-allowed select-none"
+                  title="Segera hadir — aplikasi masih dalam pengembangan"
+                >
+                  {/* Badge Coming Soon di atas logo */}
+                  <span className="inline-flex items-center gap-1.5 bg-amber-400 text-black text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
+                    <Clock className="w-3 h-3" /> Coming Soon
+                  </span>
+                  {/* Logo store tetap tampil normal */}
+                  <div className="flex items-center gap-4 bg-black px-6 py-4 rounded-2xl shadow-xl opacity-70">
+                    <img src={src} alt={alt} className="h-8" />
+                  </div>
+                </motion.div>
               ))}
             </div>
           </motion.div>
