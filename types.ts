@@ -296,19 +296,21 @@ export interface Product {
 export interface Booking {
   id: number;
   userId: number;
-  userName?: string;
   productId: number;
   productName: string;
-  productImage: string;
+  userName: string;
   quantity: number;
   totalPrice: number;
-  status: BookingStatus;
   date: string;
-  createdAt: string;
+  status: BookingStatus;
+  productImage?: string;
+  paymentUrl?: string;        // ← tambah
+  paymentStatus?: string;     // ← tambah
+  paymentExpiredAt?: string;  // ← tambah
   contactDetails?: {
-    name: string;
-    email: string;
-    phone: string;
+    name?: string;
+    email?: string;
+    phone?: string;
   };
 }
 
