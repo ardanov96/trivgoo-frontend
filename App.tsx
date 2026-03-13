@@ -21,6 +21,7 @@ import ProductDetail from './pages/ProductDetail';
 import Wishlist from './pages/Wishlist';
 import TrivPay from './pages/TrivPay';
 import VerifyEmail from './pages/VerifyEmail';
+import PaymentResult from './pages/PaymentResult';
 
 // Protected Pages
 import AdminBookings from './pages/admin/Bookings';
@@ -81,6 +82,7 @@ import BookingPending from './pages/BookingPending';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
+
 // ── Route Guards ──────────────────────────────────────────────────────────────
 
 interface ProtectedRouteProps {
@@ -138,6 +140,7 @@ const AppRoutes = () => {
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
         <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
         <Route path="/verify-email" element={<PublicOnlyRoute><VerifyEmail /></PublicOnlyRoute>} />
+        <Route path="/payment/result" element={<PaymentResult />} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/career" element={<Career />} />

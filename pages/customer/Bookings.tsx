@@ -8,6 +8,7 @@ import { Calendar, Edit2, Package, History, ChevronRight, TrendingUp, Award, Wal
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import { useCart } from '../../components/CartContext';
+import { getImageUrl, FALLBACK_IMAGE } from '../../utils/imageUtils';
 
 const getStatusColor = (status: BookingStatus | string) => {
   const s = (status || '').toLowerCase();
@@ -32,7 +33,12 @@ const MobileBookingCard: React.FC<MobileBookingCardProps> = ({ booking, onPay, o
   <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-4 active:scale-[0.98] transition-transform">
     <div className="flex gap-4">
       <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-        <img src={booking.productImage} className="w-full h-full object-cover" alt="Product" />
+        <img 
+          src={getImageUrl(booking.productImage)} 
+          className="w-full h-full object-cover" 
+          alt="Product"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
+        />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start mb-1">
@@ -317,7 +323,12 @@ const CustomerBookings: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="h-10 w-10 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
-                        <img className="h-full w-full object-cover" src={booking.productImage} alt="" />
+                        <img 
+                          className="h-full w-full object-cover" 
+                          src={getImageUrl(booking.productImage)} 
+                          alt=""
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                        />
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-bold text-gray-900 line-clamp-1">{booking.productName}</div>

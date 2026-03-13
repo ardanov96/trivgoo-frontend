@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Star, MapPin, ChevronLeft, Heart, ShoppingCart,
-  Users, Gauge, Briefcase, Droplet, Award, UserCog, Car,
+  Users, Gauge, Briefcase, Award, UserCog, Car,
   CheckCircle2, Shield, Clock, Phone, MapPinned, Navigation,
   Info, ChevronDown, ChevronUp, Plus, Minus, Check,
-  Fuel, CalendarDays, BadgeCheck, Headphones, Package
+  Fuel, CalendarDays, BadgeCheck, Headphones, Package, AlertCircle,
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { agentProductService } from '../services/agentProductService';
 import { useCart } from '../components/CartContext';
 import { useWishlist } from '../components/WishlistContext';
@@ -32,7 +33,6 @@ const formatLocation = (location: string): string => {
   return cleaned.slice(-3).join(', ');
 };
 
-// ── Mock Reviews ─────────────────────────────────────────────
 const MOCK_REVIEWS = [
   { id: 1, name: 'Rania User', avatar: 'https://randomuser.me/api/portraits/women/44.jpg', rating: 5, text: 'Mobil sangat bersih dan nyaman. Pickup mudah dan tepat waktu!', date: '2 hari lalu' },
   { id: 2, name: 'Marius User', avatar: 'https://randomuser.me/api/portraits/men/32.jpg', rating: 5, text: 'Sopir ramah, mobil dalam kondisi bagus. Sangat direkomendasikan!', date: '5 hari lalu' },
@@ -44,6 +44,8 @@ const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // ── Car state ────────────────────────────────────────────
   const [rentalDays, setRentalDays] = useState(3);
   const [driveType, setDriveType] = useState<'dengan_sopir' | 'lepas_kunci'>('dengan_sopir');
   const [pickupType, setPickupType] = useState<'kantor' | 'lokasi_lain'>('kantor');
@@ -55,13 +57,18 @@ const ProductDetail: React.FC = () => {
     childSeat: false,
   });
   const [termsOpen, setTermsOpen] = useState(false);
-  // Tour date
+
+  // ── Tour state ───────────────────────────────────────────
   const [tourDate, setTourDate] = useState('');
   const [tourPax, setTourPax] = useState(1);
-  // Stay dates
+
+  // ── Stay state ───────────────────────────────────────────
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
   const [stayGuests, setStayGuests] = useState(2);
+
+  // ── Validation errors ─────────────────────────────────────
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const { addToCart, isInCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -75,10 +82,17 @@ const ProductDetail: React.FC = () => {
       setIsLoading(true);
       try {
         const data = await agentProductService.getProductById(Number(id));
-        const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+        const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/$/, '');
+
+        // Normalize image_url
         if (data.image_url && !data.image_url.startsWith('http')) {
-          data.image_url = `${BASE_URL}/${data.image_url}`;
+          data.image_url = `${BASE_URL}/${data.image_url.replace(/^\//, '')}`;
         }
+        // Normalize image juga (fallback field)
+        if (data.image && !data.image.startsWith('http')) {
+          data.image = `${BASE_URL}/${data.image.replace(/^\//, '')}`;
+        }
+
         setProduct(data);
       } catch (e) {
         console.error(e);
@@ -95,6 +109,120 @@ const ProductDetail: React.FC = () => {
     addToCart(product, rentalDays);
     showToast(`${product.name} ditambahkan ke keranjang!`, 'success');
   };
+
+  // ── Nights calculation helper ─────────────────────────────
+  const calcNights = () =>
+    checkInDate && checkOutDate
+      ? Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))
+      : 0;
+
+  // ── Main navigate handler with validation ─────────────────
+  const handleReserveNow = (type: 'tour_stay' | 'car') => {
+    if (!product) return;
+    const errors: Record<string, string> = {};
+
+    if (type === 'tour_stay') {
+      const isTourProduct = isTour(product.details);
+
+      if (isTourProduct) {
+        if (!tourDate) errors.tourDate = 'Pilih tanggal tour terlebih dahulu';
+        if (tourPax < 1) errors.tourPax = 'Minimal 1 peserta';
+      } else {
+        // Stay
+        if (!checkInDate) errors.checkIn = 'Pilih tanggal check-in';
+        if (!checkOutDate) errors.checkOut = 'Pilih tanggal check-out';
+        if (checkInDate && checkOutDate && checkInDate >= checkOutDate)
+          errors.checkOut = 'Check-out harus setelah check-in';
+        if (stayGuests < 1) errors.stayGuests = 'Minimal 1 tamu';
+      }
+    } else {
+      // Car
+      if (rentalDays < 1) errors.rentalDays = 'Minimal 1 hari sewa';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstError = Object.values(errors)[0];
+      Swal.fire({
+        icon: 'warning',
+        title: 'Lengkapi Pemesanan',
+        text: firstError,
+        confirmButtonColor: '#0ea5e9',
+      });
+      return;
+    }
+
+    setFieldErrors({});
+
+    if (type === 'tour_stay') {
+      const isTourProduct = isTour(product.details);
+      const nights = calcNights();
+      const qty = isTourProduct ? tourPax : stayGuests;
+      const dur = isTourProduct ? 1 : nights;
+      const total = Number(product.price) * qty * dur;
+
+      navigate('/checkout-summary', {
+        state: {
+          productId: product.id,
+          productName: product.name,
+          location: product.location,
+          image: product.image_url || product.image,
+          currency: product.currency || 'IDR',
+          pricePerPax: Number(product.price),
+          pax: qty,
+          guestCount: qty,
+          duration: dur,
+          totalPrice: total,
+          date: isTourProduct
+            ? tourDate
+            : `${checkInDate} - ${checkOutDate}`,
+          unitLabel: isTourProduct ? 'Tiket' : 'Malam',
+          priceUnitLabel: isTourProduct ? 'orang' : 'malam',
+          vehicleType: isTourProduct ? 'tour' : 'stay',
+        },
+      });
+    } else {
+      const basePrice = Number(product.price);
+      const insurancePrice = addOns.premiumInsurance ? 75000 : 0;
+      const childSeatPrice = addOns.childSeat ? 50000 : 0;
+      const totalPerDay = basePrice + insurancePrice + childSeatPrice;
+      const totalPrice = totalPerDay * rentalDays;
+
+      navigate('/checkout-summary', {
+        state: {
+          productId: product.id,
+          productName: product.name,
+          location: product.location,
+          image: product.image_url || product.image,
+          currency: product.currency || 'IDR',
+          pricePerPax: totalPerDay,
+          pax: 1,
+          guestCount: 1,
+          duration: rentalDays,
+          totalPrice,
+          date: '',
+          unitLabel: 'Hari',
+          priceUnitLabel: 'hari',
+          vehicleType: 'car',
+          transmission: (product.details as CarDetails)?.transmission,
+          seats: (product.details as CarDetails)?.seats,
+          luggage: (product.details as CarDetails)?.luggage,
+          year: (product.details as CarDetails)?.year,
+          fuelPolicy: (product.details as CarDetails)?.fuelPolicy,
+          withDriver: driveType === 'dengan_sopir',
+          addOns,
+        },
+      });
+    }
+  };
+
+  // ── Field error helper component ──────────────────────────
+  const FieldError = ({ name }: { name: string }) =>
+    fieldErrors[name] ? (
+      <p className="flex items-center gap-1 text-red-500 text-xs mt-1">
+        <AlertCircle className="w-3 h-3" /> {fieldErrors[name]}
+      </p>
+    ) : null;
 
   if (isLoading) {
     return (
@@ -130,13 +258,14 @@ const ProductDetail: React.FC = () => {
   const tourDetails = isTour(product.details) ? (product.details as TourDetails) : null;
   const stayDetails = isStay(product.details) ? (product.details as StayDetails) : null;
 
-  // ── TOUR / STAY DETAIL (Klook-style) ─────────────────────
+  // ════════════════════════════════════════════════════════
+  //  TOUR / STAY
+  // ════════════════════════════════════════════════════════
   if (!isCarProduct) {
     const isTourProduct = !!tourDetails;
     const categoryLabel = isTourProduct ? 'Tour & Activity' : 'Hotel & Villa';
     const categoryLink = isTourProduct ? '/explore?category_id=1' : '/explore?category_id=2';
 
-    // Highlights based on product type
     const highlights = isTourProduct ? [
       { icon: Clock, label: 'Durasi', value: (tourDetails as any)?.duration || 'Full Day' },
       { icon: Users, label: 'Min. Peserta', value: `${(tourDetails as any)?.minPax || 1} orang` },
@@ -167,11 +296,17 @@ const ProductDetail: React.FC = () => {
         ]
       : [];
 
+    // Total price for tour/stay summary
+    const nights = calcNights();
+    const tourStayTotal = isTourProduct
+      ? Number(product.price) * tourPax
+      : Number(product.price) * (nights || 1) * stayGuests;
+
     return (
       <div className="min-h-screen bg-gray-50 pt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
 
-          {/* ── Breadcrumb ── */}
+          {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
             <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 font-medium text-gray-500">
               <ChevronLeft className="w-3.5 h-3.5" /> Kembali
@@ -184,10 +319,9 @@ const ProductDetail: React.FC = () => {
             <span className="text-gray-600 truncate max-w-[200px]">{product.name}</span>
           </div>
 
-          {/* ── Title & Meta tags ABOVE gallery (Klook-style) ── */}
+          {/* Title */}
           <div className="mb-4">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">{product.name}</h1>
-            {/* Rating & info row */}
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1">
                 <span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">{product.rating || '8.2'}/10</span>
@@ -201,10 +335,7 @@ const ProductDetail: React.FC = () => {
               {isLoggedIn && (
                 <>
                   <span className="text-gray-300">·</span>
-                  <button
-                    onClick={() => toggleWishlist(product)}
-                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 transition-colors"
-                  >
+                  <button onClick={() => toggleWishlist(product)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 transition-colors">
                     <Heart className={`w-4 h-4 ${isSaved ? 'text-red-500 fill-red-500' : ''}`} />
                     {isSaved ? 'Tersimpan' : 'Simpan ke wishlist'}
                   </button>
@@ -213,33 +344,22 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Image Grid Gallery (Klook-style) ── */}
+          {/* Gallery */}
           <div className="relative rounded-2xl overflow-hidden mb-8" style={{ height: '400px' }}>
-            <div className="grid grid-cols-3 gap-1.5 h-full" style={{ gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr' }}>
-              {/* Main large photo — spans 1 col 2 rows on left */}
+            <div className="grid gap-1.5 h-full" style={{ gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr' }}>
               <div className="row-span-2 relative overflow-hidden bg-gray-200">
-                <img
-                  src={getImageUrl(product.image_url || product.image)}
-                  alt={product.name}
+                <img src={getImageUrl(product.image_url || product.image)} alt={product.name}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                />
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
               </div>
-              {/* 4 smaller photos — 2x2 on right */}
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="relative overflow-hidden bg-gray-200">
-                  <img
-                    src={getImageUrl(product.image_url || product.image)}
-                    alt={`${product.name} ${i + 2}`}
+                  <img src={getImageUrl(product.image_url || product.image)} alt={`${product.name} ${i + 2}`}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                  />
-                  {/* "Gallery" overlay on last cell */}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
                   {i === 3 && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors">
-                      <div className="bg-white rounded-lg px-4 py-2">
-                        <p className="text-gray-900 font-bold text-sm">Gallery</p>
-                      </div>
+                      <div className="bg-white rounded-lg px-4 py-2"><p className="text-gray-900 font-bold text-sm">Gallery</p></div>
                     </div>
                   )}
                 </div>
@@ -249,10 +369,9 @@ const ProductDetail: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            {/* ── LEFT ── */}
+            {/* LEFT */}
             <div className="lg:col-span-2 space-y-6">
-
-              {/* Quick Highlights */}
+              {/* Highlights */}
               <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {highlights.map((h, i) => (
@@ -274,11 +393,11 @@ const ProductDetail: React.FC = () => {
                 </h2>
                 <p className="text-sm text-gray-600 leading-relaxed">
                   {(product as any).description ||
-                    `Nikmati pengalaman ${isTourProduct ? 'wisata' : 'menginap'} terbaik di ${formatLocation(product.location || '')}. ${product.name} menawarkan layanan premium dengan fasilitas lengkap untuk memastikan kenyamanan Anda selama ${isTourProduct ? 'perjalanan' : 'menginap'}.`}
+                    `Nikmati pengalaman ${isTourProduct ? 'wisata' : 'menginap'} terbaik di ${formatLocation(product.location || '')}. ${product.name} menawarkan layanan premium dengan fasilitas lengkap.`}
                 </p>
               </div>
 
-              {/* What's Included / Excluded */}
+              {/* Inclusions */}
               <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                 <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Package className="w-4 h-4 text-primary-600" /> Yang Termasuk
@@ -288,8 +407,7 @@ const ProductDetail: React.FC = () => {
                     <p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-2">✓ Termasuk</p>
                     {inclusions.map((item, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                        <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
-                        {item}
+                        <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />{item}
                       </div>
                     ))}
                   </div>
@@ -307,7 +425,7 @@ const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Itinerary (tour only) */}
+              {/* Itinerary — tour only */}
               {isTourProduct && itinerary.length > 0 && (
                 <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                   <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -328,7 +446,7 @@ const ProductDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* Meet Point / Location */}
+              {/* Location */}
               <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                 <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <MapPinned className="w-4 h-4 text-primary-600" />
@@ -340,7 +458,7 @@ const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Cancellation Policy */}
+              {/* Cancellation */}
               <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                 <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <Shield className="w-4 h-4 text-primary-600" /> Kebijakan Pembatalan
@@ -364,7 +482,6 @@ const ProductDetail: React.FC = () => {
                 <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
                   <Star className="w-4 h-4 text-amber-400 fill-amber-400" /> Ulasan Traveler
                 </h2>
-                {/* Rating summary */}
                 <div className="flex items-center gap-6 mb-5 pb-5 border-b border-gray-100">
                   <div className="text-center">
                     <p className="text-5xl font-extrabold text-gray-900">{product.rating || '8.2'}</p>
@@ -410,7 +527,7 @@ const ProductDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* ── RIGHT — Booking Panel ── */}
+            {/* RIGHT — Booking Panel */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-4">
                 <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xl">
@@ -420,9 +537,7 @@ const ProductDetail: React.FC = () => {
                     <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Mulai dari</p>
                     <p className="text-3xl font-extrabold text-gray-900">
                       {product.currency} {Number(product.price).toLocaleString('id-ID')}
-                      <span className="text-sm font-medium text-gray-400 ml-1">
-                        /{isTourProduct ? 'orang' : 'malam'}
-                      </span>
+                      <span className="text-sm font-medium text-gray-400 ml-1">/{isTourProduct ? 'orang' : 'malam'}</span>
                     </p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">{product.rating || '8.2'}/10</span>
@@ -431,26 +546,29 @@ const ProductDetail: React.FC = () => {
                   </div>
 
                   {isTourProduct ? (
-                    /* ── TOUR: tanggal + jumlah peserta ── */
                     <>
-                      {/* Tanggal Tour */}
+                      {/* Tour Date */}
                       <div className="mb-4">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Tanggal</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                          Tanggal <span className="text-red-500">*</span>
+                        </label>
                         <div className="relative">
                           <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <input
-                            type="date"
-                            value={tourDate}
-                            onChange={(e) => setTourDate(e.target.value)}
+                          <input type="date" value={tourDate}
+                            onChange={(e) => { setTourDate(e.target.value); setFieldErrors(p => ({ ...p, tourDate: '' })); }}
                             min={new Date().toISOString().split('T')[0]}
-                            className="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50"
+                            className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.tourDate ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`}
                           />
                         </div>
+                        <FieldError name="tourDate" />
                       </div>
-                      {/* Jumlah Peserta */}
+
+                      {/* Pax */}
                       <div className="mb-5">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Jumlah Peserta</label>
-                        <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-2 bg-gray-50">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                          Jumlah Peserta <span className="text-red-500">*</span>
+                        </label>
+                        <div className={`flex items-center gap-3 border rounded-xl p-2 bg-gray-50 ${fieldErrors.tourPax ? 'border-red-400' : 'border-gray-200'}`}>
                           <button onClick={() => setTourPax(p => Math.max(1, p - 1))}
                             className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all">
                             <Minus className="w-3.5 h-3.5" />
@@ -461,22 +579,24 @@ const ProductDetail: React.FC = () => {
                             <Plus className="w-3.5 h-3.5" />
                           </button>
                         </div>
+                        <FieldError name="tourPax" />
                       </div>
                     </>
                   ) : (
-                    /* ── STAY: check-in, check-out + tamu ── */
                     <>
                       {/* Check-in & Check-out */}
                       <div className="mb-4">
-                        <div className="grid grid-cols-2 gap-1 border border-gray-200 rounded-xl overflow-hidden">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                          Tanggal Menginap <span className="text-red-500">*</span>
+                        </label>
+                        <div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.checkIn || fieldErrors.checkOut ? 'border-red-400' : 'border-gray-200'}`}>
                           <div className="p-3 bg-gray-50 border-r border-gray-200">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Check-in</label>
-                            <input
-                              type="date"
-                              value={checkInDate}
+                            <input type="date" value={checkInDate}
                               onChange={(e) => {
                                 setCheckInDate(e.target.value);
                                 if (checkOutDate && e.target.value >= checkOutDate) setCheckOutDate('');
+                                setFieldErrors(p => ({ ...p, checkIn: '', checkOut: '' }));
                               }}
                               min={new Date().toISOString().split('T')[0]}
                               className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none"
@@ -484,24 +604,25 @@ const ProductDetail: React.FC = () => {
                           </div>
                           <div className="p-3 bg-gray-50">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Check-out</label>
-                            <input
-                              type="date"
-                              value={checkOutDate}
-                              onChange={(e) => setCheckOutDate(e.target.value)}
+                            <input type="date" value={checkOutDate}
+                              onChange={(e) => { setCheckOutDate(e.target.value); setFieldErrors(p => ({ ...p, checkOut: '' })); }}
                               min={checkInDate || new Date().toISOString().split('T')[0]}
                               className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none"
                             />
                           </div>
                         </div>
-                        {checkInDate && checkOutDate && (
-                          <p className="text-xs text-primary-600 font-semibold mt-1.5 pl-1">
-                            {Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))} malam
-                          </p>
+                        {checkInDate && checkOutDate && nights > 0 && (
+                          <p className="text-xs text-primary-600 font-semibold mt-1.5 pl-1">{nights} malam</p>
                         )}
+                        <FieldError name="checkIn" />
+                        <FieldError name="checkOut" />
                       </div>
-                      {/* Jumlah Tamu */}
+
+                      {/* Guests */}
                       <div className="mb-5">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Tamu</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                          Tamu <span className="text-red-500">*</span>
+                        </label>
                         <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-2 bg-gray-50">
                           <button onClick={() => setStayGuests(g => Math.max(1, g - 1))}
                             className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all">
@@ -527,52 +648,47 @@ const ProductDetail: React.FC = () => {
                     ) : (
                       <div className="flex justify-between text-sm text-gray-600">
                         <span>
-                          {checkInDate && checkOutDate
-                            ? `${Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))} malam`
-                            : '1 malam'} × {product.currency} {Number(product.price).toLocaleString('id-ID')}
+                          {nights > 0 ? `${nights} malam` : '— malam'} × {stayGuests} tamu × {product.currency} {Number(product.price).toLocaleString('id-ID')}
                         </span>
                         <span className="font-semibold">
-                          {product.currency} {(Number(product.price) * (checkInDate && checkOutDate
-                            ? Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))
-                            : 1)).toLocaleString('id-ID')}
+                          {nights > 0
+                            ? `${product.currency} ${(Number(product.price) * nights * stayGuests).toLocaleString('id-ID')}`
+                            : '—'}
                         </span>
                       </div>
                     )}
                     <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900">
                       <span>Total</span>
                       <span className="text-primary-600">
-                        {product.currency} {(Number(product.price) * (isTourProduct ? tourPax
-                          : (checkInDate && checkOutDate
-                            ? Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))
-                            : 1))).toLocaleString('id-ID')}
+                        {nights > 0 || isTourProduct
+                          ? `${product.currency} ${tourStayTotal.toLocaleString('id-ID')}`
+                          : '—'}
                       </span>
                     </div>
                   </div>
 
-                  {/* CTA */}
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={isInCart(product.id)}
+                  {/* Add to Cart */}
+                  <button onClick={handleAddToCart} disabled={isInCart(product.id)}
                     className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${
                       isInCart(product.id)
                         ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default'
                         : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30'
                     }`}
                   >
-                    {isInCart(product.id) ? (
-                      <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Added to Cart</span>
-                    ) : (
-                      <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> Pesan Sekarang</span>
-                    )}
+                    {isInCart(product.id)
+                      ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Added to Cart</span>
+                      : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> Pesan Sekarang</span>
+                    }
                   </button>
+
+                  {/* Reserve Now */}
                   <button
-                    onClick={() => navigate(`/checkout-summary?product_id=${product.id}&qty=${rentalDays}`)}
+                    onClick={() => handleReserveNow('tour_stay')}
                     className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3"
                   >
                     Reserve Now
                   </button>
 
-                  {/* Trust */}
                   <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
                     <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" /> Aman</span>
                     <span className="flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5 text-blue-500" /> Terverifikasi</span>
@@ -580,7 +696,6 @@ const ProductDetail: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Contact */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
                   <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
                     <Phone className="w-5 h-5 text-primary-600" />
@@ -592,26 +707,26 @@ const ProductDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
     );
   }
 
-  // ── PRICE CALCULATION ─────────────────────────────────────
+  // ════════════════════════════════════════════════════════
+  //  CAR RENTAL
+  // ════════════════════════════════════════════════════════
   const basePrice = Number(product.price);
   const insurancePrice = addOns.premiumInsurance ? 75000 : 0;
   const childSeatPrice = addOns.childSeat ? 50000 : 0;
   const totalPerDay = basePrice + insurancePrice + childSeatPrice;
-  const totalPrice = totalPerDay * rentalDays;
-
+  const totalCarPrice = totalPerDay * rentalDays;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* ── Breadcrumb ── */}
+        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-6 pt-4">
           <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 transition-colors font-medium">
             <ChevronLeft className="w-4 h-4" /> Kembali
@@ -622,12 +737,11 @@ const ProductDetail: React.FC = () => {
           <span className="text-gray-900 font-semibold truncate max-w-[200px]">{product.name}</span>
         </div>
 
-        {/* ── Page Header ── */}
+        {/* Page Header */}
         <div className="flex items-start justify-between mb-6 gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
-              <Car className="w-3.5 h-3.5" />
-              Booking Details
+              <Car className="w-3.5 h-3.5" /> Booking Details
             </div>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">{product.name}</h1>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
@@ -644,71 +758,53 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
           {isLoggedIn && (
-            <button
-              onClick={() => toggleWishlist(product)}
-              className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 active:scale-90 ${isSaved ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}
-            >
+            <button onClick={() => toggleWishlist(product)}
+              className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 active:scale-90 ${isSaved ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}>
               <Heart className={`w-5 h-5 ${isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} />
             </button>
           )}
         </div>
 
-        {/* ── Main Grid: Left content + Right booking panel ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* ── LEFT COLUMN ── */}
+          {/* LEFT */}
           <div className="lg:col-span-2 space-y-6">
-
-            {/* Main Photo */}
             <div className="bg-white rounded-3xl overflow-hidden border border-gray-100">
-              <img
-                src={getImageUrl(product.image_url || product.image)}
-                alt={product.name}
+              <img src={getImageUrl(product.image_url || product.image)} alt={product.name}
                 className="w-full h-auto object-contain"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
-              />
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
             </div>
 
-            {/* Detail Mobil */}
+            {/* Car Details */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Car className="w-5 h-5 text-primary-600" />
-                Detail Mobil
+                <Car className="w-5 h-5 text-primary-600" /> Detail Mobil
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                  <Users className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-                  <p className="text-xs text-gray-500 mb-1">Penumpang</p>
-                  <p className="font-bold text-gray-900 text-sm">{carDetails?.seats || 4} Orang</p>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                  <Gauge className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-                  <p className="text-xs text-gray-500 mb-1">Transmisi</p>
-                  <p className="font-bold text-gray-900 text-sm">{carDetails?.transmission === 'Automatic' ? 'Matic' : 'Manual'}</p>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                  <Fuel className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-                  <p className="text-xs text-gray-500 mb-1">Bahan Bakar</p>
-                  <p className="font-bold text-gray-900 text-sm">{carDetails?.fuelPolicy || 'Gas'}</p>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                  <Briefcase className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-                  <p className="text-xs text-gray-500 mb-1">Bagasi</p>
-                  <p className="font-bold text-gray-900 text-sm">{carDetails?.luggage || 2} Koper</p>
-                </div>
+                {[
+                  { icon: Users, label: 'Penumpang', value: `${carDetails?.seats || 4} Orang` },
+                  { icon: Gauge, label: 'Transmisi', value: carDetails?.transmission === 'Automatic' ? 'Matic' : 'Manual' },
+                  { icon: Fuel, label: 'Bahan Bakar', value: carDetails?.fuelPolicy || 'Gas' },
+                  { icon: Briefcase, label: 'Bagasi', value: `${carDetails?.luggage || 2} Koper` },
+                ].map((item, i) => (
+                  <div key={i} className="bg-gray-50 rounded-2xl p-4 text-center">
+                    <item.icon className="w-6 h-6 text-primary-600 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500 mb-1">{item.label}</p>
+                    <p className="font-bold text-gray-900 text-sm">{item.value}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Facility & Include */}
+            {/* Facility */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5 text-primary-600" />
-                Facility &amp; Include
+                <Package className="w-5 h-5 text-primary-600" /> Facility &amp; Include
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { icon: Navigation, label: 'Free Pick Up' },
-                  { icon: Shield, label: 'Raser Insurance' },
+                  { icon: Shield, label: 'Basic Insurance' },
                   { icon: Headphones, label: '24hr Support' },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 bg-green-50 rounded-2xl px-4 py-3">
@@ -722,25 +818,18 @@ const ProductDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Terms & Condition (Collapsible) */}
+            {/* Terms */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-              <button
-                onClick={() => setTermsOpen(!termsOpen)}
-                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"
-              >
+              <button onClick={() => setTermsOpen(!termsOpen)}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Info className="w-5 h-5 text-primary-600" />
-                  Terma &amp; Kondisi
+                  <Info className="w-5 h-5 text-primary-600" /> Terma &amp; Kondisi
                 </h2>
                 {termsOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
               </button>
               {termsOpen && (
                 <div className="px-6 pb-6 space-y-2 border-t border-gray-100">
-                  {[
-                    'Self-Drive Policy',
-                    'Cancellation Policy',
-                    'Checklist dan Sisa Arka',
-                  ].map((term, i) => (
+                  {['Self-Drive Policy', 'Cancellation Policy', 'Checklist dan Sisa Arka'].map((term, i) => (
                     <div key={i} className="flex items-start gap-2 py-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 shrink-0" />
                       <span className="text-sm text-gray-700 font-medium">{term}</span>
@@ -750,119 +839,72 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            {/* Lokasi Pengambilan */}
+            {/* Pickup */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <MapPinned className="w-5 h-5 text-primary-600" />
-                Lokasi Pengambilan
+                <MapPinned className="w-5 h-5 text-primary-600" /> Lokasi Pengambilan
               </h2>
               <div className="flex gap-3 mb-4">
-                {[
-                  { value: 'kantor', label: 'Kantor Rental' },
-                  { value: 'lokasi_lain', label: 'Lokasi Lainnya' },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setPickupType(opt.value as any)}
-                    className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
-                      pickupType === opt.value
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {pickupType === opt.value && <Check className="w-3.5 h-3.5 inline mr-1" />}
-                    {opt.label}
+                {[{ value: 'kantor', label: 'Kantor Rental' }, { value: 'lokasi_lain', label: 'Lokasi Lainnya' }].map((opt) => (
+                  <button key={opt.value} onClick={() => setPickupType(opt.value as any)}
+                    className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${pickupType === opt.value ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    {pickupType === opt.value && <Check className="w-3.5 h-3.5 inline mr-1" />}{opt.label}
                   </button>
                 ))}
               </div>
-              {pickupType === 'lokasi_lain' && (
-                <input
-                  type="text"
-                  placeholder="Masukkan alamat pickup lengkap..."
-                  value={pickupAddress}
-                  onChange={(e) => setPickupAddress(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50"
-                />
-              )}
-              {pickupType === 'kantor' && (
-                <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-500">{formatLocation(product.location || 'Lokasi Kantor Rental')}</span>
-                </div>
-              )}
+              {pickupType === 'lokasi_lain'
+                ? <input type="text" placeholder="Masukkan alamat pickup lengkap..." value={pickupAddress} onChange={(e) => setPickupAddress(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50" />
+                : <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-500">{formatLocation(product.location || 'Lokasi Kantor Rental')}</span>
+                  </div>
+              }
             </div>
 
-            {/* Lokasi Pengembalian */}
+            {/* Dropoff */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Navigation className="w-5 h-5 text-primary-600" />
-                Lokasi Pengembalian
+                <Navigation className="w-5 h-5 text-primary-600" /> Lokasi Pengembalian
               </h2>
               <div className="flex gap-3 mb-4">
-                {[
-                  { value: 'kantor', label: 'Kantor Rental' },
-                  { value: 'lokasi_lain', label: 'Lokasi Lainnya' },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setDropoffType(opt.value as any)}
-                    className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${
-                      dropoffType === opt.value
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {dropoffType === opt.value && <Check className="w-3.5 h-3.5 inline mr-1" />}
-                    {opt.label}
+                {[{ value: 'kantor', label: 'Kantor Rental' }, { value: 'lokasi_lain', label: 'Lokasi Lainnya' }].map((opt) => (
+                  <button key={opt.value} onClick={() => setDropoffType(opt.value as any)}
+                    className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${dropoffType === opt.value ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    {dropoffType === opt.value && <Check className="w-3.5 h-3.5 inline mr-1" />}{opt.label}
                   </button>
                 ))}
               </div>
-              {dropoffType === 'lokasi_lain' && (
-                <input
-                  type="text"
-                  placeholder="Masukkan alamat pengembalian..."
-                  value={dropoffAddress}
-                  onChange={(e) => setDropoffAddress(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50"
-                />
-              )}
-              {dropoffType === 'kantor' && (
-                <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-500">{formatLocation(product.location || 'Lokasi Kantor Rental')}</span>
-                </div>
-              )}
+              {dropoffType === 'lokasi_lain'
+                ? <input type="text" placeholder="Masukkan alamat pengembalian..." value={dropoffAddress} onChange={(e) => setDropoffAddress(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50" />
+                : <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-500">{formatLocation(product.location || 'Lokasi Kantor Rental')}</span>
+                  </div>
+              }
             </div>
 
             {/* Notes */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <Info className="w-5 h-5 text-primary-600" />
-                Notes
+                <Info className="w-5 h-5 text-primary-600" /> Notes
               </h2>
-              <textarea
-                rows={3}
-                placeholder="Tambahkan catatan atau permintaan khusus..."
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 resize-none"
-              />
+              <textarea rows={3} placeholder="Tambahkan catatan atau permintaan khusus..."
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 resize-none" />
             </div>
 
             {/* Reviews */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                Reviews
+                <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> Reviews
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {MOCK_REVIEWS.map((review) => (
                   <div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
                     <div className="flex items-center gap-3 mb-3">
-                      <img
-                        src={review.avatar}
-                        alt={review.name}
-                        className="w-10 h-10 rounded-full border-2 border-primary-100 object-cover"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                      />
+                      <img src={review.avatar} alt={review.name} className="w-10 h-10 rounded-full border-2 border-primary-100 object-cover"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
                       <div>
                         <p className="font-bold text-gray-900 text-sm">{review.name}</p>
                         <p className="text-xs text-gray-400">{review.date}</p>
@@ -878,19 +920,16 @@ const ProductDetail: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
 
-          </div>{/* end left col */}
-
-          {/* ── RIGHT COLUMN — BOOKING PANEL (Sticky) ── */}
+          {/* RIGHT — Booking Panel */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-4">
               <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
 
-                {/* Price Header */}
+                {/* Price */}
                 <div className="mb-5 pb-4 border-b border-gray-100">
-                  <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-                    No. ID: {String(product.id).padStart(6, '0')}
-                  </p>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">No. ID: {String(product.id).padStart(6, '0')}</p>
                   <p className="text-3xl font-extrabold text-gray-900">
                     {product.currency} {Number(product.price).toLocaleString('id-ID')}
                     <span className="text-sm font-medium text-gray-400 ml-1">/hari</span>
@@ -906,50 +945,37 @@ const ProductDetail: React.FC = () => {
                 <div className="mb-5">
                   <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5">
                     <CalendarDays className="w-4 h-4 text-primary-500" />
-                    Duration
+                    Duration <span className="text-red-500">*</span>
                   </p>
-                  <div className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3">
-                    <button
-                      onClick={() => setRentalDays(d => Math.max(1, d - 1))}
-                      className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"
-                    >
+                  <div className={`flex items-center gap-3 bg-gray-50 rounded-2xl p-3 border ${fieldErrors.rentalDays ? 'border-red-400' : 'border-transparent'}`}>
+                    <button onClick={() => setRentalDays(d => Math.max(1, d - 1))}
+                      className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all">
                       <Minus className="w-3.5 h-3.5" />
                     </button>
                     <span className="flex-1 text-center font-extrabold text-gray-900">
-                      {rentalDays} {rentalDays === 1 ? 'day' : 'day'}
-                      <span className="text-xs font-medium text-gray-400 ml-1">
-                        = {product.currency} {(basePrice * rentalDays).toLocaleString('id-ID')}
-                      </span>
+                      {rentalDays} hari
+                      <span className="text-xs font-medium text-gray-400 ml-1">= {product.currency} {(basePrice * rentalDays).toLocaleString('id-ID')}</span>
                     </span>
-                    <button
-                      onClick={() => setRentalDays(d => d + 1)}
-                      className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"
-                    >
+                    <button onClick={() => setRentalDays(d => d + 1)}
+                      className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all">
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  <FieldError name="rentalDays" />
                 </div>
 
                 {/* Drive Type */}
                 <div className="mb-5">
                   <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                    <UserCog className="w-4 h-4 text-primary-500" />
-                    Pilih Tipe Sewa
+                    <UserCog className="w-4 h-4 text-primary-500" /> Pilih Tipe Sewa <span className="text-red-500">*</span>
                   </p>
                   <div className="space-y-2">
                     {[
                       { value: 'dengan_sopir', label: 'Dengan Sopir', desc: 'Sopir profesional disediakan' },
                       { value: 'lepas_kunci', label: 'Lepas Kunci', desc: 'Kamu yang menyetir' },
                     ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setDriveType(opt.value as any)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                          driveType === opt.value
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}
-                      >
+                      <button key={opt.value} onClick={() => setDriveType(opt.value as any)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${driveType === opt.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${driveType === opt.value ? 'border-primary-500' : 'border-gray-300'}`}>
                           {driveType === opt.value && <div className="w-2 h-2 rounded-full bg-primary-500" />}
                         </div>
@@ -965,8 +991,7 @@ const ProductDetail: React.FC = () => {
                 {/* Add-Ons */}
                 <div className="mb-5">
                   <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                    <BadgeCheck className="w-4 h-4 text-primary-500" />
-                    Add-Ons
+                    <BadgeCheck className="w-4 h-4 text-primary-500" /> Add-Ons
                   </p>
                   <div className="space-y-2">
                     {[
@@ -976,15 +1001,9 @@ const ProductDetail: React.FC = () => {
                       const isChecked = addOns[addon.key as keyof typeof addOns];
                       const AddonIcon = addon.icon;
                       return (
-                        <button
-                          key={addon.key}
+                        <button key={addon.key}
                           onClick={() => setAddOns(prev => ({ ...prev, [addon.key]: !prev[addon.key as keyof typeof addOns] }))}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                            isChecked
-                              ? 'border-green-400 bg-green-50'
-                              : 'border-gray-200 hover:border-gray-300 bg-white'
-                          }`}
-                        >
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${isChecked ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
                           <div className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-all ${isChecked ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
                             {isChecked && <Check className="w-3 h-3 text-white" />}
                           </div>
@@ -992,9 +1011,7 @@ const ProductDetail: React.FC = () => {
                           <div className="flex-1">
                             <p className={`text-sm font-bold ${isChecked ? 'text-green-700' : 'text-gray-800'}`}>{addon.label}</p>
                           </div>
-                          <p className="text-xs font-bold text-gray-500">
-                            +{product.currency} {addon.price.toLocaleString('id-ID')}
-                          </p>
+                          <p className="text-xs font-bold text-gray-500">+{product.currency} {addon.price.toLocaleString('id-ID')}</p>
                         </button>
                       );
                     })}
@@ -1021,40 +1038,29 @@ const ProductDetail: React.FC = () => {
                   )}
                   <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900">
                     <span>Total</span>
-                    <span className="text-primary-600">{product.currency} {totalPrice.toLocaleString('id-ID')}</span>
+                    <span className="text-primary-600">{product.currency} {totalCarPrice.toLocaleString('id-ID')}</span>
                   </div>
                 </div>
 
-                {/* CTA Button */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isInCart(product.id)}
+                {/* Add to Cart */}
+                <button onClick={handleAddToCart} disabled={isInCart(product.id)}
                   className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${
                     isInCart(product.id)
                       ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default'
                       : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30 hover:shadow-primary-700/40'
-                  }`}
-                >
-                  {isInCart(product.id) ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Check className="w-4 h-4" /> Added to Cart
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <ShoppingCart className="w-4 h-4" /> Proceed to Booking
-                    </span>
-                  )}
+                  }`}>
+                  {isInCart(product.id)
+                    ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Added to Cart</span>
+                    : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> Proceed to Booking</span>
+                  }
                 </button>
 
-                {/* Reserve Now Button */}
-                <button
-                  onClick={() => navigate(`/checkout-summary?product_id=${product.id}&days=${rentalDays}&drive_type=${driveType}`)}
-                  className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3"
-                >
+                {/* Reserve Now */}
+                <button onClick={() => handleReserveNow('car')}
+                  className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3">
                   Reserve Now
                 </button>
 
-                {/* Trust badges */}
                 <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
                   <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" /> Aman</span>
                   <span className="flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5 text-blue-500" /> Terverifikasi</span>
@@ -1062,7 +1068,6 @@ const ProductDetail: React.FC = () => {
                 </div>
               </div>
 
-              {/* Contact Card */}
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
                 <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
                   <Phone className="w-5 h-5 text-primary-600" />
