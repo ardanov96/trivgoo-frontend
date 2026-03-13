@@ -123,20 +123,19 @@ const Payment: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
+  // Halaman ini adalah versi lama (mock VA) yang sudah tidak dipakai dalam DOKU flow.
+  // Jika user mengakses secara langsung tanpa state, redirect ke home.
+  useEffect(() => {
+    if (!state) {
+      navigate('/', { replace: true });
+    }
+  }, [state, navigate]);
+
   if (!state) {
+    // Tampilkan loading singkat sebelum redirect terjadi
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-sm">
-          <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Invalid Session</h2>
-          <p className="text-gray-500 mb-6">Missing booking details.</p>
-          <button
-            onClick={() => navigate('/')}
-            className="text-primary-600 font-bold hover:underline"
-          >
-            Return Home
-          </button>
-        </div>
+        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
