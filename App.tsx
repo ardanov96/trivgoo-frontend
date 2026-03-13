@@ -5,6 +5,7 @@ import { ToastProvider } from './components/ToastContext';
 import { WishlistProvider } from './components/WishlistContext';
 import { UserRole } from './types';
 import { CartProvider } from './components/CartContext';
+import ChatbotWidget from './components/ChatbotWidget';
 
 // Layouts
 import DashboardLayout from './components/DashboardLayout';
@@ -250,6 +251,7 @@ const App: React.FC = () => {
             <BrowserRouter>
               <ScrollToTop />
               <AppRoutes />
+              <ChatbotWidget />
             </BrowserRouter>
           </WishlistProvider>
         </CartProvider>
