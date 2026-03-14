@@ -30,6 +30,13 @@ const getStatusColor = (status: BookingStatus | string) => {
   }
 };
 
+// Cek apakah payment link sudah expired
+const isPaymentExpired = (booking: Booking): boolean => {
+  const expiredAt = (booking as any).paymentExpiredAt;
+  if (!expiredAt) return false;
+  return new Date(expiredAt).getTime() < Date.now();
+};
+
 // ── Countdown hook ────────────────────────────────────────────────────────────
 const useCountdown = (expiredAt?: string) => {
   const calc = useCallback(() => {
@@ -66,7 +73,7 @@ const PaymentCountdown: React.FC<{ expiredAt?: string; compact?: boolean }> = ({
   if (compact) return (
     <span className={`flex items-center gap-1 font-bold text-[10px] ${isUrgent ? 'text-red-500' : 'text-amber-600'}`}>
       <Clock className="w-3 h-3" />
-      {remaining.h > 0 && `${remaining.h}j `}{String(remaining.m).padStart(2,'0')}m {String(remaining.s).padStart(2,'0')}d
+      {remaining.h > 0 && `${remaining.h}j `}{String(remaining.m).padStart(2,'00')}m {String(remaining.s).padStart(2,'00')}d
     </span>
   );
   return (
@@ -76,11 +83,22 @@ const PaymentCountdown: React.FC<{ expiredAt?: string; compact?: boolean }> = ({
       <Clock className="w-3.5 h-3.5" />
       Bayar dalam{' '}
       {remaining.h > 0 && <span>{remaining.h}j </span>}
-      <span>{String(remaining.m).padStart(2,'0')}m</span>
-      <span>{String(remaining.s).padStart(2,'0')}d</span>
+      <span>{String(remaining.m).padStart(2,'00')}m</span>
+      <span>{String(remaining.s).padStart(2,'00')}d</span>
     </div>
   );
 };
+
+// ── ExpiredBadge — reusable badge untuk status expired ────────────────────────
+const ExpiredBadge: React.FC<{ compact?: boolean }> = ({ compact }) => (
+  compact
+    ? <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
+        <AlertTriangle className="w-3 h-3" /> Pembayaran Expired
+      </span>
+    : <span className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border bg-gray-100 text-gray-500 border-gray-200 w-fit">
+        <AlertTriangle className="w-3 h-3" /> Expired
+      </span>
+);
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 const Pagination: React.FC<{
@@ -182,55 +200,68 @@ const MobileBookingCard: React.FC<{
   booking: Booking;
   onPay: (b: Booking) => void; onContact: (b: Booking) => void;
   onTicket: (b: Booking) => void; onReview: (b: Booking) => void; onCancel: (b: Booking) => void;
-}> = ({ booking, onPay, onContact, onTicket, onReview, onCancel }) => (
-  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-4 active:scale-[0.98] transition-transform">
-    <div className="flex gap-4">
-      <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-        <img src={getImageUrl(booking.productImage)} className="w-full h-full object-cover" alt="Product"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-start mb-1">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${getStatusColor(booking.status)}`}>
-            {booking.status}
-          </span>
-          <span className="text-[10px] text-gray-400 font-mono">{(booking as any).externalId || `#${booking.id}`}</span>
+}> = ({ booking, onPay, onContact, onTicket, onReview, onCancel }) => {
+  const expired = isPaymentExpired(booking);
+  return (
+    <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-4 active:scale-[0.98] transition-transform">
+      <div className="flex gap-4">
+        <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+          <img src={getImageUrl(booking.productImage)} className="w-full h-full object-cover" alt="Product"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
         </div>
-        <h4 className="font-bold text-gray-900 truncate leading-tight mb-1">{booking.productName}</h4>
-        <div className="text-xs text-gray-500 flex items-center mb-1"><Calendar className="w-3 h-3 mr-1" /> {booking.date}</div>
-        {booking.status === BookingStatus.PENDING && (booking as any).paymentExpiredAt && (
-          <div className="mb-2"><PaymentCountdown expiredAt={(booking as any).paymentExpiredAt} compact /></div>
-        )}
-        <div className="flex justify-between items-end">
-          <span className="font-bold text-primary-700">Rp {Number(booking.totalPrice).toLocaleString('id-ID')}</span>
-          <div className="flex gap-1.5">
-            {booking.status === BookingStatus.PENDING && (
-              <>
-                <button onClick={() => onPay(booking)} className="p-1.5 bg-primary-600 rounded-lg text-white hover:bg-primary-700 shadow-sm" title="Bayar"><CreditCard className="w-4 h-4" /></button>
-                <button onClick={() => onCancel(booking)} className="p-1.5 bg-red-50 rounded-lg text-red-500 hover:bg-red-100" title="Batalkan"><Trash2 className="w-4 h-4" /></button>
-              </>
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start mb-1">
+            {/* Jika PENDING + expired → tampilkan ExpiredBadge saja */}
+            {booking.status === BookingStatus.PENDING && expired ? (
+              <ExpiredBadge compact />
+            ) : (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${getStatusColor(booking.status)}`}>
+                {booking.status}
+              </span>
             )}
-            {(booking.status === BookingStatus.CONFIRMED || booking.status === BookingStatus.PENDING) && (
-              <button onClick={() => onContact(booking)} className="p-1.5 bg-green-50 rounded-lg text-green-600 hover:text-green-700"><MessageCircle className="w-4 h-4" /></button>
-            )}
-            {booking.status === BookingStatus.CONFIRMED && (
-              <button onClick={() => onTicket(booking)} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900"><QrCode className="w-4 h-4" /></button>
-            )}
-            {booking.status === BookingStatus.COMPLETED && (
-              <button onClick={() => onReview(booking)} className="p-1.5 bg-yellow-50 rounded-lg text-yellow-600 hover:text-yellow-700"><MessageSquare className="w-4 h-4" /></button>
-            )}
-            <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
-              <ChevronRight className="w-4 h-4" />
-            </Link>
+            <span className="text-[10px] text-gray-400 font-mono">{(booking as any).externalId || `#${booking.id}`}</span>
+          </div>
+          <h4 className="font-bold text-gray-900 truncate leading-tight mb-1">{booking.productName}</h4>
+          <div className="text-xs text-gray-500 flex items-center mb-1"><Calendar className="w-3 h-3 mr-1" /> {booking.date}</div>
+
+          {/* Countdown — hanya jika PENDING dan BELUM expired */}
+          {booking.status === BookingStatus.PENDING && !expired && (booking as any).paymentExpiredAt && (
+            <div className="mb-2">
+              <PaymentCountdown expiredAt={(booking as any).paymentExpiredAt} compact />
+            </div>
+          )}
+
+          <div className="flex justify-between items-end">
+            <span className="font-bold text-primary-700">Rp {Number(booking.totalPrice).toLocaleString('id-ID')}</span>
+            <div className="flex gap-1.5">
+              {/* Tombol Bayar & Batalkan hanya muncul jika PENDING dan BELUM expired */}
+              {booking.status === BookingStatus.PENDING && !expired && (
+                <>
+                  <button onClick={() => onPay(booking)} className="p-1.5 bg-primary-600 rounded-lg text-white hover:bg-primary-700 shadow-sm" title="Bayar"><CreditCard className="w-4 h-4" /></button>
+                  <button onClick={() => onCancel(booking)} className="p-1.5 bg-red-50 rounded-lg text-red-500 hover:bg-red-100" title="Batalkan"><Trash2 className="w-4 h-4" /></button>
+                </>
+              )}
+              {(booking.status === BookingStatus.CONFIRMED || booking.status === BookingStatus.PENDING) && (
+                <button onClick={() => onContact(booking)} className="p-1.5 bg-green-50 rounded-lg text-green-600 hover:text-green-700"><MessageCircle className="w-4 h-4" /></button>
+              )}
+              {booking.status === BookingStatus.CONFIRMED && (
+                <button onClick={() => onTicket(booking)} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900"><QrCode className="w-4 h-4" /></button>
+              )}
+              {booking.status === BookingStatus.COMPLETED && (
+                <button onClick={() => onReview(booking)} className="p-1.5 bg-yellow-50 rounded-lg text-yellow-600 hover:text-yellow-700"><MessageSquare className="w-4 h-4" /></button>
+              )}
+              <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// ── Desktop Booking Table — STANDALONE component (bukan nested) ───────────────
-// Diletakkan di LUAR CustomerBookings agar tidak re-create setiap render
+// ── Desktop Booking Table ─────────────────────────────────────────────────────
 interface BookingTableProps {
   data: Booking[];
   activeTab: string;
@@ -245,12 +276,11 @@ const BookingTable: React.FC<BookingTableProps> = ({
   const topRef    = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const syncing   = useRef(false);
-
   const [showTopScroll, setShowTopScroll] = useState(false);
 
   useEffect(() => {
-    const bot    = bottomRef.current;
-    const top    = topRef.current;
+    const bot = bottomRef.current;
+    const top = topRef.current;
     if (!bot || !top) return;
     const mirror = top.querySelector<HTMLDivElement>('.scroll-mirror');
     if (!mirror) return;
@@ -258,7 +288,6 @@ const BookingTable: React.FC<BookingTableProps> = ({
       const tbl = bot.querySelector('table');
       if (tbl) {
         mirror.style.width = tbl.scrollWidth + 'px';
-        // Hanya tampilkan scrollbar atas jika konten memang overflow
         setShowTopScroll(tbl.scrollWidth > bot.clientWidth);
       }
     };
@@ -268,7 +297,6 @@ const BookingTable: React.FC<BookingTableProps> = ({
     return () => ro.disconnect();
   }, [data]);
 
-  // Sync scroll atas ↔ bawah
   useEffect(() => {
     const top = topRef.current;
     const bot = bottomRef.current;
@@ -280,37 +308,11 @@ const BookingTable: React.FC<BookingTableProps> = ({
     return () => { top.removeEventListener('scroll', onTop); bot.removeEventListener('scroll', onBot); };
   }, []);
 
-  // Sync lebar mirror dengan lebar tabel (agar scrollbar atas muncul)
-  useEffect(() => {
-    const bot    = bottomRef.current;
-    const top    = topRef.current;
-    if (!bot || !top) return;
-    const mirror = top.querySelector<HTMLDivElement>('.scroll-mirror');
-    if (!mirror) return;
-    const sync = () => {
-      const tbl = bot.querySelector('table');
-      if (tbl) mirror.style.width = tbl.scrollWidth + 'px';
-    };
-    sync();
-    const ro = new ResizeObserver(sync);
-    ro.observe(bot);
-    return () => ro.disconnect();
-  }, [data]);
-
   return (
-    // overflow-hidden pada wrapper PENTING — mencegah scroll meluber ke luar
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hidden md:block w-full" style={{ contain: 'paint' }}>
-
-      {/* Scrollbar atas — tinggi 12px, hanya berisi div invisible selebar tabel */}
-      <div
-        ref={topRef}
-        className={`overflow-x-auto border-b border-gray-100 transition-all ${showTopScroll ? '' : 'hidden'}`}
-        style={{ height: 14 }}
-      >
+      <div ref={topRef} className={`overflow-x-auto border-b border-gray-100 ${showTopScroll ? '' : 'hidden'}`} style={{ height: 14 }}>
         <div className="scroll-mirror" style={{ height: 1, minWidth: '100%' }} />
       </div>
-
-      {/* Tabel utama */}
       <div ref={bottomRef} className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-100">
           <thead className="bg-gray-50/80">
@@ -342,9 +344,17 @@ const BookingTable: React.FC<BookingTableProps> = ({
             ) : data.map((booking) => {
               const expiredAt     = (booking as any).paymentExpiredAt;
               const isExpiredSoon = expiredAt && (new Date(expiredAt).getTime() - Date.now()) < 3 * 3600000;
+              const expired       = isPaymentExpired(booking);
+
               return (
                 <tr key={booking.id}
-                  className={`hover:bg-gray-50/50 transition-colors ${isExpiredSoon && booking.status === BookingStatus.PENDING ? 'bg-red-50/30' : ''}`}>
+                  className={`hover:bg-gray-50/50 transition-colors ${
+                    expired && booking.status === BookingStatus.PENDING
+                      ? 'bg-gray-50/60 opacity-75'                         // expired → redup
+                      : isExpiredSoon && booking.status === BookingStatus.PENDING
+                        ? 'bg-red-50/30'                                   // hampir expired → merah tipis
+                        : ''
+                  }`}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-xs font-bold text-primary-600 font-mono tracking-wide">
                       {(booking as any).externalId || `#${booking.id}`}
@@ -370,11 +380,18 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col gap-1">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border w-fit ${getStatusColor(booking.status)}`}>
-                        {booking.status}
-                      </span>
-                      {booking.status === BookingStatus.PENDING && expiredAt && (
-                        <PaymentCountdown expiredAt={expiredAt} />
+                      {/* Jika PENDING + expired → tampilkan HANYA ExpiredBadge, sembunyikan badge PENDING */}
+                      {booking.status === BookingStatus.PENDING && expired ? (
+                        <ExpiredBadge />
+                      ) : (
+                        <>
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border w-fit ${getStatusColor(booking.status)}`}>
+                            {booking.status}
+                          </span>
+                          {booking.status === BookingStatus.PENDING && expiredAt && (
+                            <PaymentCountdown expiredAt={expiredAt} />
+                          )}
+                        </>
                       )}
                     </div>
                   </td>
@@ -383,7 +400,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
-                      {booking.status === BookingStatus.PENDING && (
+                      {/* Tombol Bayar & Batalkan — hanya jika PENDING dan BELUM expired */}
+                      {booking.status === BookingStatus.PENDING && !expired && (
                         <>
                           <button onClick={() => onPay(booking)}
                             className="flex items-center text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition-colors text-xs font-bold shadow-sm gap-1">
@@ -420,7 +438,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                         </button>
                       )}
                       <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
-                          <span className="sr-only">Details</span> <ChevronRight className="w-4 h-4" />
+                        <span className="sr-only">Details</span> <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
                   </td>
@@ -463,14 +481,11 @@ const CustomerBookings: React.FC = () => {
   const [pointBalance, setPointBalance]        = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Pagination ─────────────────────────────────────────────────────────────
   const [activePage, setActivePage]   = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
-
-  // ── Filter tanggal ─────────────────────────────────────────────────────────
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo]     = useState('');
-  const [searchText, setSearchText] = useState('');
+  const [dateFrom, setDateFrom]       = useState('');
+  const [dateTo, setDateTo]           = useState('');
+  const [searchText, setSearchText]   = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -511,7 +526,6 @@ const CustomerBookings: React.FC = () => {
     if (cancelSuccess) { const t = setTimeout(() => setCancelSuccess(null), 4000); return () => clearTimeout(t); }
   }, [cancelSuccess]);
 
-  // Reset page & filter saat ganti tab
   useEffect(() => {
     if (activeTab === 'active') setActivePage(1);
     else setHistoryPage(1);
@@ -537,7 +551,6 @@ const CustomerBookings: React.FC = () => {
     .filter(b => b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.COMPLETED)
     .reduce((sum, b) => sum + b.totalPrice, 0);
 
-  // ── Filter logic ───────────────────────────────────────────────────────────
   const applyFilters = (list: Booking[]) => {
     let result = list;
     if (searchText.trim()) {
@@ -548,26 +561,14 @@ const CustomerBookings: React.FC = () => {
         String(b.id).includes(q)
       );
     }
-    if (dateFrom) {
-      result = result.filter(b => {
-        const bookingDate = b.date?.split(' - ')[0] || b.date || '';
-        return bookingDate >= dateFrom;
-      });
-    }
-    if (dateTo) {
-      result = result.filter(b => {
-        const bookingDate = b.date?.split(' - ')[0] || b.date || '';
-        return bookingDate <= dateTo;
-      });
-    }
+    if (dateFrom) result = result.filter(b => (b.date?.split(' - ')[0] || b.date || '') >= dateFrom);
+    if (dateTo)   result = result.filter(b => (b.date?.split(' - ')[0] || b.date || '') <= dateTo);
     return result;
   };
 
   const hasActiveFilter = dateFrom || dateTo || searchText.trim();
-
   const clearFilters = () => { setDateFrom(''); setDateTo(''); setSearchText(''); };
 
-  // ── Pagination computed ────────────────────────────────────────────────────
   const rawData        = activeTab === 'active' ? activeBookings : pastBookings;
   const filteredData   = applyFilters(rawData);
   const currentPage    = activeTab === 'active' ? activePage : historyPage;
@@ -575,12 +576,8 @@ const CustomerBookings: React.FC = () => {
   const totalPages     = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   const pagedData      = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  const handlePageChange = (p: number) => {
-    setCurrentPage(p);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const handlePageChange = (p: number) => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
-  // Reset page saat filter berubah
   useEffect(() => { setCurrentPage(1); }, [dateFrom, dateTo, searchText]);
 
   const openTicket = (b: Booking) => { setSelectedBooking(b); setShowTicketModal(true); };
@@ -772,47 +769,27 @@ const CustomerBookings: React.FC = () => {
               </div>
             </div>
 
-            {/* ── Filter bar ── */}
+            {/* Filter bar */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4">
               <div className="flex flex-col sm:flex-row gap-3">
-                {/* Search */}
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
+                  <input type="text" value={searchText} onChange={e => setSearchText(e.target.value)}
                     placeholder="Cari nama produk atau kode booking..."
-                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all"
-                  />
+                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all" />
                 </div>
-
-                {/* Date from */}
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={e => setDateFrom(e.target.value)}
+                  <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
                     className="pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all w-full sm:w-auto"
-                    title="Dari tanggal"
-                  />
+                    title="Dari tanggal" />
                 </div>
-
-                {/* Date to */}
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input
-                    type="date"
-                    value={dateTo}
-                    min={dateFrom || undefined}
-                    onChange={e => setDateTo(e.target.value)}
+                  <input type="date" value={dateTo} min={dateFrom || undefined} onChange={e => setDateTo(e.target.value)}
                     className="pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all w-full sm:w-auto"
-                    title="Sampai tanggal"
-                  />
+                    title="Sampai tanggal" />
                 </div>
-
-                {/* Clear filter */}
                 {hasActiveFilter && (
                   <button onClick={clearFilters}
                     className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors whitespace-nowrap">
@@ -820,8 +797,6 @@ const CustomerBookings: React.FC = () => {
                   </button>
                 )}
               </div>
-
-              {/* Filter summary */}
               {hasActiveFilter && (
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                   <Filter className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
@@ -842,12 +817,8 @@ const CustomerBookings: React.FC = () => {
               <div className="md:hidden space-y-4">
                 {pagedData.length === 0 ? (
                   <div className="text-center py-10 bg-white rounded-2xl border border-gray-100 border-dashed">
-                    <p className="text-gray-400 text-sm">
-                      {hasActiveFilter ? 'Tidak ada booking yang sesuai filter.' : 'Tidak ada booking.'}
-                    </p>
-                    {hasActiveFilter && (
-                      <button onClick={clearFilters} className="mt-3 text-xs text-primary-600 font-bold hover:underline">Hapus filter</button>
-                    )}
+                    <p className="text-gray-400 text-sm">{hasActiveFilter ? 'Tidak ada booking yang sesuai filter.' : 'Tidak ada booking.'}</p>
+                    {hasActiveFilter && <button onClick={clearFilters} className="mt-3 text-xs text-primary-600 font-bold hover:underline">Hapus filter</button>}
                   </div>
                 ) : pagedData.map(b => (
                   <MobileBookingCard key={b.id} booking={b}
@@ -858,14 +829,12 @@ const CustomerBookings: React.FC = () => {
 
               {/* Desktop */}
               <BookingTable
-                data={pagedData}
-                activeTab={activeTab}
+                data={pagedData} activeTab={activeTab}
                 onPay={handlePayNow} onContact={handleContactAgent}
                 onTicket={openTicket} onReview={openReview}
                 onCancel={openCancelModal} onSimulateComplete={handleSimulateComplete}
               />
 
-              {/* Pagination */}
               <Pagination
                 currentPage={currentPage} totalPages={totalPages}
                 onPageChange={handlePageChange}
