@@ -772,7 +772,7 @@ const PressAndMedia: React.FC = () => {
                     <label className="block text-sm font-bold text-gray-700 mb-2">Nomor Telepon</label>
                     <input type="tel"
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="+62 812 3456 7890" />
+                      placeholder="cth: 081234567890" />
                   </div>
                 </div>
 

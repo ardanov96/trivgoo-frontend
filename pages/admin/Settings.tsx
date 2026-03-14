@@ -12,7 +12,7 @@ const AdminSettings: React.FC = () => {
 
   // Form States
   const [siteName, setSiteName] = useState('Trivgoo Travel');
-  const [supportEmail, setSupportEmail] = useState('support@trivgoo.com');
+  const [supportEmail, setSupportEmail] = useState('cs@trivgoo.com');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   
   const [commissionRate, setCommissionRate] = useState(11);

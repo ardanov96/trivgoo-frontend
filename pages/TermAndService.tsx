@@ -1,506 +1,306 @@
-import { ArrowLeft, CheckCircle, Shield, FileText, Scale, Lock, AlertCircle } from 'lucide-react';
-import React from 'react';
+import { ArrowLeft, ChevronRight, FileText } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const TermAndService: React.FC = () => {
-  // Smooth scroll function
-  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
-    e.preventDefault();
-    const element = document.getElementById(sectionId);
-    if (element) {
-      const offset = 100; // Offset for sticky header
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
+const SECTIONS = [
+  { id: 'tentang', label: 'Terms and Service' },
+  { id: 'acceptance', label: 'Acceptance of Terms' },
+  { id: 'services', label: 'Services Provided' },
+  { id: 'user-obligations', label: 'User Obligations' },
+  { id: 'booking', label: 'Booking and Payment' },
+  { id: 'pricing', label: 'Pricing' },
+  { id: 'payment-methods', label: 'Payment Methods' },
+  { id: 'cancellation', label: 'Cancellation and Refunds' },
+  { id: 'liability', label: 'Limitation of Liability' },
+  { id: 'privacy', label: 'Privacy and Data Protection' },
+  { id: 'changes', label: 'Changes to Terms' },
+  { id: 'contact', label: 'Contact Us' },
+];
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
+const NavItem: React.FC<{ section: typeof SECTIONS[0]; active: boolean; onClick: () => void }> = ({ section, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`w-full text-left flex items-start gap-2 py-1.5 px-2 rounded-lg text-xs transition-all ${
+      active ? 'text-primary-600 font-bold bg-primary-50' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+    }`}
+  >
+    {active && <ChevronRight className="w-3 h-3 flex-shrink-0 mt-0.5" />}
+    <span className={active ? '' : 'pl-3.5'}>{section.label}</span>
+  </button>
+);
+
+const TermAndService: React.FC = () => {
+  const [activeSection, setActiveSection] = useState('tentang');
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => { entries.forEach((e) => { if (e.isIntersecting) setActiveSection(e.target.id); }); },
+      { rootMargin: '-20% 0px -70% 0px' }
+    );
+    SECTIONS.forEach(({ id }) => { const el = document.getElementById(id); if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 24, behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white py-20 md:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500 rounded-full mix-blend-overlay filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-400 rounded-full mix-blend-overlay filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <Link 
-            to="/" 
-            className="inline-flex items-center text-primary-100 hover:text-white transition-colors mb-8 group"
-          >
+    <div className="min-h-screen bg-white">
+
+      {/* ── Animated Hero ── */}
+      <div className="relative text-white py-20 md:py-28 overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #6b1a12 0%, #a83328 35%, #c34134 65%, #E05845 100%)' }}>
+
+        <style>{`
+          @keyframes gridScroll2 { 0% { background-position: 0 0; } 100% { background-position: 40px 40px; } }
+          @keyframes glowPulse2  { 0%,100% { opacity:.35; } 50% { opacity:.65; } }
+          @keyframes scanLine2   { 0% { transform:translateY(0%); opacity:.12; } 50% { opacity:.25; } 100% { transform:translateY(100%); opacity:.12; } }
+          @keyframes floatIn2    { 0% { opacity:0; transform:translateY(32px); } 100% { opacity:1; transform:translateY(0); } }
+          @keyframes badgeIn2    { 0% { opacity:0; transform:translateY(-12px); } 100% { opacity:1; transform:translateY(0); } }
+          @keyframes routeGlow   { 0%,100%{opacity:.2;} 50%{opacity:.45;} }
+          .ts-grid  { animation: gridScroll2 3s linear infinite; }
+          .ts-glow1 { animation: glowPulse2 5s ease-in-out infinite; }
+          .ts-glow2 { animation: glowPulse2 7s ease-in-out infinite 2.5s; }
+          .ts-glow3 { animation: glowPulse2 6s ease-in-out infinite 1s; }
+          .ts-scan  { animation: scanLine2 4s linear infinite; }
+          .ts-title { animation: floatIn2 .9s cubic-bezier(.22,1,.36,1) .3s both; }
+          .ts-badge { animation: badgeIn2 .6s cubic-bezier(.22,1,.36,1) .1s both; }
+          .ts-meta  { animation: floatIn2 .7s cubic-bezier(.22,1,.36,1) .55s both; }
+          .ts-back  { animation: floatIn2 .6s cubic-bezier(.22,1,.36,1) 0s both; }
+          .ts-route { animation: routeGlow 4s ease-in-out infinite; }
+        `}</style>
+
+        {/* Animated dot grid */}
+        <div className="ts-grid absolute inset-0 pointer-events-none" style={{
+          backgroundImage: 'radial-gradient(circle, rgba(255,220,200,0.18) 1.5px, transparent 1.5px)',
+          backgroundSize: '40px 40px'
+        }} />
+
+        {/* Glow blobs */}
+        <div className="ts-glow1 absolute pointer-events-none rounded-full" style={{
+          top: '-10%', right: '-6%', width: 480, height: 480,
+          background: 'radial-gradient(circle, rgba(255,200,150,0.16) 0%, transparent 70%)'
+        }} />
+        <div className="ts-glow2 absolute pointer-events-none rounded-full" style={{
+          bottom: '-15%', left: '-8%', width: 400, height: 400,
+          background: 'radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%)'
+        }} />
+        <div className="ts-glow3 absolute pointer-events-none rounded-full" style={{
+          top: '35%', right: '25%', width: 280, height: 280,
+          background: 'radial-gradient(circle, rgba(251,191,36,0.1) 0%, transparent 70%)'
+        }} />
+
+        {/* SVG dashed routes — different pattern from PrivacyPolicy */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <path className="ts-route" d="M 90% 90% Q 60% 20% 10% 40%" fill="none" stroke="rgba(255,220,200,0.3)" strokeWidth="1.5" strokeDasharray="8 6" />
+          <path className="ts-route" d="M 80% 10% Q 45% 60% 5% 70%" fill="none" stroke="rgba(255,200,150,0.2)" strokeWidth="1" strokeDasharray="6 5" style={{ animationDelay:'1s' }} />
+          <path className="ts-route" d="M 50% 95% Q 70% 40% 95% 25%" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="5 4" style={{ animationDelay:'2s' }} />
+          {/* small decorative dots */}
+          <circle cx="10%" cy="40%" r="3" fill="rgba(255,220,200,0.5)" style={{ animation:'glowPulse2 3s ease-in-out infinite' }} />
+          <circle cx="90%" cy="90%" r="2.5" fill="rgba(251,191,36,0.6)" style={{ animation:'glowPulse2 4s ease-in-out infinite .5s' }} />
+          <circle cx="80%" cy="10%" r="2" fill="rgba(255,200,150,0.5)" style={{ animation:'glowPulse2 5s ease-in-out infinite 1s' }} />
+        </svg>
+
+        {/* Scan line */}
+        <div className="ts-scan absolute inset-x-0 pointer-events-none" style={{
+          height: 3, top: 0,
+          background: 'linear-gradient(90deg, transparent, rgba(255,200,180,0.35), transparent)'
+        }} />
+
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, transparent, rgba(80,15,5,0.35))' }} />
+
+        {/* Content */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="ts-back inline-flex items-center text-red-200 hover:text-white text-sm mb-8 group transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-semibold">Back to Home</span>
+            Kembali ke Beranda
           </Link>
-          
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
-              <FileText className="w-8 h-8" />
+
+          <div className="ts-badge flex items-center gap-3 mb-5">
+            <div className="p-2.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+              <FileText className="w-5 h-5 text-red-100" />
             </div>
-            <span className="text-primary-100 font-bold text-sm uppercase tracking-widest">
-              Legal Document
-            </span>
+            <span className="text-red-200 text-xs font-bold uppercase tracking-[0.2em]">Legal · Trivgoo</span>
           </div>
-          
-          <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6 leading-tight">
+
+          <h1 className="ts-title text-4xl md:text-6xl font-serif font-bold leading-tight mb-4">
             Terms and Service
           </h1>
-          <p className="text-xl text-primary-100 max-w-3xl leading-relaxed">
-            Please read these terms and conditions carefully before using Trivgoo's services.
-          </p>
-          
-          <div className="mt-8 flex items-center gap-2 text-sm text-primary-100">
-            <AlertCircle className="w-4 h-4" />
-            <span>Last updated: February 10, 2026</span>
-          </div>
+
         </div>
       </div>
 
-      {/* Quick Navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-6 overflow-x-auto py-4 no-scrollbar">
-            <a 
-              href="#acceptance" 
-              onClick={(e) => scrollToSection(e, 'acceptance')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 whitespace-nowrap transition-colors cursor-pointer"
-            >
-              Acceptance
-            </a>
-            <a 
-              href="#services" 
-              onClick={(e) => scrollToSection(e, 'services')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 whitespace-nowrap transition-colors cursor-pointer"
-            >
-              Services
-            </a>
-            <a 
-              href="#user-obligations" 
-              onClick={(e) => scrollToSection(e, 'user-obligations')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 whitespace-nowrap transition-colors cursor-pointer"
-            >
-              User Obligations
-            </a>
-            <a 
-              href="#booking" 
-              onClick={(e) => scrollToSection(e, 'booking')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 whitespace-nowrap transition-colors cursor-pointer"
-            >
-              Booking & Payment
-            </a>
-            <a 
-              href="#cancellation" 
-              onClick={(e) => scrollToSection(e, 'cancellation')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 whitespace-nowrap transition-colors cursor-pointer"
-            >
-              Cancellation
-            </a>
-            <a 
-              href="#liability" 
-              onClick={(e) => scrollToSection(e, 'liability')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 whitespace-nowrap transition-colors cursor-pointer"
-            >
-              Liability
-            </a>
-            <a 
-              href="#privacy" 
-              onClick={(e) => scrollToSection(e, 'privacy')}
-              className="text-sm font-semibold text-gray-600 hover:text-primary-600 whitespace-nowrap transition-colors cursor-pointer"
-            >
-              Privacy
-            </a>
-          </div>
+      {/* ── Body ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex gap-10">
+
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <div className="sticky top-6 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-2">ON THIS PAGE</p>
+              <nav className="space-y-0.5">
+                {SECTIONS.map((s) => (
+                  <NavItem key={s.id} section={s} active={activeSection === s.id} onClick={() => scrollTo(s.id)} />
+                ))}
+              </nav>
+            </div>
+          </aside>
+
+          <article className="flex-1 min-w-0 prose prose-gray max-w-none">
+
+            <section id="tentang" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">Terms and Service</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Selamat datang di trivgoo.com. Ketentuan Layanan ("Ketentuan") ini mengatur penggunaan Anda atas situs web, aplikasi mobile, dan layanan yang disediakan oleh PT Trivgoo Global Nusantara ("Kami", "Trivgoo").</p>
+              <p className="text-gray-700 leading-relaxed mb-4">Dengan mengakses atau menggunakan platform kami, Anda menyetujui untuk terikat oleh Ketentuan ini. Jika Anda tidak menyetujui Ketentuan ini, mohon untuk tidak menggunakan layanan kami.</p>
+              <p className="text-gray-700 leading-relaxed mb-4">Ketentuan Layanan ini mencakup hal-hal berikut:</p>
+              <ol className="list-decimal list-inside space-y-1 text-gray-700 text-sm pl-2">
+                {['Penerimaan Ketentuan;','Layanan yang Disediakan;','Kewajiban Pengguna;','Pemesanan dan Pembayaran;','Pembatalan dan Pengembalian Dana;','Batasan Tanggung Jawab;','Privasi dan Perlindungan Data;','Perubahan pada Ketentuan; dan','Hubungi Kami.'].map((item, i) => <li key={i}>{item}</li>)}
+              </ol>
+            </section>
+
+            <section id="acceptance" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">1. Acceptance of Terms</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Dengan membuat akun, melakukan pemesanan, atau menggunakan layanan Trivgoo, Anda mengakui bahwa Anda telah membaca, memahami, dan menyetujui untuk terikat oleh Ketentuan ini, serta Kebijakan Privasi kami.</p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2">
+                <li>Anda harus berusia minimal 18 tahun untuk menggunakan layanan kami</li>
+                <li>Anda bertanggung jawab untuk menjaga kerahasiaan akun Anda</li>
+                <li>Anda setuju untuk memberikan informasi yang akurat dan lengkap</li>
+                <li>Penggunaan platform kami oleh individu di bawah umur harus dalam pengawasan orang tua atau wali</li>
+              </ul>
+            </section>
+
+            <section id="services" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">2. Services Provided</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Trivgoo beroperasi sebagai platform pemesanan perjalanan yang menghubungkan wisatawan dengan penyedia layanan termasuk tur, akomodasi, rental mobil, dan transfer bandara di seluruh Indonesia dan Asia.</p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2">
+                <li><strong>Paket Tur:</strong> Pengalaman perjalanan yang dikurasi dan tur berpemandu</li>
+                <li><strong>Akomodasi:</strong> Hotel, vila, dan penginapan berkualitas</li>
+                <li><strong>Rental Mobil:</strong> Layanan sewa kendaraan dengan atau tanpa pengemudi</li>
+                <li><strong>Transfer Bandara:</strong> Layanan antar-jemput bandara</li>
+              </ul>
+              <p className="text-gray-700 leading-relaxed mt-4"><strong>Catatan Penting:</strong> Trivgoo bertindak sebagai perantara. Kami tidak bertanggung jawab atas penyediaan layanan aktual yang dilakukan oleh vendor pihak ketiga.</p>
+            </section>
+
+            <section id="user-obligations" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">3. User Obligations</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Sebagai pengguna Trivgoo, Anda setuju untuk:</p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2">
+                <li>Memberikan informasi yang akurat, terkini, dan lengkap selama pendaftaran dan pemesanan</li>
+                <li>Menggunakan platform hanya untuk tujuan yang sah sesuai dengan Ketentuan ini</li>
+                <li>Tidak terlibat dalam aktivitas penipuan atau mencoba memanipulasi sistem kami</li>
+                <li>Menghormati hak kekayaan intelektual Trivgoo dan pihak ketiga</li>
+                <li>Tidak mengirimkan virus, malware, atau kode berbahaya lainnya</li>
+                <li>Mematuhi semua undang-undang lokal, nasional, dan internasional yang berlaku</li>
+                <li>Tidak menyalahgunakan program promosi, voucher, atau sistem poin loyalitas</li>
+              </ul>
+            </section>
+
+            <section id="booking" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">4. Booking and Payment</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Ketika Anda melakukan pemesanan melalui Trivgoo, Anda mengadakan kontrak dengan penyedia layanan. Semua pemesanan tunduk pada ketersediaan dan konfirmasi dari penyedia layanan terkait.</p>
+              <p className="text-gray-700 leading-relaxed">Pemesanan Anda dianggap terkonfirmasi setelah pembayaran diterima dan konfirmasi dikirimkan ke email Anda. Harap tinjau semua detail dengan cermat dan hubungi kami segera jika terdapat kesalahan.</p>
+            </section>
+
+            <section id="pricing" className="mb-12 scroll-mt-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">Pricing</h3>
+              <div className="w-8 h-0.5 bg-gray-300 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Semua harga ditampilkan dalam mata uang lokal dan sudah termasuk pajak yang berlaku kecuali dinyatakan lain. Harga dapat bervariasi berdasarkan tanggal, ketersediaan, dan faktor lainnya.</p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2">
+                <li>Harga yang ditampilkan adalah harga final termasuk biaya layanan platform</li>
+                <li>Trivgoo berhak mengubah harga kapan saja tanpa pemberitahuan sebelumnya</li>
+                <li>Harga yang telah dikonfirmasi dalam pemesanan tidak akan berubah kecuali ada kesalahan teknis</li>
+              </ul>
+            </section>
+
+            <section id="payment-methods" className="mb-12 scroll-mt-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">Payment Methods</h3>
+              <div className="w-8 h-0.5 bg-gray-300 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Kami menerima berbagai metode pembayaran untuk kenyamanan Anda:</p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2">
+                <li>Kartu kredit dan debit (Visa, Mastercard, American Express)</li>
+                <li>Transfer bank langsung</li>
+                <li>Dompet digital (GoPay, OVO, Dana, dan lainnya)</li>
+                <li>Virtual Account</li>
+              </ul>
+              <p className="text-gray-700 leading-relaxed mt-4">Pembayaran harus dilakukan secara penuh pada saat pemesanan kecuali dinyatakan lain. Semua transaksi pembayaran diproses melalui gateway pembayaran yang aman dan tersertifikasi PCI-DSS.</p>
+            </section>
+
+            <section id="cancellation" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">5. Cancellation and Refunds</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Kebijakan pembatalan bervariasi tergantung pada penyedia layanan dan jenis pemesanan. Harap tinjau kebijakan pembatalan spesifik sebelum melakukan pemesanan.</p>
+              <p className="text-gray-700 leading-relaxed mb-4 font-medium">Kebijakan Pembatalan Umum:</p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2 mb-4">
+                <li><strong>Lebih dari 7 hari sebelumnya:</strong> Pengembalian dana penuh dikurangi biaya pemrosesan (umumnya 5%)</li>
+                <li><strong>3–7 hari sebelumnya:</strong> Pengembalian dana 50% dari total pemesanan</li>
+                <li><strong>Kurang dari 3 hari sebelumnya:</strong> Tidak ada pengembalian dana</li>
+              </ul>
+              <p className="text-gray-700 leading-relaxed">Pengembalian dana diproses dalam 7–14 hari kerja ke metode pembayaran asli.</p>
+            </section>
+
+            <section id="liability" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">6. Limitation of Liability</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Trivgoo bertindak semata-mata sebagai platform yang menghubungkan wisatawan dengan penyedia layanan. Kami tidak bertanggung jawab atas:</p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2 mb-4">
+                <li>Kualitas, keamanan, atau legalitas layanan yang diberikan oleh vendor pihak ketiga</li>
+                <li>Cedera, kerusakan, atau kerugian yang terjadi selama perjalanan Anda</li>
+                <li>Keterlambatan, pembatalan, atau perubahan yang dilakukan oleh penyedia layanan</li>
+                <li>Kejadian force majeure termasuk bencana alam, kerusuhan politik, atau pandemi</li>
+                <li>Kehilangan atau kerusakan barang pribadi selama perjalanan</li>
+              </ul>
+              <p className="text-gray-700 leading-relaxed">Tanggung jawab maksimum kami untuk setiap klaim tidak akan melebihi total jumlah yang dibayarkan oleh Anda untuk pemesanan spesifik yang bersangkutan.</p>
+            </section>
+
+            <section id="privacy" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">7. Privacy and Data Protection</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Kami berkomitmen untuk melindungi privasi dan informasi pribadi Anda. Kebijakan Privasi kami menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi data Anda.</p>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2 mb-4">
+                <li>Kami menggunakan enkripsi standar industri untuk melindungi informasi pribadi dan pembayaran Anda</li>
+                <li>Anda memiliki hak untuk mengakses, memperbarui, atau menghapus data pribadi Anda</li>
+                <li>Kami tidak menjual data pribadi Anda kepada pihak ketiga untuk tujuan pemasaran</li>
+              </ul>
+              <p className="text-gray-700 leading-relaxed">Untuk informasi lebih lengkap, silakan baca{' '}
+                <Link to="/privacy-policy" className="text-primary-600 hover:underline font-medium">Kebijakan Privasi</Link>{' '}kami secara penuh.</p>
+            </section>
+
+            <section id="changes" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">8. Changes to Terms</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Trivgoo berhak untuk mengubah Ketentuan ini kapan saja. Kami akan memberitahu pengguna tentang perubahan signifikan melalui email atau melalui pemberitahuan di platform kami.</p>
+              <p className="text-gray-700 leading-relaxed">Penggunaan layanan kami yang berkelanjutan setelah perubahan tersebut merupakan penerimaan Anda atas Ketentuan yang telah diperbarui.</p>
+            </section>
+
+            <section id="contact" className="mb-12 scroll-mt-6">
+              <h2 className="text-2xl font-serif font-bold text-gray-900 mb-1">9. Contact Us</h2>
+              <div className="w-12 h-1 bg-primary-600 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">Jika Anda memiliki pertanyaan atau kekhawatiran tentang Ketentuan Layanan ini, tim kami siap membantu Anda.</p>
+              <ul className="list-none space-y-2 text-gray-700 text-sm pl-2">
+                <li>📧 Email: <a href="mailto:cs@trivgoo.com" className="text-primary-600 hover:underline font-medium">cs@trivgoo.com</a></li>
+                <li>💬 WhatsApp: <a href="https://wa.me/6282144443784" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline font-medium">+62 821-4444-3784</a></li>
+              </ul>
+            </section>
+
+            <div className="border-t border-gray-200 pt-10 mt-10">
+              <p className="text-sm text-gray-500 mb-6">Dengan menggunakan layanan Trivgoo, Anda menyatakan telah membaca dan menyetujui Ketentuan Layanan ini.</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link to="/contact-us" className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-colors">Hubungi Customer Support</Link>
+                <Link to="/privacy-policy" className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Lihat Privacy Policy</Link>
+              </div>
+            </div>
+
+          </article>
         </div>
       </div>
-
-      {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-        
-        {/* Introduction */}
-        <div className="bg-gradient-to-br from-blue-50 to-primary-50 rounded-3xl p-8 md:p-10 mb-12 border border-primary-100">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-primary-600 rounded-2xl flex-shrink-0">
-              <Shield className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome to Trivgoo</h2>
-              <p className="text-gray-700 leading-relaxed">
-                These Terms and Service ("Terms") govern your use of Trivgoo's website, mobile applications, 
-                and services. By accessing or using our platform, you agree to be bound by these Terms. 
-                If you do not agree to these Terms, please do not use our services.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 1: Acceptance of Terms */}
-        <section id="acceptance" className="mb-16 scroll-mt-24">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <span className="text-primary-600 font-bold">1</span>
-            </div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Acceptance of Terms</h2>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <p className="text-gray-700 leading-relaxed mb-4">
-              By creating an account, making a booking, or using any of Trivgoo's services, you acknowledge 
-              that you have read, understood, and agree to be bound by these Terms, as well as our Privacy Policy.
-            </p>
-            
-            <div className="space-y-3 mt-6">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
-                <p className="text-gray-700">You must be at least 18 years old to use our services</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
-                <p className="text-gray-700">You are responsible for maintaining the confidentiality of your account</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
-                <p className="text-gray-700">You agree to provide accurate and complete information</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 2: Services Provided */}
-        <section id="services" className="mb-16 scroll-mt-24">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <span className="text-primary-600 font-bold">2</span>
-            </div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Services Provided</h2>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <p className="text-gray-700 leading-relaxed mb-6">
-              Trivgoo operates as a travel booking platform connecting travelers with service providers 
-              including tours, accommodations, car rentals, and airport transfers across Indonesia and Asia.
-            </p>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary-600 rounded-full"></div>
-                  Tour Packages
-                </h3>
-                <p className="text-sm text-gray-600">Curated travel experiences and guided tours</p>
-              </div>
-              
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary-600 rounded-full"></div>
-                  Accommodations
-                </h3>
-                <p className="text-sm text-gray-600">Hotels, villas, and quality stays</p>
-              </div>
-              
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary-600 rounded-full"></div>
-                  Car Rentals
-                </h3>
-                <p className="text-sm text-gray-600">Vehicle rental services with drivers</p>
-              </div>
-              
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary-600 rounded-full"></div>
-                  Airport Transfers
-                </h3>
-                <p className="text-sm text-gray-600">Pick-up and drop-off services</p>
-              </div>
-            </div>
-            
-            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-              <p className="text-sm text-amber-900">
-                <strong>Note:</strong> Trivgoo acts as an intermediary. We are not responsible for the 
-                actual provision of services, which are performed by third-party vendors.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: User Obligations */}
-        <section id="user-obligations" className="mb-16 scroll-mt-24">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <span className="text-primary-600 font-bold">3</span>
-            </div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">User Obligations</h2>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 space-y-4">
-            <p className="text-gray-700 leading-relaxed font-semibold">As a user of Trivgoo, you agree to:</p>
-            
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
-                <span className="text-gray-700">Provide accurate, current, and complete information during registration and booking</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
-                <span className="text-gray-700">Use the platform only for lawful purposes and in accordance with these Terms</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
-                <span className="text-gray-700">Not engage in fraudulent activities or attempt to manipulate our systems</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
-                <span className="text-gray-700">Respect intellectual property rights of Trivgoo and third parties</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
-                <span className="text-gray-700">Not transmit viruses, malware, or any harmful code</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✓</span>
-                <span className="text-gray-700">Comply with all applicable local, national, and international laws</span>
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Section 4: Booking and Payment */}
-        <section id="booking" className="mb-16 scroll-mt-24">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <span className="text-primary-600 font-bold">4</span>
-            </div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Booking and Payment</h2>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Booking Process</h3>
-            <p className="text-gray-700 leading-relaxed mb-6">
-              When you make a booking through Trivgoo, you are entering into a contract with the service 
-              provider. All bookings are subject to availability and confirmation.
-            </p>
-            
-            <div className="space-y-4 mb-8">
-              <div className="border-l-4 border-primary-600 pl-4">
-                <h4 className="font-bold text-gray-900 mb-1">Pricing</h4>
-                <p className="text-gray-600 text-sm">All prices are displayed in the local currency and include applicable taxes unless otherwise stated. Prices may vary based on dates, availability, and other factors.</p>
-              </div>
-              
-              <div className="border-l-4 border-primary-600 pl-4">
-                <h4 className="font-bold text-gray-900 mb-1">Payment Methods</h4>
-                <p className="text-gray-600 text-sm">We accept various payment methods including credit cards, debit cards, bank transfers, and e-wallets. Payment must be made in full at the time of booking unless otherwise specified.</p>
-              </div>
-              
-              <div className="border-l-4 border-primary-600 pl-4">
-                <h4 className="font-bold text-gray-900 mb-1">Confirmation</h4>
-                <p className="text-gray-600 text-sm">You will receive a booking confirmation via email once your payment is processed. Please review all details carefully and contact us immediately if there are any errors.</p>
-              </div>
-            </div>
-            
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-              <p className="text-sm text-red-900">
-                <strong>Important:</strong> Bookings are not guaranteed until payment is received and 
-                confirmed. We reserve the right to cancel unconfirmed bookings.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 5: Cancellation and Refunds */}
-        <section id="cancellation" className="mb-16 scroll-mt-24">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <span className="text-primary-600 font-bold">5</span>
-            </div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Cancellation and Refunds</h2>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <p className="text-gray-700 leading-relaxed mb-6">
-              Cancellation policies vary depending on the service provider and type of booking. 
-              Please review the specific cancellation policy before making a booking.
-            </p>
-            
-            <h3 className="text-lg font-bold text-gray-900 mb-4">General Cancellation Policy</h3>
-            
-            <div className="space-y-3 mb-6">
-              <div className="flex gap-4 p-4 bg-green-50 border border-green-200 rounded-xl">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold">
-                    7+
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-1">More than 7 days before</h4>
-                  <p className="text-sm text-gray-700">Full refund minus processing fee (typically 5%)</p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-amber-600 text-white rounded-xl flex items-center justify-center font-bold">
-                    3-7
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-1">3-7 days before</h4>
-                  <p className="text-sm text-gray-700">50% refund of total booking amount</p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-red-600 text-white rounded-xl flex items-center justify-center font-bold">
-                    &lt;3
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 mb-1">Less than 3 days before</h4>
-                  <p className="text-sm text-gray-700">No refund available</p>
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-sm text-gray-600 italic">
-              Note: Refunds are processed within 7-14 business days to the original payment method. 
-              Some services may have different cancellation terms which will be clearly stated at the time of booking.
-            </p>
-          </div>
-        </section>
-
-        {/* Section 6: Limitation of Liability */}
-        <section id="liability" className="mb-16 scroll-mt-24">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <span className="text-primary-600 font-bold">6</span>
-            </div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Limitation of Liability</h2>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <p className="text-gray-700 leading-relaxed mb-4">
-              Trivgoo acts solely as a platform connecting travelers with service providers. We are not 
-              responsible for:
-            </p>
-            
-            <ul className="space-y-2 mb-6">
-              <li className="flex items-start gap-2 text-gray-700">
-                <span className="text-primary-600 mt-1">•</span>
-                <span>The quality, safety, or legality of services provided by third-party vendors</span>
-              </li>
-              <li className="flex items-start gap-2 text-gray-700">
-                <span className="text-primary-600 mt-1">•</span>
-                <span>Any injuries, damages, or losses incurred during your travel</span>
-              </li>
-              <li className="flex items-start gap-2 text-gray-700">
-                <span className="text-primary-600 mt-1">•</span>
-                <span>Travel delays, cancellations, or changes made by service providers</span>
-              </li>
-              <li className="flex items-start gap-2 text-gray-700">
-                <span className="text-primary-600 mt-1">•</span>
-                <span>Force majeure events including natural disasters, political unrest, or pandemics</span>
-              </li>
-              <li className="flex items-start gap-2 text-gray-700">
-                <span className="text-primary-600 mt-1">•</span>
-                <span>Loss or damage to personal belongings during your trip</span>
-              </li>
-            </ul>
-            
-            <div className="p-5 bg-gray-900 text-white rounded-xl">
-              <div className="flex items-start gap-3">
-                <Scale className="w-6 h-6 flex-shrink-0 mt-0.5" />
-                <p className="text-sm leading-relaxed">
-                  Our maximum liability for any claim arising from your use of Trivgoo services shall 
-                  not exceed the total amount paid by you for the specific booking in question.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 7: Privacy and Data Protection */}
-        <section id="privacy" className="mb-16 scroll-mt-24">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <span className="text-primary-600 font-bold">7</span>
-            </div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Privacy and Data Protection</h2>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <p className="text-gray-700 leading-relaxed mb-6">
-              We are committed to protecting your privacy and personal information. Our Privacy Policy 
-              explains how we collect, use, and safeguard your data.
-            </p>
-            
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-primary-50 rounded-xl p-5 border border-primary-100">
-                <Lock className="w-8 h-8 text-primary-600 mb-3" />
-                <h3 className="font-bold text-gray-900 mb-2">Data Security</h3>
-                <p className="text-sm text-gray-700">We use industry-standard encryption to protect your personal and payment information.</p>
-              </div>
-              
-              <div className="bg-primary-50 rounded-xl p-5 border border-primary-100">
-                <Shield className="w-8 h-8 text-primary-600 mb-3" />
-                <h3 className="font-bold text-gray-900 mb-2">Your Rights</h3>
-                <p className="text-sm text-gray-700">You have the right to access, update, or delete your personal data at any time.</p>
-              </div>
-            </div>
-            
-            <Link 
-              to="/privacy-policy" 
-              className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 transition-colors"
-            >
-              Read our full Privacy Policy
-              <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
-            </Link>
-          </div>
-        </section>
-
-        {/* Section 8: Changes to Terms */}
-        <section className="mb-16">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-              <span className="text-primary-600 font-bold">8</span>
-            </div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Changes to Terms</h2>
-          </div>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <p className="text-gray-700 leading-relaxed">
-              Trivgoo reserves the right to modify these Terms at any time. We will notify users of any 
-              significant changes via email or through a notice on our platform. Your continued use of 
-              our services after such modifications constitutes your acceptance of the updated Terms.
-            </p>
-          </div>
-        </section>
-
-        {/* Contact Section */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-8 md:p-12 text-white text-center">
-          <h2 className="text-3xl font-serif font-bold mb-4">Questions About Our Terms?</h2>
-          <p className="text-primary-100 mb-8 max-w-2xl mx-auto">
-            If you have any questions or concerns about these Terms and Service, our team is here to help.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              to="/contact" 
-              className="px-8 py-4 bg-white text-primary-600 rounded-full font-bold hover:bg-gray-50 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-            >
-              Contact Support
-            </Link>
-            <Link 
-              to="/faq" 
-              className="px-8 py-4 bg-primary-700 border-2 border-white text-white rounded-full font-bold hover:bg-primary-800 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-            >
-              View FAQ
-            </Link>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 };

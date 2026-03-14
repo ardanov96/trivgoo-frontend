@@ -153,7 +153,7 @@ const RegisterAgent: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700">Nomor Telepon</label>
               <input
-                placeholder="081234567890"
+                placeholder="cth: 081234567890"
                 type="tel"
                 className={inputClass}
                 required

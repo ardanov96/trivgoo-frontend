@@ -274,7 +274,7 @@ const PAYOUT_REQUESTS: PayoutRequest[] = [
     userId: 2,
     amount: 500,
     bankName: 'BCA',
-    accountNumber: '1234567890',
+    accountNumber: 'cth: 4534567890',
     status: PayoutStatus.PROCESSED,
     date: '2023-10-25',
   },
