@@ -3,6 +3,8 @@ import React from 'react';
 import { useWishlist } from '../components/WishlistContext';
 import { Link } from 'react-router-dom';
 import { Heart, MapPin, ArrowRight, Star, Trash2 } from 'lucide-react';
+import { encodeId } from '../utils/hashids';
+import { generateSlug } from '../utils/slugify';
 
 const Wishlist: React.FC = () => {
   const { wishlist, removeFromWishlist } = useWishlist();
@@ -33,7 +35,7 @@ const Wishlist: React.FC = () => {
             {wishlist.map((product) => (
                <div key={product.id} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative">
                   <div className="aspect-[4/3] relative overflow-hidden">
-                      <Link to={`/product/${product.id}`}>
+                      <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`}>
                         <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                       </Link>
                       
@@ -55,7 +57,7 @@ const Wishlist: React.FC = () => {
                         <MapPin className="w-3.5 h-3.5 mr-1.5" />
                         {product.location}
                       </div>
-                      <Link to={`/product/${product.id}`}>
+                      <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`}>
                         <h3 className="font-serif font-bold text-xl text-gray-900 mb-2 truncate group-hover:text-primary-600 transition-colors">{product.name}</h3>
                       </Link>
                       <div className="mt-auto pt-4 flex items-end justify-between border-t border-gray-50">
@@ -63,7 +65,7 @@ const Wishlist: React.FC = () => {
                             <span className="text-[10px] text-gray-400 uppercase font-bold">From</span>
                             <p className="text-xl font-bold text-gray-900">{product.currency} {product.price}</p>
                         </div>
-                        <Link to={`/product/${product.id}`} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300">
+                        <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300">
                             <ArrowRight className="w-5 h-5" />
                         </Link>
                       </div>

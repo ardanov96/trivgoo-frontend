@@ -12,6 +12,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import { useCart } from '../../components/CartContext';
 import { getImageUrl, FALLBACK_IMAGE } from '../../utils/imageUtils';
+import { encodeId } from '../../utils/hashids';
+import { generateSlug } from '../../utils/slugify';
 
 // ── Status color helper ───────────────────────────────────────────────────────
 const getStatusColor = (status: BookingStatus | string) => {
@@ -155,7 +157,7 @@ const MobileBookingCard: React.FC<MobileBookingCardProps> = ({ booking, onPay, o
                 <MessageSquare className="w-4 h-4" />
               </button>
             )}
-            <Link to={`/product/${booking.productId}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
+            <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -451,7 +453,7 @@ const CustomerBookings: React.FC = () => {
                           </button>
                         )}
 
-                        <Link to={`/product/${booking.productId}`} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
+                        <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
                           <span className="sr-only">Details</span> <ChevronRight className="w-4 h-4" />
                         </Link>
                       </div>

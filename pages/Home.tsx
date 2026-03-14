@@ -33,6 +33,9 @@ import {
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Category, Product } from '../types';
+import SEO from '../components/SEO';
+import { generateSlug } from '../utils/slugify';
+import { encodeId } from '../utils/hashids';
 import { useAuth } from '../AuthContext';
 import { agentProductService } from '../services/agentProductService';
 import { useCart } from '../components/CartContext';
@@ -390,7 +393,7 @@ const Home: React.FC = () => {
     const isSaved = isInWishlist(product.id);
     return (
       <motion.div key={product.id} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ duration:0.5, delay:index*0.1 }}>
-        <Link to={`/product/${product.id}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full">
+        <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full">
           <div className="aspect-[4/3] relative overflow-hidden">
             <img src={getImageUrl(product.image_url || product.image)} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={e=>{(e.currentTarget as HTMLImageElement).src=FALLBACK_IMAGE;}} />
             {isLoggedIn && (
@@ -411,7 +414,7 @@ const Home: React.FC = () => {
               <p className="text-sm text-gray-500 mb-1">From</p>
               <p className="text-lg font-bold text-gray-900">{product.currency} {Number(product.price).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-500"> {priceUnit}</span></p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                <Link to={`/product/${product.id}`} onClick={e=>e.stopPropagation()} className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center">See Details</Link>
+                <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} onClick={e=>e.stopPropagation()} className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center">See Details</Link>
                 <button onClick={e=>handleAddToCart(e,product)} disabled={isInCart(product.id)} className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98] ${isInCart(product.id)?'border-green-500 text-green-600 bg-green-50 cursor-default':'border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md'}`}>
                   <ShoppingCart className={`w-3.5 h-3.5 shrink-0 ${isInCart(product.id)?'stroke-green-600':''}`} />
                   <span className="truncate">{isInCart(product.id)?'Added': priceUnit==='/night'?'Book Now':'Add to Cart'}</span>
@@ -427,6 +430,11 @@ const Home: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div>
+      <SEO 
+        title="Trivgoo - Find Your Adventure" 
+        description="Discover perfect destinations, best car rentals, and amazing hotels with Trivgoo." 
+      />
+
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <div className="relative min-h-[100dvh] flex items-start justify-center px-4 pt-28 md:pt-24 lg:pt-28 pb-12">
@@ -575,7 +583,7 @@ const Home: React.FC = () => {
             {flashSaleProducts.length > 0 ? flashSaleProducts.map((product: Product) => {
               const isCampaignProduct = activeCampaign && product.flashSale?.campaignId === activeCampaign.id;
               return (
-                <div key={product.id} onClick={()=>navigate(`/product/${product.id}`)} className="min-w-[300px] md:min-w-[350px] snap-center group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden flex flex-col h-full relative cursor-pointer border border-gray-100">
+                <div key={product.id} onClick={()=>navigate(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} className="min-w-[300px] md:min-w-[350px] snap-center group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden flex flex-col h-full relative cursor-pointer border border-gray-100">
                   {isCampaignProduct && <div className="absolute top-0 left-0 w-full bg-yellow-400 text-black text-[10px] font-bold text-center py-1 z-20 uppercase tracking-widest">Official Event Deal</div>}
                   <div className="h-64 md:h-72 relative overflow-hidden">
                     <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />

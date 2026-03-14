@@ -4,6 +4,7 @@ import { useCart } from './CartContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useToast } from './ToastContext';
+import { encodeId } from '../utils/hashids';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -18,9 +19,10 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const [processingId, setProcessingId] = useState<number | null>(null);
 
   // Navigate to product page to fill in booking details
-  const handleGoToProduct = (productId: number) => {
+  const handleProductClick = (productId: string | number) => {
     onClose();
-    navigate(`/product/${productId}`);
+    // Default fallback routing for cart drawer
+    navigate(`/product/${encodeId(productId)}`);
   };
 
   // Reserve Now — goes directly to checkout-summary with product data

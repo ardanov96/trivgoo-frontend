@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { encodeId } from "../../utils/hashids";
+import { generateSlug } from "../../utils/slugify";
 import { useToast } from "../../components/ToastContext";
 import {
   adminService,
@@ -477,7 +479,7 @@ const AdminProducts: React.FC = () => {
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           <Link
-                            to={`/product/${product.id}`}
+                            to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`}
                             className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-gray-100 rounded transition-colors"
                             title="View"
                           >
