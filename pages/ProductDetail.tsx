@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 import {
   Star, MapPin, ChevronLeft, Heart, ShoppingCart,
   Users, Gauge, Briefcase, Award, UserCog, Car,
@@ -15,6 +16,7 @@ import { useToast } from '../components/ToastContext';
 import { useAuth } from '../AuthContext';
 import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
 import { Product, CarDetails, TourDetails, StayDetails } from '../types';
+import { decodeId } from '../utils/hashids';
 
 // ── Type Guards ──────────────────────────────────────────────
 const isCar = (details: any): details is CarDetails => details?.type === 'car';
@@ -44,6 +46,7 @@ const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // ── Car state ────────────────────────────────────────────
   const [rentalDays, setRentalDays] = useState(3);
@@ -78,10 +81,23 @@ const ProductDetail: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      if (!id) return;
+      if (!id) {
+        setError('Product ID is missing.');
+        setIsLoading(false);
+        return;
+      }
+
+      const numericId = decodeId(id);
+      if (numericId === null) { // decodeId returns null for invalid hash
+        setError('Product not found or invalid URL.');
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
+      setError(null); // Clear previous errors
       try {
-        const data = await agentProductService.getProductById(Number(id));
+        const data = await agentProductService.getProductById(numericId);
         const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/$/, '');
 
         // Normalize image_url
@@ -304,6 +320,11 @@ const ProductDetail: React.FC = () => {
 
     return (
       <div className="min-h-screen bg-gray-50 pt-20">
+        <SEO 
+          title={`${product.name} | Trivgoo`} 
+          description={(product as any).description || `Book ${product.name} at ${formatLocation(product.location || '')} on Trivgoo.`}
+          image={product.image_url || product.image || FALLBACK_IMAGE}
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
 
           {/* Breadcrumb */}
@@ -724,6 +745,11 @@ const ProductDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-16">
+      <SEO 
+        title={`${product.name} Rental | Trivgoo`} 
+        description={`Rent ${product.name} starting from ${product.currency} ${Number(product.price).toLocaleString('id-ID')}/day on Trivgoo.`}
+        image={product.image_url || product.image || FALLBACK_IMAGE}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Breadcrumb */}

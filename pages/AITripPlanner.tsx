@@ -2,8 +2,11 @@ import { ArrowRight, Lightbulb, Map, MapPin, Send, Sparkles, Star } from 'lucide
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import { generateTripPlan } from '../services/geminiService';
 import { Product } from '../types';
+import { encodeId } from '../utils/hashids';
+import { generateSlug } from '../utils/slugify';
 
 const SUGGESTIONS = [
   'I want a romantic 3-day honeymoon in Bali with a private pool villa, budget around $500.',
@@ -168,8 +171,8 @@ const AITripPlanner: React.FC = () => {
                     {recommendedProducts.map((product) => (
                       <Link
                         key={product.id}
-                        to={`/product/${product.id}`}
-                        className="block group bg-white rounded-2xl p-3 shadow-sm border border-gray-100 hover:shadow-lg hover:border-primary-200 transition-all transform hover:-translate-y-1"
+                        to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`}
+                        className="block mt-4 text-center text-sm font-semibold text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 py-2 rounded-lg transition-colors border border-primary-200"
                       >
                         <div className="flex gap-4">
                           <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 relative">
