@@ -1,6 +1,9 @@
 import { ArrowRight, ArrowUpDown, Heart, MapPin, Search, Star, X, Users, Gauge, Briefcase, Droplet, UserCog, Award, CheckCircle2, Tag, ShieldCheck, Ticket, ChevronLeft } from 'lucide-react';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import SEO from '../components/SEO';
+import { generateSlug } from '../utils/slugify';
+import { encodeId } from '../utils/hashids';
 import { motion, type Variants } from 'framer-motion';
 import { useWishlist } from '../components/WishlistContext';
 import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
@@ -368,7 +371,7 @@ const Explore: React.FC = () => {
                 <Users className="w-4 h-4" />Pilih Agent ({agentCount})
               </button>
             ) : (
-              <Link to={`/product/${product.id}`} onClick={(e) => e.stopPropagation()} className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center">See Details</Link>
+              <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} onClick={(e) => e.stopPropagation()} className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center">See Details</Link>
             )}
             <button onClick={(e) => { e.stopPropagation(); handleAddToCart(e, product); }} disabled={isInCart(product.id)}
               className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border-2 transform active:scale-[0.98] ${isInCart(product.id) ? "border-green-500 text-green-600 bg-green-50 cursor-default" : "border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md"}`}>
@@ -463,7 +466,7 @@ const Explore: React.FC = () => {
                         <p className="text-base font-extrabold text-primary-600 leading-tight">{agent.currency} {totalPrice.toLocaleString('id-ID')}<span className="text-[10px] font-bold text-primary-500 ml-0.5">Total</span></p>
                         <p className="text-xs text-gray-500 mt-0.5">{agent.currency} {Number(agent.price).toLocaleString('id-ID')}/hari</p>
                       </div>
-                      <Link to={`/product/${agent.id}`} onClick={onClose}
+                      <Link to={`/product/${encodeId(agent.id)}/${generateSlug(agent.name)}`} onClick={onClose}
                         className="inline-flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-primary-600/25 transition-all active:scale-95 whitespace-nowrap">
                         Choose <ArrowRight className="w-3.5 h-3.5 group-hover/item:translate-x-0.5 transition-transform" />
                       </Link>
@@ -485,7 +488,7 @@ const Explore: React.FC = () => {
   const RegularCard = ({ product }: { product: Product }) => {
     const isSaved = isInWishlist(product.id);
     return (
-      <Link to={`/product/${product.id}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative">
+      <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative">
         <div className="aspect-[4/3] relative overflow-hidden">
           <img src={getImageUrl(product.image_url || product.image)} alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
@@ -510,7 +513,7 @@ const Explore: React.FC = () => {
             <p className="text-sm text-gray-500 mb-1">From</p>
             <p className="text-lg font-bold text-gray-900">{product.currency} {Number(product.price).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-500"> /pax</span></p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-              <Link to={`/product/${product.id}`} onClick={(e) => e.stopPropagation()}
+              <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} onClick={(e) => e.stopPropagation()}
                 className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center">
                 See Details
               </Link>
@@ -529,6 +532,10 @@ const Explore: React.FC = () => {
   // ── RENDER ────────────────────────────────────────────────────
   return (
     <div>
+      <SEO 
+        title="Explore - Trivgoo" 
+        description="Discover the perfect travel packages, rentals, and experiences for your next trip."
+      />
 
       {/* ── Destination Hero Banner ── */}
       {fromItinerary && destinationBanner ? (
@@ -743,7 +750,7 @@ const Explore: React.FC = () => {
               ) : (
                 carGroups.map((group) => (
                   <motion.div key={group.groupKey} variants={carCardVariants}
-                    onClick={() => { group.agents.length > 1 ? setAgentPickerGroup(group) : navigate(`/product/${group.representativeProduct.id}`); }}
+                    onClick={() => { group.agents.length > 1 ? setAgentPickerGroup(group) : navigate(`/product/${encodeId(group.representativeProduct.id)}/${generateSlug(group.representativeProduct.name)}`); }}
                     whileHover={{ y: -4, transition: { duration: 0.2 } }} className="cursor-pointer">
                     <RentalCarCard product={group.representativeProduct} agentCount={group.agents.length} />
                   </motion.div>

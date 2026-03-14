@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './AuthContext';
 import { ToastProvider } from './components/ToastContext';
 import { WishlistProvider } from './components/WishlistContext';
@@ -129,6 +130,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/product/:id/:slug" element={<ProductDetail />} />
         <Route path="/checkout-summary" element={<CheckoutSummary />} />
         <Route path="/booking-success" element={<BookingSuccess />} />
         <Route path="/booking-pending" element={<BookingPending />} />
@@ -244,19 +246,21 @@ const AppRoutes = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <BrowserRouter>
-              <ScrollToTop />
-              <AppRoutes />
-              <ChatbotWidget />
-            </BrowserRouter>
-          </WishlistProvider>
-        </CartProvider>
-      </ToastProvider>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <BrowserRouter>
+                <ScrollToTop />
+                <AppRoutes />
+                <ChatbotWidget />
+              </BrowserRouter>
+            </WishlistProvider>
+          </CartProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </HelmetProvider>
   );
 };
 
