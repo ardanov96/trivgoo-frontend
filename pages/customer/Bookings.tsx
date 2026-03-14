@@ -219,13 +219,9 @@ const MobileBookingCard: React.FC<{
             {booking.status === BookingStatus.COMPLETED && (
               <button onClick={() => onReview(booking)} className="p-1.5 bg-yellow-50 rounded-lg text-yellow-600 hover:text-yellow-700"><MessageSquare className="w-4 h-4" /></button>
             )}
-<<<<<<< HEAD
-            <Link to={`/product/${booking.productId}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900"><ChevronRight className="w-4 h-4" /></Link>
-=======
             <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
               <ChevronRight className="w-4 h-4" />
             </Link>
->>>>>>> 4ae7d1903187b83b40daf55dff4a630a199750c8
           </div>
         </div>
       </div>
@@ -411,7 +407,6 @@ const BookingTable: React.FC<BookingTableProps> = ({
                             className="flex items-center text-primary-600 bg-primary-50 hover:bg-primary-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
                             <QrCode className="w-3.5 h-3.5 mr-1" /> Ticket
                           </button>
-<<<<<<< HEAD
                           <button onClick={() => onSimulateComplete(booking.id)}
                             className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg text-[10px]">
                             Simulate Complete
@@ -424,27 +419,14 @@ const BookingTable: React.FC<BookingTableProps> = ({
                           <Star className="w-3.5 h-3.5 mr-1" /> Review
                         </button>
                       )}
-                      <Link to={`/product/${booking.productId}`} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
-                        <span className="sr-only">Detail</span><ChevronRight className="w-4 h-4" />
+                      <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
+                          <span className="sr-only">Details</span> <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
                   </td>
                 </tr>
               );
             })}
-=======
-                        )}
-
-                        <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
-                          <span className="sr-only">Details</span> <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
->>>>>>> 4ae7d1903187b83b40daf55dff4a630a199750c8
           </tbody>
         </table>
       </div>
