@@ -1,11 +1,7 @@
-// components/BannerSlider.tsx
-// Full-width banner (1010x298 ratio) dengan overlay info dinamis
-// Navigasi prev/next/dots di pojok kanan bawah — tidak overlap konten utama
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Sparkles, Zap, Tag, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { type PromoCampaign, resolveBannerUrl } from '../services/promoService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -98,6 +94,27 @@ function injectStyles() {
       background-size: 200% 100%;
       animation: edgeSweep 3.4s linear infinite reverse;
     }
+    .nav-btn-side {
+      transition: opacity 0.2s ease, background 0.2s ease;
+      opacity: 0;
+    }
+    .banner-container:hover .nav-btn-side {
+      opacity: 1;
+    }
+    .nav-btn-side > span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.2s ease;
+    }
+    .nav-btn-side:hover > span {
+      transform: scale(1.15);
+    }
+    .nav-btn-side:active > span {
+      transform: scale(0.88);
+    }
   `;
   document.head.appendChild(style);
 }
@@ -122,6 +139,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
   const [current, setCurrent]     = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [paused, setPaused]       = useState(false);
+  const navigate                  = useNavigate();
 
   useEffect(() => { injectStyles(); }, []);
 
@@ -133,15 +151,22 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
     onSlideChange?.(idx);
   }, [onSlideChange]);
 
-  const prev = () => go_to((current - 1 + active.length) % active.length, -1);
+  const prev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    go_to((current - 1 + active.length) % active.length, -1);
+  };
+
   const next = useCallback(
-    () => go_to((current + 1) % active.length, 1),
+    (e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      go_to((current + 1) % active.length, 1);
+    },
     [current, active.length, go_to],
   );
 
   useEffect(() => {
     if (!autoplay || paused || active.length <= 1) return;
-    const t = setTimeout(next, autoplay_interval);
+    const t = setTimeout(() => next(), autoplay_interval);
     return () => clearTimeout(t);
   }, [autoplay, paused, active.length, next, autoplay_interval]);
 
@@ -154,7 +179,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
 
   return (
     <div
-      className="relative w-full select-none rounded-2xl overflow-hidden banner-border-glow"
+      className="relative w-full select-none rounded-2xl overflow-hidden banner-border-glow banner-container"
       style={{ aspectRatio: '1010 / 298' }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -165,7 +190,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
       {/* ── Animated gold bottom edge ──────────────────────────────────── */}
       <div className="banner-bottom-line absolute bottom-0 left-0 w-full h-[2px] z-20 pointer-events-none" />
 
-      {/* ══ LAYER 1: Banner image ══════════════════════════════════════════ */}
+      {/* ══ LAYER 1: Banner image — CLICKABLE ═════════════════════════════ */}
       <AnimatePresence initial={false} custom={direction} mode="popLayout">
         <motion.div
           key={`banner-${c.id}`}
@@ -175,7 +200,9 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
           animate="center"
           exit="exit"
           transition={slideTransition}
-          className="absolute inset-0"
+          className="absolute inset-0 cursor-pointer"
+          onClick={() => navigate('/explore')}
+          title="Lihat semua promo"
         >
           {hasBanner ? (
             <img
@@ -189,7 +216,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* ══ LAYER 2: Left-to-right dark gradient — teks selalu terbaca ════ */}
+      {/* ══ LAYER 2: Left-to-right dark gradient ══════════════════════════ */}
       <div
         className="absolute inset-0 pointer-events-none z-[1]"
         style={{
@@ -272,6 +299,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
       <div className="absolute bottom-3 left-6 md:bottom-4 md:left-10 pointer-events-auto z-[3]">
         <Link
           to="/explore"
+          onClick={e => e.stopPropagation()}
           className="inline-flex items-center gap-1.5 bg-white text-gray-900 font-bold text-xs px-4 py-2 rounded-lg hover:bg-primary-50 hover:text-primary-700 transition-all shadow-lg active:scale-95 group"
         >
           Lihat Promo
@@ -279,38 +307,43 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </Link>
       </div>
 
-      {/* ══ LAYER 5: Navigasi — pojok KANAN BAWAH ════════════════════════ */}
+      {/* ══ LAYER 5: Navigasi — sisi KIRI & KANAN banner ═════════════════ */}
       {active.length > 1 && (
-        <div className="absolute bottom-3 right-4 md:bottom-4 md:right-6 flex items-center gap-2 pointer-events-auto z-[3]">
+        <>
+          {/* Tombol KIRI */}
           <button
             onClick={prev}
-            className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all active:scale-90"
+            className="nav-btn-side absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/25 text-white hover:bg-black/60 z-[3] shadow-lg overflow-hidden"
+            style={{ transform: 'translateY(-50%)' }}
             aria-label="Previous"
           >
-            <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span><ChevronLeft className="w-4 h-4 md:w-5 md:h-5" /></span>
           </button>
 
-          <div className="flex gap-1">
+          {/* Tombol KANAN */}
+          <button
+            onClick={next}
+            className="nav-btn-side absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/25 text-white hover:bg-black/60 z-[3] shadow-lg overflow-hidden"
+            style={{ transform: 'translateY(-50%)' }}
+            aria-label="Next"
+          >
+            <span><ChevronRight className="w-4 h-4 md:w-5 md:h-5" /></span>
+          </button>
+
+          {/* Dots — tengah bawah */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-auto z-[3]">
             {active.map((_, i) => (
               <button
                 key={i}
-                onClick={() => go_to(i, i > current ? 1 : -1)}
+                onClick={e => { e.stopPropagation(); go_to(i, i > current ? 1 : -1); }}
                 aria-label={`Slide ${i + 1}`}
-                className={`h-1 rounded-full transition-all duration-300 ${
+                className={`h-1.5 rounded-full transition-all duration-300 ${
                   i === current ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
                 }`}
               />
             ))}
           </div>
-
-          <button
-            onClick={next}
-            className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all active:scale-90"
-            aria-label="Next"
-          >
-            <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          </button>
-        </div>
+        </>
       )}
 
       {/* ══ LAYER 6: Progress bar ════════════════════════════════════════ */}

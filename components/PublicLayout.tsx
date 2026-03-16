@@ -396,52 +396,46 @@ const PublicLayout: React.FC = () => {
           </div>
 
           {/* ── Payment Methods Section ────────────────────────────────────── */}
-          <div className="border-t border-gray-800 pt-6 pb-4">
+          <div className="border-t border-gray-800 pt-8 pb-6">
+            <div className="bg-white rounded-2xl px-6 py-5">
+              <div className="flex flex-wrap gap-3 items-center">
 
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <DokuLogo />
-                <span className="text-xs text-gray-400 font-medium">
-                  Secured payments by DOKU
-                </span>
+                {/* ── Bank ── */}
+                <img src="/payment_service/bca.png"     alt="BCA"          className="h-7 w-auto object-contain" />
+                <img src="/payment_service/bni.png"     alt="BNI"          className="h-7 w-auto object-contain" />
+                <img src="/payment_service/bri.png"     alt="BRI"          className="h-7 w-auto object-contain" />
+                <img src="/payment_service/mandiri.png" alt="Mandiri"      className="h-7 w-auto object-contain" />
+                <img src="/payment_service/permata.png" alt="Permata Bank" className="h-7 w-auto object-contain" />
+                <img src="/payment_service/cimb.png"    alt="CIMB Niaga"   className="h-7 w-auto object-contain" />
+                <img src="/payment_service/danamon.png" alt="Danamon"      className="h-7 w-auto object-contain" />
+
+                <div className="w-px h-6 bg-gray-200 mx-1" />
+
+                {/* ── Kartu ── */}
+                <img src="/payment_service/visa.png"       alt="Visa"       className="h-6 w-auto object-contain" />
+                <img src="/payment_service/mastercard.jpg" alt="Mastercard" className="h-8 w-auto object-contain" />
+
+                <div className="w-px h-6 bg-gray-200 mx-1" />
+
+                {/* ── Dompet Digital ── */}
+                <img src="/payment_service/gopay.png"     alt="GoPay"     className="h-7 w-auto object-contain" />
+                <img src="/payment_service/ovo.png"       alt="OVO"       className="h-6 w-auto object-contain" />
+                <img src="/payment_service/dana.png"      alt="Dana"      className="h-7 w-auto object-contain" />
+                <img src="/payment_service/shopeepay.png" alt="ShopeePay" className="h-6 w-auto object-contain" />
+
+                <div className="w-px h-6 bg-gray-200 mx-1" />
+
+                {/* ── Minimarket ── */}
+                <img src="/payment_service/alfamart.png"  alt="Alfamart"  className="h-7 w-auto object-contain" />
+                <img src="/payment_service/indomaret.png" alt="Indomaret" className="h-7 w-auto object-contain" />
+
+                {/* ── Separator + DOKU di paling kanan/bawah ── */}
+                <div className="w-px h-6 bg-gray-200 mx-1" />
+                <img src="/payment_service/doku.png" alt="DOKU" className="h-7 w-auto object-contain" />
+                <span className="text-xs text-gray-400 font-medium">Secured by DOKU</span>
+
               </div>
             </div>
-
-            {/* Payment Logos - Menggunakan SVG components yang sudah ada */}
-            <div className="grid grid-cols-6 md:grid-cols-12 gap-3 items-center opacity-90">
-              
-              {/* Bank */}
-              <BCALogo />
-              <BNILogo />
-              <BRILogo />
-              <MandiriLogo />
-              <PermataLogo />
-              <CIMBLogo />
-              <DanamonLogo />
-
-              {/* Cards */}
-              <VisaLogo />
-              <MastercardLogo />
-              <JCBLogo />
-
-              {/* Wallet */}
-              <GopayLogo />
-              <OvoLogo />
-              <DanaLogo />
-
-              {/* Others */}
-              <ShopeePayLogo />
-              <LinkAjaLogo />
-              <QrisLogo />
-              <AlfamartLogo />
-              <IndomaretLogo />
-              
-              {/* Placeholder untuk grid yang kosong */}
-              <div className="hidden md:block"></div>
-              <div className="hidden md:block"></div>
-            </div>
-
           </div>
 
           {/* Bottom bar */}
