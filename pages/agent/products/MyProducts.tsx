@@ -1,3 +1,4 @@
+// pages/agent/products/MyProducts.tsx
 import { Image as ImageIcon, Plus } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -5,55 +6,50 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../AuthContext';
 import { useToast } from '../../../components/ToastContext';
 
-// ✅ pakai API service
 import { agentProductService } from '../../../services/agentProductService';
+import { promoService, type PromoCampaign } from '../../../services/promoService';
+import http from '../../../services/http';
 
-// campaign masih mock (sementara)
-import { mockService } from '../../../services/mockService';
-
-import { AgentProduct, FlashSaleCampaign, Product } from '../../../types';
+import { AgentProduct } from '../../../types';
 
 import CampaignsStrip from '../components/CampaignStrip';
 import FlashSaleModal from '../components/FlashSaleModal';
 import ProductCard from '../components/ProductCard';
 import { getAddLabel } from '../utils/labels';
 
-const AgentProducts: React.FC = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MyProducts: React.FC = () => {
+  const { user }      = useAuth();
+  const navigate      = useNavigate();
   const { showToast } = useToast();
 
-  const [products, setProducts] = useState<AgentProduct[]>([]);
-  const [campaigns, setCampaigns] = useState<FlashSaleCampaign[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products,   setProducts]   = useState<AgentProduct[]>([]);
+  const [campaigns,  setCampaigns]  = useState<PromoCampaign[]>([]);
+  const [isLoading,  setIsLoading]  = useState(true);
 
-  // modal state
-  const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedCampaign, setSelectedCampaign] = useState<FlashSaleCampaign | null>(null);
-  const [isJoiningCampaign, setIsJoiningCampaign] = useState(false);
-
-  // modal fields
+  // ── Modal state ──────────────────────────────────────────────────────────
+  const [showModal,          setShowModal]          = useState(false);
+  const [selectedProduct,    setSelectedProduct]    = useState<AgentProduct | null>(null);
+  const [selectedCampaign,   setSelectedCampaign]   = useState<PromoCampaign | null>(null);
+  const [isJoiningCampaign,  setIsJoiningCampaign]  = useState(false);
+  const [productToJoinId,    setProductToJoinId]    = useState<number | ''>('');
   const [discountPercentage, setDiscountPercentage] = useState('');
-  const [productToJoinId, setProductToJoinId] = useState<number | ''>('');
+  const [isSubmitting,       setIsSubmitting]       = useState(false);
 
-  // const eligibleProducts = useMemo(() => products.filter((p) => !p.flashSale), [products]);
-
+  // ── Load data ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (user) loadData();
   }, [user?.id]);
 
   const loadData = async () => {
     if (!user) return;
-
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-
       const [prodData, campaignData] = await Promise.all([
         agentProductService.getMyProducts(),
-        mockService.getCampaigns(),
+        promoService.getActiveCampaigns().catch(() => [] as PromoCampaign[]),
       ]);
-
       setProducts(prodData);
       setCampaigns(campaignData);
     } catch (e: any) {
@@ -65,82 +61,64 @@ const AgentProducts: React.FC = () => {
     }
   };
 
+  // ── Toggle aktif/nonaktif ────────────────────────────────────────────────
   const handleToggleStatus = async (id: number) => {
-    const product = products.find((p) => p.id === id);
+    const product = products.find(p => p.id === id);
     if (!product) return;
-
     const newStatus = !product.is_active;
-
-    // Optimistik update UI dulu
-    setProducts((cur) =>
-      cur.map((p) => (p.id === id ? { ...p, is_active: newStatus } : p))
-    );
-
+    setProducts(cur => cur.map(p => p.id === id ? { ...p, is_active: newStatus } : p));
     try {
       await agentProductService.updateProductStatus(id, newStatus);
       showToast(`Product ${newStatus ? 'enabled' : 'disabled'}`, 'success');
     } catch (e: any) {
       console.error(e);
       showToast(e?.message || 'Failed to update status', 'error');
-      // Rollback jika gagal
-      setProducts((cur) =>
-        cur.map((p) => (p.id === id ? { ...p, is_active: !newStatus } : p))
-      );
+      setProducts(cur => cur.map(p => p.id === id ? { ...p, is_active: !newStatus } : p));
     }
   };
 
+  // ── Hapus produk ─────────────────────────────────────────────────────────
   const handleDelete = async (id: number) => {
-    if (
-      !window.confirm('Are you sure you want to delete this product? This action cannot be undone.')
-    )
-      return;
-
-    // optimistik: langsung remove dari UI
+    if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
     const prev = products;
-    setProducts((cur) => cur.filter((p) => p.id !== id));
-
+    setProducts(cur => cur.filter(p => p.id !== id));
     try {
       await agentProductService.deleteProduct(id);
       showToast('Product deleted', 'success');
-
       await loadData();
     } catch (e: any) {
       console.error(e);
       showToast(e?.message || 'Failed to delete product', 'error');
-
-      // rollback kalau gagal
       setProducts(prev);
     }
   };
 
-  const openFlashSaleModal = (product: Product, campaign?: FlashSaleCampaign) => {
+  // ── Buka modal dari ProductCard ──────────────────────────────────────────
+  const openFlashSaleModal = (product: AgentProduct, campaign?: PromoCampaign) => {
     setSelectedProduct(product);
-
-    if (campaign) {
-      setSelectedCampaign(campaign);
-      setIsJoiningCampaign(true);
-    } else {
-      setSelectedCampaign(null);
-      setIsJoiningCampaign(false);
-    }
-
+    setSelectedCampaign(campaign ?? null);
+    setIsJoiningCampaign(false);
     setProductToJoinId('');
-    setDiscountPercentage('10');
-    setShowFlashSaleModal(true);
+    setDiscountPercentage(
+      campaign?.discount_type === 'percent' ? String(campaign.discount_value) : '10'
+    );
+    setShowModal(true);
   };
 
-  const openCampaignJoinModal = (campaign: FlashSaleCampaign) => {
+  // ── Buka modal dari CampaignsStrip ───────────────────────────────────────
+  const openCampaignJoinModal = (campaign: PromoCampaign) => {
     setSelectedCampaign(campaign);
-    setIsJoiningCampaign(true);
-
     setSelectedProduct(null);
+    setIsJoiningCampaign(true);
     setProductToJoinId('');
-    setDiscountPercentage('');
-    setShowFlashSaleModal(true);
+    setDiscountPercentage(
+      campaign.discount_type === 'percent' ? String(campaign.discount_value) : ''
+    );
+    setShowModal(true);
   };
 
   const closeModal = () => {
-    setShowFlashSaleModal(false);
+    setShowModal(false);
     setSelectedProduct(null);
     setSelectedCampaign(null);
     setIsJoiningCampaign(false);
@@ -148,36 +126,66 @@ const AgentProducts: React.FC = () => {
     setProductToJoinId('');
   };
 
+  // ── Submit join campaign ─────────────────────────────────────────────────
   const submitFlashSale = async () => {
     const targetProduct = isJoiningCampaign
-      ? products.find((p) => p.id === Number(productToJoinId))
+      ? products.find(p => p.id === Number(productToJoinId))
       : selectedProduct;
 
-    if (!targetProduct) return;
-
-    const percentage = Number(discountPercentage);
-    if (!Number.isFinite(percentage) || percentage <= 0 || percentage >= 100) {
-      showToast('Invalid discount percentage', 'error');
+    if (!targetProduct) {
+      showToast('Pilih produk terlebih dahulu', 'error');
       return;
     }
 
-    if (selectedCampaign && percentage < selectedCampaign.minDiscount) {
-      showToast(`Campaign requires minimum ${selectedCampaign.minDiscount}% discount.`, 'error');
+    const pct = Number(discountPercentage);
+    if (!Number.isFinite(pct) || pct <= 0 || pct >= 100) {
+      showToast('Invalid discount percentage (1–99%)', 'error');
       return;
     }
 
-    const calculatedSalePrice = Math.round(targetProduct.price * (1 - percentage / 100));
+    const minDiscount = selectedCampaign?.discount_type === 'percent'
+      ? selectedCampaign.discount_value
+      : 0;
 
-    await mockService.requestFlashSale(targetProduct.id, calculatedSalePrice, selectedCampaign?.id);
+    if (minDiscount > 0 && pct < minDiscount) {
+      showToast(`Campaign requires minimum ${minDiscount}% discount`, 'error');
+      return;
+    }
 
-    showToast('Request submitted successfully!', 'success');
-    closeModal();
-    await loadData();
+    setIsSubmitting(true);
+    try {
+      const salePrice = Math.round(Number(targetProduct.price) * (1 - pct / 100));
+
+      if (selectedCampaign) {
+        await http.post(`/promo-campaigns/${selectedCampaign.id}/join`, {
+          product_id:   targetProduct.id,
+          discount_pct: pct,
+          sale_price:   salePrice,
+        });
+      } else {
+        await http.post('/promo-campaigns/flash-sale', {
+          product_id:   targetProduct.id,
+          discount_pct: pct,
+          sale_price:   salePrice,
+        });
+      }
+
+      showToast('Request submitted successfully!', 'success');
+      closeModal();
+      await loadData();
+    } catch (e: any) {
+      console.error(e);
+      showToast(e?.response?.data?.message || e?.message || 'Failed to submit', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-20">
-      {/* Active Campaigns */}
+
+      {/* Campaign Strip */}
       {campaigns.length > 0 && (
         <CampaignsStrip campaigns={campaigns} onJoinCampaign={openCampaignJoinModal} />
       )}
@@ -188,7 +196,6 @@ const AgentProducts: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">My Listings</h2>
           <p className="text-gray-500 text-sm">Manage availability, pricing, and details.</p>
         </div>
-
         <Link
           to="/agent/products/new"
           className="flex items-center px-5 py-3 bg-primary-600 text-white rounded-xl font-bold shadow-lg shadow-primary-600/20 hover:bg-primary-700 transition-all hover:-translate-y-0.5"
@@ -201,7 +208,7 @@ const AgentProducts: React.FC = () => {
       {/* Body */}
       {isLoading ? (
         <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3].map(i => (
             <div key={i} className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
           ))}
         </div>
@@ -212,8 +219,7 @@ const AgentProducts: React.FC = () => {
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Empty Listing</h3>
           <p className="text-gray-500 mb-8 max-w-md mx-auto">
-            You haven&apos;t listed any services yet. Start adding your first product to reach
-            thousands of travelers.
+            You haven't listed any services yet. Start adding your first product to reach thousands of travelers.
           </p>
           <Link
             to="/agent/products/new"
@@ -224,13 +230,13 @@ const AgentProducts: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {products.map((product) => (
+          {products.map(product => (
             <ProductCard
               key={product.id}
               product={product}
               onToggleStatus={() => handleToggleStatus(product.id)}
               onDelete={() => handleDelete(product.id)}
-              onJoinFlashSale={() => openFlashSaleModal(null)}
+              onJoinFlashSale={() => openFlashSaleModal(product)}
               onNavigateEdit={() => navigate(`/agent/products/edit/${product.id}`)}
             />
           ))}
@@ -238,24 +244,25 @@ const AgentProducts: React.FC = () => {
       )}
 
       {/* Modal */}
-      {showFlashSaleModal && (
+      {showModal && (
         <FlashSaleModal
-          open={showFlashSaleModal}
+          open={showModal}
           onClose={closeModal}
           campaigns={campaigns}
           selectedCampaign={selectedCampaign}
           selectedProduct={selectedProduct}
-          eligibleProducts={null}
+          eligibleProducts={isJoiningCampaign ? products : null}
           isJoiningCampaign={isJoiningCampaign}
           productToJoinId={productToJoinId}
           setProductToJoinId={setProductToJoinId}
           discountPercentage={discountPercentage}
           setDiscountPercentage={setDiscountPercentage}
           onSubmit={submitFlashSale}
+          isSubmitting={isSubmitting}
         />
       )}
     </div>
   );
 };
 
-export default AgentProducts;
+export default MyProducts;
