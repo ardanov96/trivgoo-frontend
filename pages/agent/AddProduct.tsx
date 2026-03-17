@@ -9,6 +9,7 @@ import {
   MapPin,
   Plus,
   ShieldAlert,
+  Tag,
   Trash,
   Upload,
   User,
@@ -22,12 +23,12 @@ import { useAuth } from "../../AuthContext";
 import { agentProductService } from "../../services/agentProductService";
 import { mediaService } from "../../services/mediaService";
 import http from "../../services/http";
+import VoucherSelector from "../../components/VoucherSelector";
 
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix Leaflet default marker icon (known issue with bundlers)
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
@@ -86,11 +87,9 @@ const AgentAddProduct: React.FC = () => {
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
-  // ── useRef untuk menghindari stale closure di handleSubmit ──
   const galleryItemsRef = useRef<GalleryItem[]>([]);
   const coverStateRef = useRef<CoverState>(null);
   const markerPosRef = useRef<LatLng | null>(null);
-  // ────────────────────────────────────────────────────────────
 
   const [formData, setFormData] = useState({
     name: "",
@@ -106,6 +105,10 @@ const AgentAddProduct: React.FC = () => {
     blockedDates: [] as string[],
   });
 
+  // ── NEW: Voucher state ───────────────────────────────────────────────────
+  const [selectedVoucherIds, setSelectedVoucherIds] = useState<number[]>([]);
+  // ────────────────────────────────────────────────────────────────────────
+
   const [mapCenter, setMapCenter] = useState<LatLng>(DEFAULT_CENTER);
   const [markerPos, setMarkerPos] = useState<LatLng | null>(null);
   const [coverState, setCoverState] = useState<CoverState>(null);
@@ -115,10 +118,7 @@ const AgentAddProduct: React.FC = () => {
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, "");
-    setFormData((prev) => ({
-      ...prev,
-      price: raw,
-    }));
+    setFormData((prev) => ({ ...prev, price: raw }));
   };
 
   const [tourDetails, setTourDetails] = useState({
@@ -160,29 +160,22 @@ const AgentAddProduct: React.FC = () => {
   const [carList, setCarList] = useState<any[]>([]);
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
 
-  // ── Sync state → ref setiap kali state berubah ──────────────
   useEffect(() => { galleryItemsRef.current = galleryItems; }, [galleryItems]);
   useEffect(() => { coverStateRef.current = coverState; }, [coverState]);
   useEffect(() => { markerPosRef.current = markerPos; }, [markerPos]);
-  // ────────────────────────────────────────────────────────────
 
-  // ── FIX: Helper untuk set marker position dan sync ref sekaligus ──
   const setMarkerAndRef = useCallback((pos: LatLng | null) => {
     setMarkerPos(pos);
-    markerPosRef.current = pos; // langsung update ref, tidak menunggu effect
+    markerPosRef.current = pos;
   }, []);
-  // ─────────────────────────────────────────────────────────────────
 
-  // ensure marker gets initialized and updated when coordinates change
   useEffect(() => {
     const hasLatLng =
       Number.isFinite(formData.lat) && Number.isFinite(formData.lng) &&
       (formData.lat !== 0 || formData.lng !== 0);
-
     if (hasLatLng) {
       const pos = { lat: formData.lat, lng: formData.lng };
-      console.debug('[MARKER EFFECT] Updating marker from formData:', pos);
-      setMarkerAndRef(pos); // ← gunakan helper agar ref langsung terupdate
+      setMarkerAndRef(pos);
       setMapCenter(pos);
     }
   }, [formData.lat, formData.lng, setMarkerAndRef]);
@@ -191,7 +184,6 @@ const AgentAddProduct: React.FC = () => {
   const isStay = user?.specialization === AgentSpecialization.STAY;
   const isTransport = user?.specialization === AgentSpecialization.TRANSPORT;
 
-  // ── MEDIA HANDLERS ──────────────────────────────────────────
   const openCoverPicker = () => coverInputRef.current?.click();
   const openGalleryPicker = () => galleryInputRef.current?.click();
 
@@ -226,7 +218,6 @@ const AgentAddProduct: React.FC = () => {
       return prev.filter((_, i) => i !== index);
     });
   };
-  // ────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -241,14 +232,11 @@ const AgentAddProduct: React.FC = () => {
 
   const renderSubCategories = () => {
     const enumTourValues = Object.values(TourCategory);
-
     const tourExperienceTags = [
       "Family", "Honeymoon", "Solo Travel", "Healing",
       "Workation", "Adventure", "Cultural", "Culinary", "Eco Tourism"
     ];
-
     const tourOptions = Array.from(new Set([...enumTourValues, ...tourExperienceTags]));
-
     const options = isTour
       ? tourOptions
       : isStay
@@ -265,10 +253,11 @@ const AgentAddProduct: React.FC = () => {
                 key={opt}
                 type="button"
                 onClick={() => setSelectedSubCategory(opt)}
-                className={`group relative p-3 rounded-xl border-2 flex items-center justify-center text-center font-semibold text-xs transition-all duration-300 transform active:scale-95 ${isSelected
-                  ? "border-primary-600 bg-primary-50 text-primary-700 shadow-md ring-2 ring-primary-500/10"
-                  : "border-gray-100 hover:border-primary-200 bg-white text-gray-600 hover:text-primary-600 shadow-sm"
-                  }`}
+                className={`group relative p-3 rounded-xl border-2 flex items-center justify-center text-center font-semibold text-xs transition-all duration-300 transform active:scale-95 ${
+                  isSelected
+                    ? "border-primary-600 bg-primary-50 text-primary-700 shadow-md ring-2 ring-primary-500/10"
+                    : "border-gray-100 hover:border-primary-200 bg-white text-gray-600 hover:text-primary-600 shadow-sm"
+                }`}
               >
                 {opt}
                 {isSelected && (
@@ -290,7 +279,7 @@ const AgentAddProduct: React.FC = () => {
       if (user.specialization === AgentSpecialization.STAY) setSelectedSubCategory(StayCategory.HOTEL);
       if (user.specialization === AgentSpecialization.TRANSPORT) setSelectedSubCategory(TransportCategory.CAR_RENTAL);
       if (!markerPos) {
-        setMarkerAndRef(DEFAULT_CENTER); // ← gunakan helper
+        setMarkerAndRef(DEFAULT_CENTER);
         setMapCenter(DEFAULT_CENTER);
       }
     }
@@ -302,21 +291,11 @@ const AgentAddProduct: React.FC = () => {
           const product: AgentProduct = await agentProductService.getMyProduct(Number(id));
 
           if (product && product.owner_id === user?.id) {
-            console.debug("[LOAD PRODUCT] Full product:", product);
-            console.debug("[LOAD PRODUCT] Raw coords - lat:", product.lat, "(type:", typeof product.lat + ")", "lng:", product.lng, "(type:", typeof product.lng + ")");
-
-            if (product.car_id) {
-              setSelectedCarId(product.car_id);
-            }
+            if (product.car_id) setSelectedCarId(product.car_id);
 
             const prodLat = Number(product.lat) || 0;
             const prodLng = Number(product.lng) || 0;
             const coordsValid = Number.isFinite(prodLat) && Number.isFinite(prodLng) && (prodLat !== 0 || prodLng !== 0);
-            console.debug('[LOAD PRODUCT] Parsed coords - lat:', prodLat, 'lng:', prodLng, 'valid:', coordsValid);
-
-            if (!coordsValid) {
-              console.warn('[LOAD PRODUCT] ⚠️ WARNING: Coordinates are invalid or zero!', { lat: prodLat, lng: prodLng });
-            }
 
             setFormData({
               name: product.name,
@@ -332,20 +311,14 @@ const AgentAddProduct: React.FC = () => {
               lng: prodLng,
             });
 
-            // ── FIX UTAMA: Set marker dan ref LANGSUNG saat data di-load ──
-            // Tidak mengandalkan useEffect async agar handleSubmit
-            // selalu dapat marker yang valid meski tanpa interaksi map.
             if (coordsValid) {
               const pos = { lat: prodLat, lng: prodLng };
-              console.debug('[LOAD PRODUCT] Setting marker & ref directly:', pos);
               setMarkerPos(pos);
               setMapCenter(pos);
-              markerPosRef.current = pos; // ← KEY FIX: langsung update ref
+              markerPosRef.current = pos;
             }
-            // ─────────────────────────────────────────────────────────────
 
             if (coordsValid && (!product.location || product.location.trim() === '')) {
-              console.debug('[LOAD PRODUCT] Auto-fetching location from coordinates');
               reverseGeocode({ lat: prodLat, lng: prodLng });
             }
 
@@ -358,6 +331,16 @@ const AgentAddProduct: React.FC = () => {
                 url: img.url,
               }))
             );
+
+            // ── NEW: Load voucher yang sudah terlampir ke product ini ────
+            if (Array.isArray((product as any).vouchers)) {
+              setSelectedVoucherIds(
+                (product as any).vouchers
+                  .map((v: any) => Number(v.id))
+                  .filter(Boolean)
+              );
+            }
+            // ─────────────────────────────────────────────────────────────
 
             if (product.details) {
               if (product.details.type === "tour") {
@@ -411,7 +394,6 @@ const AgentAddProduct: React.FC = () => {
     const loadCars = async () => {
       try {
         const res = await http.get<any>('/cars');
-        console.debug('car fetch response', res);
         const list = res.data && res.data.data ? res.data.data : [];
         setCarList(Array.isArray(list) ? list : []);
       } catch (err) {
@@ -419,10 +401,7 @@ const AgentAddProduct: React.FC = () => {
         setCarList([]);
       }
     };
-
-    if (user?.specialization === AgentSpecialization.TRANSPORT) {
-      loadCars();
-    }
+    if (user?.specialization === AgentSpecialization.TRANSPORT) loadCars();
   }, [user?.specialization]);
 
   const handleCarSelect = (carId: number) => {
@@ -454,29 +433,15 @@ const AgentAddProduct: React.FC = () => {
       const data = await response.json();
       if (data && data.length > 0) {
         const result = data[0];
-        const pos = {
-          lat: parseFloat(result.lat),
-          lng: parseFloat(result.lon),
-        };
+        const pos = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
         setMarkerAndRef(pos);
         setMapCenter(pos);
         setFormData((prev) => ({ ...prev, location: result.display_name }));
       } else {
-        Swal.fire({
-          title: 'Location not found',
-          text: 'Please try a different search query',
-          icon: 'warning',
-          confirmButtonColor: '#0f172a',
-        });
+        Swal.fire({ title: 'Location not found', text: 'Please try a different search query', icon: 'warning', confirmButtonColor: '#0f172a' });
       }
     } catch (err) {
       console.error("Search error", err);
-      Swal.fire({
-        title: 'Search failed',
-        text: 'An error occurred while searching',
-        icon: 'error',
-        confirmButtonColor: '#0f172a',
-      });
     }
   };
 
@@ -495,7 +460,6 @@ const AgentAddProduct: React.FC = () => {
     }
   };
 
-  // ── Early return untuk user yang belum verified ──────────────
   if (user?.verification_status !== VerificationStatus.VERIFIED) {
     return (
       <div className="max-w-2xl mx-auto py-20 text-center">
@@ -517,7 +481,6 @@ const AgentAddProduct: React.FC = () => {
       </div>
     );
   }
-  // ────────────────────────────────────────────────────────────
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -545,7 +508,8 @@ const AgentAddProduct: React.FC = () => {
     });
   };
 
-  const addListItem = (setter: any, list: string[], field: string) => setter((prev: any) => ({ ...prev, [field]: [...list, ""] }));
+  const addListItem = (setter: any, list: string[], field: string) =>
+    setter((prev: any) => ({ ...prev, [field]: [...list, ""] }));
   const removeListItem = (setter: any, list: string[], field: string, index: number) =>
     setter((prev: any) => ({ ...prev, [field]: list.filter((_, i) => i !== index) }));
 
@@ -634,9 +598,7 @@ const AgentAddProduct: React.FC = () => {
         year: Number(carDetails.year),
         requirements: [],
       };
-      if (selectedCarId) {
-        details.car_id = selectedCarId;
-      }
+      if (selectedCarId) details.car_id = selectedCarId;
       return details;
     }
     return undefined;
@@ -668,20 +630,10 @@ const AgentAddProduct: React.FC = () => {
       .filter((x): x is { kind: "file"; file: File; preview: string } => x.kind === "file")
       .map((x) => x.file);
 
-    console.log('[DEBUG] coverFile:', coverFile?.name);
-    console.log('[DEBUG] galleryFiles count:', galleryFiles.length);
-
     const [uploadedCoverUrl, uploadedGalleryUrls] = await Promise.all([
-      coverFile
-        ? mediaService.uploadOne(coverFile, MEDIA_PURPOSE)
-        : Promise.resolve(""),
-      galleryFiles.length
-        ? mediaService.uploadMany(galleryFiles, MEDIA_PURPOSE)
-        : Promise.resolve([] as string[]),
+      coverFile ? mediaService.uploadOne(coverFile, MEDIA_PURPOSE) : Promise.resolve(""),
+      galleryFiles.length ? mediaService.uploadMany(galleryFiles, MEDIA_PURPOSE) : Promise.resolve([] as string[]),
     ]);
-
-    console.log('[DEBUG] uploadedCoverUrl:', uploadedCoverUrl);
-    console.log('[DEBUG] uploadedGalleryUrls:', uploadedGalleryUrls);
 
     return { uploadedCoverUrl, uploadedGalleryUrls };
   };
@@ -690,25 +642,13 @@ const AgentAddProduct: React.FC = () => {
     e.preventDefault();
     if (!user) return;
 
-    // ── FIX: Baca dari ref (selalu up-to-date, bebas stale closure) ──
     const currentMarker = markerPosRef.current;
     const formDataValid =
       Number.isFinite(formData.lat) && Number.isFinite(formData.lng) &&
       (formData.lat !== 0 || formData.lng !== 0);
-
-    // Prioritas: ref → formData coords (fallback edit mode)
-    const finalMarkerPos = currentMarker
-      || (formDataValid ? { lat: formData.lat, lng: formData.lng } : null);
-    // ────────────────────────────────────────────────────────────────
-
-    console.warn('[SUBMIT] ⚠️ VALIDATION CHECK:');
-    console.log('  markerPosRef.current:', currentMarker);
-    console.log('  formData.lat:', formData.lat, '| formData.lng:', formData.lng);
-    console.log('  formDataValid:', formDataValid);
-    console.log('  finalMarkerPos:', finalMarkerPos);
+    const finalMarkerPos = currentMarker || (formDataValid ? { lat: formData.lat, lng: formData.lng } : null);
 
     if (!finalMarkerPos) {
-      console.error('[SUBMIT] ❌ BLOCKING SUBMIT - No valid marker position found');
       await Swal.fire({
         title: 'Location Required',
         text: 'Please set location marker on the map',
@@ -750,9 +690,6 @@ const AgentAddProduct: React.FC = () => {
       const finalCoverUrl = uploadedCoverUrl || existingCoverUrl;
       const finalGalleryUrls = uniq([...existingGalleryUrls, ...(uploadedGalleryUrls || [])]);
 
-      console.log('[DEBUG] finalCoverUrl:', finalCoverUrl);
-      console.log('[DEBUG] finalGalleryUrls:', finalGalleryUrls);
-
       const payload: AgentProductPayload = {
         category_id: categoryId,
         name: formData.name,
@@ -768,21 +705,33 @@ const AgentAddProduct: React.FC = () => {
         blocked_dates: formData.blockedDates,
         lat: finalMarkerPos.lat,
         lng: finalMarkerPos.lng,
-      };
+      } as any;
 
       if (isTransport) {
         payload.image_url = carList.find((c) => c.id === selectedCarId)?.image || payload.image_url;
         payload.images = [];
-        if (selectedCarId) {
-          (payload as any).car_id = selectedCarId;
-        }
+        if (selectedCarId) (payload as any).car_id = selectedCarId;
       }
 
+      let savedProductId: number;
       if (isEditMode && id) {
-        await agentProductService.updateProduct(Number(id), payload);
+        const updated = await agentProductService.updateProduct(Number(id), payload);
+        savedProductId = updated.id;
       } else {
-        await agentProductService.createProduct(payload);
+        const created = await agentProductService.createProduct(payload);
+        savedProductId = created.id;
       }
+
+      // ── NEW: Simpan relasi voucher ke endpoint khusus ──────────────
+      if (savedProductId) {
+        try {
+          await agentProductService.setProductVouchers(savedProductId, selectedVoucherIds);
+        } catch (voucherErr) {
+          console.warn('[VOUCHER] Gagal menyimpan voucher relasi:', voucherErr);
+          // Tidak memblokir sukses utama — cukup warn
+        }
+      }
+      // ──────────────────────────────────────────────────────────────
 
       await Swal.fire({
         title: 'Success!',
@@ -795,7 +744,15 @@ const AgentAddProduct: React.FC = () => {
 
       navigate("/agent/products");
     } catch (error) {
-      console.error(error);
+      console.error('[SUBMIT ERROR]', error);
+
+      // Tampilkan pesan error asli dari backend
+      const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      'Something went wrong while saving the product.';
+
       Swal.fire({
         title: 'Error!',
         text: 'Something went wrong while saving the product.',
@@ -906,20 +863,18 @@ const AgentAddProduct: React.FC = () => {
                       />
                     </div>
                     <div className="px-4 py-3 text-[11px] text-gray-500 flex items-center justify-between">
-                      <span>Search location or click map to set marker. Drag marker to adjust position.</span>
+                      <span>Search location or click map to set marker.</span>
                       <span className="font-mono">{markerPos ? `${markerPos.lat.toFixed(6)}, ${markerPos.lng.toFixed(6)}` : "-"}</span>
                     </div>
                   </div>
 
-                  <div className={`px-4 py-3 text-xs flex items-center justify-between rounded-b-2xl ${markerPosRef.current || (Number.isFinite(formData.lat) && Number.isFinite(formData.lng) && (formData.lat !== 0 || formData.lng !== 0))
-                    ? 'bg-green-50 text-green-700 border-t border-green-200'
-                    : 'bg-red-50 text-red-600 border-t border-red-200'
-                    }`}>
+                  <div className={`px-4 py-3 text-xs flex items-center justify-between rounded-b-2xl ${
+                    markerPosRef.current || (Number.isFinite(formData.lat) && Number.isFinite(formData.lng) && (formData.lat !== 0 || formData.lng !== 0))
+                      ? 'bg-green-50 text-green-700 border-t border-green-200'
+                      : 'bg-red-50 text-red-600 border-t border-red-200'
+                  }`}>
                     <span className="font-bold">
-                      {markerPos
-                        ? <>✓ Location marked</>
-                        : <>⚠️ Click map to set location</>
-                      }
+                      {markerPos ? <>✓ Location marked</> : <>⚠️ Click map to set location</>}
                     </span>
                   </div>
                 </div>
@@ -1066,7 +1021,6 @@ const AgentAddProduct: React.FC = () => {
                     <input type="number" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white" value={carDetails.luggage} onChange={(e) => setCarDetails({ ...carDetails, luggage: parseInt(e.target.value, 10) })} />
                   </div>
                 </div>
-
                 <div className="flex items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <input type="checkbox" id="driver" className="w-5 h-5 text-primary-600 rounded" checked={carDetails.driver} onChange={(e) => setCarDetails({ ...carDetails, driver: e.target.checked })} />
                   <label htmlFor="driver" className="ml-3 text-sm font-bold text-gray-700 flex items-center"><User className="w-4 h-4 mr-2" /> Driver Included</label>
@@ -1087,10 +1041,7 @@ const AgentAddProduct: React.FC = () => {
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-900 font-bold">Rp.</span>
                   <input
-                    type="text"
-                    name="price"
-                    required
-                    inputMode="numeric"
+                    type="text" name="price" required inputMode="numeric"
                     className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white font-bold text-lg"
                     placeholder="0"
                     value={formData.price ? formatRupiah(formData.price) : ""}
@@ -1110,7 +1061,6 @@ const AgentAddProduct: React.FC = () => {
                     <input type="date" className="flex-1 px-4 py-2 rounded-xl border border-gray-200" value={newBlockedDate} onChange={(e) => setNewBlockedDate(e.target.value)} />
                     <button type="button" onClick={handleAddBlockedDate} className="px-4 py-2 bg-red-100 text-red-600 rounded-xl font-bold hover:bg-red-200 transition">Block</button>
                   </div>
-
                   {formData.blockedDates.length > 0 && (
                     <div className="p-4 bg-red-50 rounded-xl border border-red-100">
                       <p className="text-xs font-bold text-red-700 mb-3">Blocked Dates ({formData.blockedDates.length})</p>
@@ -1134,6 +1084,29 @@ const AgentAddProduct: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* ── 4. Voucher & Promo ── NEW SECTION ─────────────────────────────────── */}
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center">
+              <span className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center mr-3 text-sm">4</span>
+              Voucher & Promo
+            </h3>
+            <p className="text-xs text-gray-400 mb-5">
+              Pilih voucher yang dapat digunakan customer saat memesan produk ini.
+              Voucher berlaku sesuai syarat &amp; ketentuan masing-masing.
+            </p>
+            <VoucherSelector
+              selectedIds={selectedVoucherIds}
+              onChange={setSelectedVoucherIds}
+            />
+            {selectedVoucherIds.length > 0 && (
+              <p className="mt-3 text-xs text-green-600 font-semibold flex items-center gap-1">
+                <Tag className="w-3 h-3" />
+                {selectedVoucherIds.length} voucher aktif untuk produk ini
+              </p>
+            )}
+          </div>
+          {/* ──────────────────────────────────────────────────────────────────────── */}
         </div>
 
         {/* RIGHT COLUMN */}
@@ -1180,31 +1153,33 @@ const AgentAddProduct: React.FC = () => {
               </>
             )}
 
-            {isTransport && <div className="mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                <Car className="w-5 h-5 mr-2 text-primary-500" />Select Vehicle
-              </h3>
-              <select
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary-500 text-sm font-medium"
-                value={selectedCarId ?? ''}
-                onChange={(e) => { const val = parseInt(e.target.value, 10); if (!isNaN(val)) handleCarSelect(val); }}
-              >
-                <option value="" disabled>-- Select a vehicle --</option>
-                {carList.map((car) => (
-                  <option key={car.id} value={car.id}>
-                    {car.brand} {car.name} {car.model_year ? `(${car.model_year})` : ''}
-                  </option>
-                ))}
-              </select>
-              {selectedCarId && (() => {
-                const car = carList.find(c => c.id === selectedCarId);
-                return car ? (
-                  <div className="mt-4 p-4 rounded-xl border border-primary-100">
-                    {car.image && <img src={car.image} alt={car.name} className="w-full h-32 object-cover rounded-lg mb-3" />}
-                  </div>
-                ) : null;
-              })()}
-            </div>}
+            {isTransport && (
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                  <Car className="w-5 h-5 mr-2 text-primary-500" />Select Vehicle
+                </h3>
+                <select
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary-500 text-sm font-medium"
+                  value={selectedCarId ?? ''}
+                  onChange={(e) => { const val = parseInt(e.target.value, 10); if (!isNaN(val)) handleCarSelect(val); }}
+                >
+                  <option value="" disabled>-- Select a vehicle --</option>
+                  {carList.map((car) => (
+                    <option key={car.id} value={car.id}>
+                      {car.brand} {car.name} {car.model_year ? `(${car.model_year})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {selectedCarId && (() => {
+                  const car = carList.find(c => c.id === selectedCarId);
+                  return car ? (
+                    <div className="mt-4 p-4 rounded-xl border border-primary-100">
+                      {car.image && <img src={car.image} alt={car.name} className="w-full h-32 object-cover rounded-lg mb-3" />}
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+            )}
 
             <div className="mt-8 pt-6 border-t border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Highlights</h3>
@@ -1234,34 +1209,27 @@ interface MapComponentProps {
   onMarkerDragEnd: (pos: LatLng) => void;
 }
 
-// ── Custom Modern Marker ──
 const customMarkerIcon = new L.DivIcon({
   html: `
     <div class="relative w-full h-full flex flex-col items-center justify-end group">
       <div class="absolute bottom-4 w-12 h-12 bg-primary-500 rounded-full opacity-20 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-      <div class="relative z-10 w-10 h-10 flex items-center justify-center bg-primary-600 rounded-full shadow-xl border-2 border-white text-white transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
+      <div class="relative z-10 w-10 h-10 flex items-center justify-center bg-primary-600 rounded-full shadow-xl border-2 border-white text-white">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
       </div>
       <div class="relative w-1.5 h-4 bg-primary-600 border-x border-white -mt-1 z-0"></div>
       <div class="absolute -bottom-1 w-5 h-1.5 bg-black/30 blur-[2px] rounded-[50%]"></div>
     </div>
   `,
-  className: "bg-transparent border-none", // Remove default leaflet styles
+  className: "bg-transparent border-none",
   iconSize: [48, 60],
-  iconAnchor: [24, 60], // Point of the icon which corresponds to marker's location
+  iconAnchor: [24, 60],
 });
 
-// Helper: handle map click events
 const MapClickHandler: React.FC<{ onClickMap: (pos: LatLng) => void }> = ({ onClickMap }) => {
-  useMapEvents({
-    click: (e) => {
-      onClickMap({ lat: e.latlng.lat, lng: e.latlng.lng });
-    },
-  });
+  useMapEvents({ click: (e) => onClickMap({ lat: e.latlng.lat, lng: e.latlng.lng }) });
   return null;
 };
 
-// Helper: re-center map when center prop changes
 const MapCenterUpdater: React.FC<{ center: LatLng; hasMarker: boolean }> = ({ center, hasMarker }) => {
   const map = useMap();
   useEffect(() => {
@@ -1270,59 +1238,43 @@ const MapCenterUpdater: React.FC<{ center: LatLng; hasMarker: boolean }> = ({ ce
   return null;
 };
 
-const LeafletMapComponent: React.FC<MapComponentProps> = ({
-  center,
-  marker,
-  onClickMap,
-  onMarkerDragEnd,
-}) => {
+const LeafletMapComponent: React.FC<MapComponentProps> = ({ center, marker, onClickMap, onMarkerDragEnd }) => {
   return (
-    <div className="w-full h-full relative relative z-0">
+    <div className="w-full h-full relative z-0">
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={marker ? 15 : 11}
-        style={{ width: "100%", height: "100%", zIndex: 10 }} // Next to UI overlays inside
+        style={{ width: "100%", height: "100%", zIndex: 10 }}
         scrollWheelZoom
       >
-        {/* Modern CartoDB Voyager TileLayer */}
         <TileLayer
           attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         <MapClickHandler onClickMap={onClickMap} />
         <MapCenterUpdater center={center} hasMarker={!!marker} />
-
         {marker && (
           <Marker
             position={[marker.lat, marker.lng]}
             draggable
             icon={customMarkerIcon}
-            eventHandlers={{
-              dragend: (e) => {
-                const latlng = e.target.getLatLng();
-                onMarkerDragEnd({ lat: latlng.lat, lng: latlng.lng });
-              },
-            }}
+            eventHandlers={{ dragend: (e) => { const ll = e.target.getLatLng(); onMarkerDragEnd({ lat: ll.lat, lng: ll.lng }); } }}
           />
         )}
       </MapContainer>
-
-      {/* Floating UI Overlays (Outside MapContainer to avoid z-index conflicts with Leaflet controls) */}
       <div className="absolute top-4 left-4 z-[20] pointer-events-none">
         {marker ? (
-          <div className="bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg border border-gray-100 flex flex-col transition-all duration-300 transform scale-100 opacity-100">
+          <div className="bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg border border-gray-100 flex flex-col">
             <span className="text-[10px] font-bold text-primary-600 uppercase tracking-wider mb-1 flex items-center">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
               Location Pinned
             </span>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-mono font-medium text-gray-700">Lat: {marker.lat.toFixed(6)}</span>
-              <span className="text-xs font-mono font-medium text-gray-700">Lng: {marker.lng.toFixed(6)}</span>
-            </div>
-            <p className="text-[9px] text-gray-400 mt-2 mt-1 leading-tight">Drag marker to adjust</p>
+            <span className="text-xs font-mono font-medium text-gray-700">Lat: {marker.lat.toFixed(6)}</span>
+            <span className="text-xs font-mono font-medium text-gray-700">Lng: {marker.lng.toFixed(6)}</span>
+            <p className="text-[9px] text-gray-400 mt-1">Drag marker to adjust</p>
           </div>
         ) : (
-          <div className="bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-gray-100 flex items-center text-primary-600 transition-all duration-300 animate-pulse">
+          <div className="bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-lg border border-gray-100 flex items-center text-primary-600 animate-pulse">
             <span className="text-xs font-bold uppercase tracking-wider">Select a location on map</span>
           </div>
         )}

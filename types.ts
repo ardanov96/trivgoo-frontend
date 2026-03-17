@@ -416,6 +416,24 @@ export interface AdminProductDetails {
   ageRestriction: string;
 }
 
+export interface VoucherItem {
+  id: number;
+  code: string;
+  description: string | null;
+  type: 'percent' | 'fixed';
+  value: number;
+  max_discount: number | null;
+  min_transaction: number;
+  scope: string;
+  max_usage: number | null;
+  used_count: number;
+  per_user: number;
+  starts_at: string | null;
+  expires_at: string | null;
+  is_active: number;
+  created_at?: string;
+}
+
 // ✅ FIX: hapus duplikat AgentProduct — digabung jadi satu interface lengkap
 export interface AgentProduct {
   id: number;
@@ -449,6 +467,8 @@ export interface AgentProduct {
 
   // when transport products are linked to a specific vehicle
   car_id?: number;
+
+  vouchers?: VoucherItem[]; 
 }
 
 export type ListAgentProductsResponse = ApiResponse<Paginated<AgentProduct>>;
