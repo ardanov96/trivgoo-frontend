@@ -210,6 +210,8 @@ const CheckoutSummary: React.FC = () => {
   const { user }    = useAuth();
   const { removeFromCart } = useCart();
   const [loading, setLoading] = useState(false);
+  // Guard double-submit: ref lebih reliable dari state karena update sinkron
+  const isSubmitting = React.useRef(false);
 
   const [contactName,  setContactName]  = useState('');
   const [contactEmail, setContactEmail] = useState(user?.email || '');
@@ -321,10 +323,9 @@ const CheckoutSummary: React.FC = () => {
 
   // ── Handle payment ────────────────────────────────────────
   const handlePayment = async () => {
-    if (!validateContact()) {
-      Swal.fire('Lengkapi Data', 'Mohon isi data pemesan terlebih dahulu', 'warning');
-      return;
-    }
+    // Cegah double-submit — ref update sinkron, tidak ada race condition
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
 
     try {
       setLoading(true);
@@ -366,8 +367,10 @@ const CheckoutSummary: React.FC = () => {
       window.location.href = payment_url;
     } catch (error: any) {
       setLoading(false);
-      Swal.fire('Error', error.response?.data?.message || error.message || 'Gagal memproses pembayaran', 'error');
+      isSubmitting.current = false; // Reset hanya saat error agar bisa coba lagi
+      Swal.fire('Error', error.message || 'Gagal memproses pembayaran', 'error');
     }
+    // Catatan: jika sukses (redirect), isSubmitting tetap true — tidak relevan karena halaman berganti
   };
 
   // ── Render ────────────────────────────────────────────────
