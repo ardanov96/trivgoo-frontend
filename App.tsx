@@ -232,7 +232,7 @@ const AppRoutes = () => {
         <Route path="products" element={<AgentProducts />} />
         <Route path="products/new" element={<AgentAddProduct />} />
         <Route path="products/edit/:id" element={<AgentAddProduct />} />
-        <Route path="customers" element={<AgentCustomerBookings />} />
+        <Route path="bookings" element={<AgentCustomerBookings />} />
         <Route path="commissions" element={<AgentCommissions />} />
         <Route path="verification" element={<AgentVerification />} />
         <Route path="profile/settings" element={<ProfileSetting />} />

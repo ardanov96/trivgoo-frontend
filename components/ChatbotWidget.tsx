@@ -95,7 +95,7 @@ const ChatbotWidget: React.FC = () => {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                   </span>
-                  <p className="text-xs text-primary-100 font-medium">Online | Powered by Gemini</p>
+                  <p className="text-xs text-primary-100 font-medium">Online | Powered by Trivgoo AI</p>
                 </div>
               </div>
             </div>
@@ -119,8 +119,8 @@ const ChatbotWidget: React.FC = () => {
                 )}
                 <div
                   className={`p-3 rounded-2xl shadow-sm text-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                      ? 'bg-primary-600 text-white rounded-br-sm'
-                      : 'bg-white text-gray-700 border border-gray-100 rounded-bl-sm'
+                    ? 'bg-primary-600 text-white rounded-br-sm'
+                    : 'bg-white text-gray-700 border border-gray-100 rounded-bl-sm'
                     }`}
                 >
                   {msg.content}

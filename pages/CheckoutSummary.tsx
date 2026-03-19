@@ -238,6 +238,7 @@ const CheckoutSummary: React.FC = () => {
     date                  = '',
     pax                   = 1,
     pricePerPax           = 0,
+    basePricePerPax       = 0,
     totalPrice            = 0,
     image                 = '',
     currency              = 'IDR',
@@ -252,6 +253,7 @@ const CheckoutSummary: React.FC = () => {
     year,
     fuelPolicy,
     withDriver,
+    addOns,
     pickupTime,
     returnTime,
     availableVouchers     = [],
@@ -325,11 +327,23 @@ const CheckoutSummary: React.FC = () => {
   const handlePayment = async () => {
     // Cegah double-submit — ref update sinkron, tidak ada race condition
     if (isSubmitting.current) return;
+
+    if (!validateContact()) {
+      Swal.fire('Mohon Lengkapi Data', 'Pastikan semua data pemesan sudah diisi dengan benar.', 'warning');
+      return;
+    }
+
     isSubmitting.current = true;
 
     try {
       setLoading(true);
       const orderId = `TRV-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+      // Ekstrak tanggal mulai untuk dikirim ke backend (C.5 Inventory Lock)
+      let startDateStr = new Date().toISOString().split('T')[0];
+      if (date) {
+        startDateStr = date.includes(' - ') ? date.split(' - ')[0] : date;
+      }
 
       const res = await http.post('/payment/create-payment', {
         id:           orderId,
@@ -341,6 +355,7 @@ const CheckoutSummary: React.FC = () => {
         user_id:      user?.id || null,
         product_id:   productId || null,
         admin_fee:    ADMIN_FEE,
+        date:         startDateStr, // NEW FIELD
         ...(appliedVoucher ? {
           voucher_code:    appliedVoucher.code,
           voucher_id:      appliedVoucher.id,
@@ -368,7 +383,19 @@ const CheckoutSummary: React.FC = () => {
     } catch (error: any) {
       setLoading(false);
       isSubmitting.current = false; // Reset hanya saat error agar bisa coba lagi
-      Swal.fire('Error', error.message || 'Gagal memproses pembayaran', 'error');
+      
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal memproses pembayaran';
+      const isCapacityError = errorMessage.includes('Kapasitas Penuh');
+      
+      Swal.fire({
+        title: isCapacityError ? 'Sudah Penuh!' : 'Error',
+        text: isCapacityError 
+          ? 'Maaf, stok unit/tiket untuk tanggal ini baru saja habis dipesan pelanggan lain. Silakan pilih tanggal lain.' 
+          : errorMessage,
+        icon: isCapacityError ? 'warning' : 'error',
+        confirmButtonText: 'Mengerti',
+        confirmButtonColor: isCapacityError ? '#f97316' : '#ef4444' // orange / red
+      });
     }
     // Catatan: jika sukses (redirect), isSubmitting tetap true — tidak relevan karena halaman berganti
   };
@@ -571,9 +598,29 @@ const CheckoutSummary: React.FC = () => {
 
             {/* Harga produk */}
             {isCarBooking ? (
-              <div className="flex justify-between text-gray-600 text-sm">
-                <span>{formatCurrency(pricePerPax)} / hari × {duration} hari</span>
-                <span>{formatCurrency(pricePerPax * duration)}</span>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-gray-600 text-sm">
+                  <span>{formatCurrency(basePricePerPax || pricePerPax)} / hari × {duration} hari</span>
+                  <span>{formatCurrency((basePricePerPax || pricePerPax) * duration)}</span>
+                </div>
+                {addOns?.withDriver && (
+                  <div className="flex justify-between text-gray-500 text-xs pl-2">
+                    <span>↳ Sopir × {duration} hari</span>
+                    <span>+ {formatCurrency(150000 * duration)}</span>
+                  </div>
+                )}
+                {addOns?.premiumInsurance && (
+                  <div className="flex justify-between text-gray-500 text-xs pl-2">
+                    <span>↳ Premium Insurance × {duration} hari</span>
+                    <span>+ {formatCurrency(75000 * duration)}</span>
+                  </div>
+                )}
+                {addOns?.childSeat && (
+                  <div className="flex justify-between text-gray-500 text-xs pl-2">
+                    <span>↳ Child Seat × {duration} hari</span>
+                    <span>+ {formatCurrency(50000 * duration)}</span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex justify-between text-gray-600 text-sm">

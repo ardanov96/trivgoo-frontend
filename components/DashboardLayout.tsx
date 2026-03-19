@@ -158,7 +158,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
               <NavSectionLabel label="Overview" />
               <NavItem to="/agent" icon={LayoutDashboard} label="Dashboard" />
               <NavItem to="/agent/commissions" icon={DollarSign} label="Commissions" />
-              <NavItem to="/agent/customers" icon={UserCheck} label="Customer List" />
+              <NavItem to="/agent/bookings" icon={UserCheck} label="Customer Bookings" />
 
               <NavSectionLabel label="Management" />
               {user?.verification_status !== VerificationStatus.VERIFIED && (

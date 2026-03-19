@@ -47,28 +47,42 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
     setProcessingId(productId);
 
     onClose();
-    navigate('/checkout-summary', {
-      state: {
-        productId: item.product.id,
-        productName: item.product.name,
-        location: item.product.location,
-        date: '',           // user belum pilih tanggal — akan diisi di ProductDetail
-        pax: item.quantity,
-        pricePerPax: effectivePrice,
-        totalPrice: effectivePrice * item.quantity,
-        image: heroImage,
-        currency: item.product.currency,
-        duration: 1,
-        guestCount: item.quantity,
-        unitLabel: 'Ticket',
-        priceUnitLabel: 'person',
-        contactDetails: {
-          name: user?.name || '',
-          email: user?.email || '',
-          phone: '',
+
+    if (item.customization) {
+      navigate('/checkout-summary', {
+        state: {
+          ...item.customization,
+          contactDetails: {
+            name: user?.name || '',
+            email: user?.email || '',
+            phone: '',
+          },
         },
-      },
-    });
+      });
+    } else {
+      navigate('/checkout-summary', {
+        state: {
+          productId: item.product.id,
+          productName: item.product.name,
+          location: item.product.location,
+          date: '',           // user belum pilih tanggal — akan diisi di ProductDetail
+          pax: item.quantity,
+          pricePerPax: effectivePrice,
+          totalPrice: effectivePrice * item.quantity,
+          image: heroImage,
+          currency: item.product.currency,
+          duration: 1,
+          guestCount: item.quantity,
+          unitLabel: 'Ticket',
+          priceUnitLabel: 'person',
+          contactDetails: {
+            name: user?.name || '',
+            email: user?.email || '',
+            phone: '',
+          },
+        },
+      });
+    }
 
     setProcessingId(null);
   };
@@ -150,12 +164,12 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                       src={heroImage}
                       alt={item.product.name}
                       className="w-20 h-20 object-cover rounded-xl flex-shrink-0 cursor-pointer"
-                      onClick={() => handleGoToProduct(item.product.id)}
+                      onClick={() => handleProductClick(item.product.id)}
                     />
                     <div className="flex-1 min-w-0">
                       <h4
                         className="font-bold text-gray-900 text-sm line-clamp-2 leading-snug mb-1 cursor-pointer hover:text-primary-600 transition-colors"
-                        onClick={() => handleGoToProduct(item.product.id)}
+                        onClick={() => handleProductClick(item.product.id)}
                       >
                         {item.product.name}
                       </h4>
@@ -191,7 +205,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                       Hapus
                     </button>
                     <button
-                      onClick={() => handleGoToProduct(item.product.id)}
+                      onClick={() => handleProductClick(item.product.id)}
                       className="py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1"
                     >
                       Detail
