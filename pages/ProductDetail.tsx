@@ -117,6 +117,7 @@ const ProductDetail: React.FC = () => {
   const [tourPax, setTourPax] = useState(1);
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
+  const [carPickupDate, setCarPickupDate] = useState('');
   const [stayGuests, setStayGuests] = useState(2);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -143,19 +144,8 @@ const ProductDetail: React.FC = () => {
     load();
   }, [id]);
 
-  const handleAddToCart = () => {
-    if (!product || isInCart(product.id)) return;
-    addToCart(product, rentalDays);
-    showToast(`${product.name} ditambahkan ke keranjang!`, 'success');
-  };
-
-  const calcNights = () =>
-    checkInDate && checkOutDate
-      ? Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))
-      : 0;
-
-  const handleReserveNow = (type: 'tour_stay' | 'car') => {
-    if (!product) return;
+  const generateCheckoutPayload = (type: 'tour_stay' | 'car') => {
+    if (!product) return null;
     const errors: Record<string, string> = {};
     if (type === 'tour_stay') {
       const isTourProduct = isTour(product.details);
@@ -169,12 +159,13 @@ const ProductDetail: React.FC = () => {
         if (stayGuests < 1) errors.stayGuests = 'Minimal 1 tamu';
       }
     } else {
+      if (!carPickupDate) errors.carPickupDate = 'Pilih tanggal pengambilan';
       if (rentalDays < 1) errors.rentalDays = 'Minimal 1 hari sewa';
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      Swal.fire({ icon: 'warning', title: 'Lengkapi Pemesanan', text: Object.values(errors)[0], confirmButtonColor: '#0ea5e9' });
-      return;
+      Swal.fire({ icon: 'warning', title: 'Lengkapi Konfigurasi', text: Object.values(errors)[0], confirmButtonColor: '#0ea5e9' });
+      return null;
     }
     setFieldErrors({});
     const productVouchers = (product as any).vouchers || [];
@@ -184,7 +175,7 @@ const ProductDetail: React.FC = () => {
       const nights = calcNights();
       const qty = isTourProduct ? tourPax : stayGuests;
       const dur = isTourProduct ? 1 : nights;
-      navigate('/checkout-summary', { state: {
+      return {
         productId: product.id, productName: product.name, location: product.location,
         image: product.image_url || product.image, currency: product.currency || 'IDR',
         pricePerPax: Number(product.price), pax: qty, guestCount: qty, duration: dur,
@@ -194,17 +185,17 @@ const ProductDetail: React.FC = () => {
         priceUnitLabel: isTourProduct ? 'orang' : 'malam',
         vehicleType: isTourProduct ? 'tour' : 'stay',
         availableVouchers: productVouchers,
-      }});
+      };
     } else {
       const driverPrice    = addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
       const insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
       const childSeatPrice = addOns.childSeat ? 50_000 : 0;
       const totalPerDay    = Number(product.price) + driverPrice + insurancePrice + childSeatPrice;
-      navigate('/checkout-summary', { state: {
+      return {
         productId: product.id, productName: product.name, location: product.location,
         image: product.image_url || product.image, currency: product.currency || 'IDR',
-        pricePerPax: totalPerDay, pax: 1, guestCount: 1, duration: rentalDays,
-        totalPrice: totalPerDay * rentalDays, date: '',
+        pricePerPax: totalPerDay, basePricePerPax: Number(product.price), pax: 1, guestCount: 1, duration: rentalDays,
+        totalPrice: totalPerDay * rentalDays, date: carPickupDate,
         unitLabel: 'Hari', priceUnitLabel: 'hari', vehicleType: 'car',
         transmission: (product.details as CarDetails)?.transmission,
         seats: (product.details as CarDetails)?.seats,
@@ -214,8 +205,31 @@ const ProductDetail: React.FC = () => {
         withDriver: addOns.withDriver,
         addOns,
         availableVouchers: productVouchers,
-      }});
+      };
     }
+  };
+
+  const handleAddToCart = () => {
+    if (!product || isInCart(product.id)) return;
+    const type = isTour(product.details) || isStay(product.details) ? 'tour_stay' : 'car';
+    const payload = generateCheckoutPayload(type);
+    if (!payload) return; // Validasi gagal
+
+    // Gunakan duration (rentalDays) sebagai quantity untuk compatibilitas UI keranjang lama namun menyuntikkan payload kustom.
+    const cartQty = payload.duration;
+    addToCart(product, cartQty, payload);
+    showToast(`${product.name} ditambahkan ke keranjang!`, 'success');
+  };
+
+  const calcNights = () =>
+    checkInDate && checkOutDate
+      ? Math.max(1, Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))
+      : 0;
+
+  const handleReserveNow = (type: 'tour_stay' | 'car') => {
+    const payload = generateCheckoutPayload(type);
+    if (!payload) return;
+    navigate('/checkout-summary', { state: payload });
   };
 
   const FieldError = ({ name }: { name: string }) =>
@@ -401,8 +415,28 @@ const ProductDetail: React.FC = () => {
 
                 <ProductVoucherBanner vouchers={productVouchers} />
 
+                {/* Pickup Date */}
+                <div className="mb-4">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Tanggal Pengambilan <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input 
+                      type="date" 
+                      value={carPickupDate} 
+                      onChange={(e) => {
+                        setCarPickupDate(e.target.value);
+                        setFieldErrors(p => ({...p, carPickupDate: ''}));
+                      }} 
+                      min={new Date().toISOString().split('T')[0]} 
+                      className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.carPickupDate ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`}
+                    />
+                  </div>
+                  <FieldError name="carPickupDate"/>
+                </div>
+
                 {/* Duration */}
                 <div className="mb-5">
+
                   <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><CalendarDays className="w-4 h-4 text-primary-500"/> Duration <span className="text-red-500">*</span></p>
                   <div className={`flex items-center gap-3 bg-gray-50 rounded-2xl p-3 border ${fieldErrors.rentalDays?'border-red-400':'border-transparent'}`}>
                     <button onClick={()=>setRentalDays(d=>Math.max(1,d-1))} className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5"/></button>

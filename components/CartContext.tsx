@@ -5,11 +5,12 @@ export interface CartItem {
   product: Product;
   quantity: number;
   addedAt: string;
+  customization?: any; // Simpan state spesifik (tanggal, addOns, harga custom)
 }
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
+  addToCart: (product: Product, quantity?: number, customization?: any) => void;
   removeFromCart: (productId: number) => void;
   isInCart: (productId: number) => boolean;
   cartCount: number;
@@ -41,17 +42,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [cartItems]);
 
-  const addToCart = useCallback((product: Product, quantity = 1) => {
+  const addToCart = useCallback((product: Product, quantity = 1, customization?: any) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
         return prev.map((item) =>
           item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: item.quantity + quantity, customization: customization || item.customization }
             : item
         );
       }
-      return [...prev, { product, quantity, addedAt: new Date().toISOString() }];
+      return [...prev, { product, quantity, addedAt: new Date().toISOString(), customization }];
     });
   }, []);
 
@@ -66,7 +67,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = useCallback(() => setCartItems([]), []);
 
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartCount = cartItems.length;
 
   return (
     <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, isInCart, cartCount, clearCart }}>
