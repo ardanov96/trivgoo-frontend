@@ -1,4 +1,4 @@
-import { Heart, LogOut, Menu, ShoppingCart, Sparkles, X } from "lucide-react";
+import { Heart, LogOut, Menu, ShoppingCart, Sparkles, X, User as UserIcon, ChevronDown, Package, LayoutDashboard } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
@@ -7,6 +7,7 @@ import { useCart } from "../components/CartContext";
 import CartDrawer from "../components/CartDrawer";
 import { authService } from "../services/authService";
 import { UserRole } from "../types";
+import UserAvatar from "./UserAvatar";
 
 // ─── Payment Method Logo Components (inline SVG, zero external deps) ──────────
 
@@ -197,12 +198,18 @@ const PublicLayout: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const didFetchMeRef = useRef(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -276,13 +283,57 @@ const PublicLayout: React.FC = () => {
               )}
               {user ? (
                 <div className="flex items-center space-x-4 pl-2 border-l border-gray-200/20">
-                  <button onClick={navigateToDashboard} className={`flex items-center text-sm font-medium transition-colors group ${scrolled || !isHome ? "text-gray-700 hover:text-primary-600" : "text-white hover:text-primary-200"}`}>
-                    <img className="h-9 w-9 rounded-full border-2 border-white shadow-sm mr-2 object-cover group-hover:border-primary-200 transition-colors" src={user.avatar || "/avatar.png"} alt="" />
-                    <span>{user.name}</span>
-                  </button>
-                  <button onClick={handleLogout} className={`p-2 rounded-full transition-colors ${scrolled || !isHome ? "text-gray-400 hover:text-red-500 hover:bg-red-50" : "text-white/70 hover:text-white hover:bg-white/10"}`}>
-                    <LogOut className="w-5 h-5" />
-                  </button>
+                  <div className="relative" ref={dropdownRef}>
+                    <button 
+                      onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} 
+                      className={`flex items-center text-sm font-medium transition-colors group ${scrolled || !isHome ? "text-gray-700 hover:text-primary-600" : "text-white hover:text-primary-200"}`}
+                    >
+                      <UserAvatar 
+                        user={user} 
+                        className="h-9 w-9 border-2 border-white shadow-sm mr-2 group-hover:border-primary-200 transition-colors" 
+                      />
+                      <span>{user.name}</span>
+                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {isProfileDropdownOpen && (
+                      <div className="absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-2 animate-in fade-in zoom-in-95 duration-200 z-50">
+                        <Link 
+                          to={user.role === UserRole.CUSTOMER ? '/my-account' : '/profile'} 
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors"
+                        >
+                          <UserIcon className="w-4 h-4 mr-3 text-gray-400" /> Profil Saya
+                        </Link>
+                        {user.role === UserRole.CUSTOMER && (
+                          <Link 
+                            to="/my-bookings" 
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors"
+                          >
+                            <Package className="w-4 h-4 mr-3 text-gray-400" /> My Booking
+                          </Link>
+                        )}
+                        {(user.role === UserRole.ADMIN || user.role === UserRole.AGENT) && (
+                          <Link 
+                            to={user.role === UserRole.ADMIN ? '/admin' : '/agent'} 
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors"
+                          >
+                            <LayoutDashboard className="w-4 h-4 mr-3 text-gray-400" /> Dashboard
+                          </Link>
+                        )}
+                        <div className="h-px bg-gray-100 my-1"></div>
+                        <button 
+                          onClick={() => { setIsProfileDropdownOpen(false); handleLogout(); }} 
+                          className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left font-medium"
+                        >
+                          <LogOut className="w-4 h-4 mr-3 text-red-500" /> Logout
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center space-x-3 pl-2 border-l border-gray-200/20">
@@ -330,7 +381,7 @@ const PublicLayout: React.FC = () => {
               ) : (
                 <div className="mt-6 border-t pt-4">
                   <div className="flex items-center px-4 py-2">
-                    <img className="h-10 w-10 rounded-full object-cover" src={user.avatar || "/default-avatar.png"} alt="" />
+                    <UserAvatar user={user} className="h-10 w-10" />
                     <div className="ml-3">
                       <div className="text-base font-medium text-gray-800">{user.name}</div>
                       <div className="text-sm font-medium text-gray-500">{user.email}</div>

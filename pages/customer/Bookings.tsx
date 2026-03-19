@@ -10,8 +10,9 @@ import {
   AlertCircle, ChevronLeft, Filter, Search,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { authService } from '@/services/authService';
+import { authService } from '../../services/authService';
 import { useCart } from '../../components/CartContext';
+import UserAvatar from '../../components/UserAvatar';
 import { getImageUrl, FALLBACK_IMAGE } from '../../utils/imageUtils';
 import { encodeId } from '../../utils/hashids';
 import { generateSlug } from '../../utils/slugify';
@@ -461,9 +462,6 @@ const CustomerBookings: React.FC = () => {
 
   const [bookings, setBookings]         = useState<Booking[]>([]);
   const [activeTab, setActiveTab]       = useState<'active' | 'history'>('active');
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileName, setProfileName]   = useState('');
-  const [profileEmail, setProfileEmail] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showTicketModal, setShowTicketModal]  = useState(false);
   const [showReviewModal, setShowReviewModal]  = useState(false);
@@ -474,12 +472,8 @@ const CustomerBookings: React.FC = () => {
   const [reviewRating, setReviewRating]        = useState(5);
   const [reviewComment, setReviewComment]      = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [selectedFile, setSelectedFile]        = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl]            = useState<string | null>(null);
-  const [isSaving, setIsSaving]                = useState(false);
   const [membershipTier, setMembershipTier]    = useState<{ name: string; color: string | null } | null>(null);
   const [pointBalance, setPointBalance]        = useState<number>(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activePage, setActivePage]   = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
@@ -487,29 +481,11 @@ const CustomerBookings: React.FC = () => {
   const [dateTo, setDateTo]           = useState('');
   const [searchText, setSearchText]   = useState('');
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) { setSelectedFile(file); setPreviewUrl(URL.createObjectURL(file)); }
-  };
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    setIsSaving(true);
-    try {
-      const fd = new FormData();
-      fd.append('name', profileName); fd.append('email', profileEmail);
-      if (selectedFile) fd.append('profile_photo', selectedFile);
-      const u = await authService.updateProfile(fd);
-      updateUser({ name: u.name, email: u.email, avatar: u.profile_photo });
-      setIsEditingProfile(false); setPreviewUrl(null);
-      alert('Profile updated successfully!');
-    } catch { alert('Failed to update profile'); }
-    finally { setIsSaving(false); }
-  };
 
   useEffect(() => {
     if (user) {
-      loadBookings(); setProfileName(user.name); setProfileEmail(user.email);
+      loadBookings();
       loyaltyService.getMembership().then(m => setMembershipTier({ name: m.tier.name, color: m.tier.color })).catch(() => {});
       loyaltyService.getBalance().then(b => setPointBalance(b.balance)).catch(() => {});
     }
@@ -650,48 +626,29 @@ const CustomerBookings: React.FC = () => {
           <div className="w-full lg:w-1/4 flex-shrink-0">
             <div className="bg-white rounded-3xl shadow-soft border border-gray-100 p-6 md:p-8 sticky top-28">
               <div className="flex flex-col items-center text-center mb-8">
-                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white shadow-xl overflow-hidden mb-5 relative">
-                  <img src={previewUrl || user?.avatar || 'https://via.placeholder.com/150'} alt="Profile" className="w-full h-full object-cover" />
-                  {isEditingProfile && (
-                    <div onClick={() => fileInputRef.current?.click()} className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer">
-                      <Camera className="text-white w-6 h-6" />
-                      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                    </div>
+                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white shadow-xl flex items-center justify-center relative group overflow-hidden mb-5">
+                  <UserAvatar 
+                    user={user} 
+                    className="w-full h-full shadow-inner" 
+                  />
+                </div>
+                
+                <h2 className="text-xl font-bold text-gray-900 mb-1">{user?.name}</h2>
+                <p className="text-gray-400 text-sm font-medium mb-4">{user?.email}</p>
+                
+                <div className="flex flex-col items-center gap-2">
+                  {membershipTier && (
+                    <span className="px-3 py-1 text-white text-[10px] font-bold uppercase tracking-wider rounded-full flex items-center"
+                      style={{ backgroundColor: membershipTier.color ?? '#cd7f32' }}>
+                      <Award className="w-3 h-3 mr-1" /> {membershipTier.name}
+                    </span>
+                  )}
+                  {pointBalance > 0 && (
+                    <span className="px-3 py-1 bg-gray-900 text-yellow-400 text-[10px] font-bold rounded-full flex items-center gap-1">
+                      <Coins className="w-3 h-3" /> {pointBalance.toLocaleString('id-ID')} pts
+                    </span>
                   )}
                 </div>
-                {isEditingProfile ? (
-                  <div className="w-full space-y-3">
-                    <input type="text" value={profileName} onChange={e => setProfileName(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-gray-50" placeholder="Name" />
-                    <input type="email" value={profileEmail} onChange={e => setProfileEmail(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-gray-50" placeholder="Email" />
-                    <div className="flex gap-2 justify-center pt-2">
-                      <button onClick={() => { setIsEditingProfile(false); setPreviewUrl(null); }} className="px-4 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-600">Cancel</button>
-                      <button disabled={isSaving} onClick={handleSaveProfile} className="px-4 py-2 text-xs bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-bold disabled:opacity-50">Save</button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">{user?.name}</h2>
-                    <p className="text-gray-400 text-sm font-medium mb-4">{user?.email}</p>
-                    <div className="flex flex-col items-center gap-2">
-                      {membershipTier && (
-                        <span className="px-3 py-1 text-white text-[10px] font-bold uppercase tracking-wider rounded-full flex items-center"
-                          style={{ backgroundColor: membershipTier.color ?? '#cd7f32' }}>
-                          <Award className="w-3 h-3 mr-1" /> {membershipTier.name}
-                        </span>
-                      )}
-                      {pointBalance > 0 && (
-                        <span className="px-3 py-1 bg-gray-900 text-yellow-400 text-[10px] font-bold rounded-full flex items-center gap-1">
-                          <Coins className="w-3 h-3" /> {pointBalance.toLocaleString('id-ID')} pts
-                        </span>
-                      )}
-                    </div>
-                    <button onClick={() => setIsEditingProfile(true)} className="mt-6 flex items-center text-gray-400 text-xs font-bold hover:text-primary-600 uppercase tracking-wide">
-                      <Edit2 className="w-3 h-3 mr-1.5" /> Edit Profile
-                    </button>
-                  </>
-                )}
               </div>
 
               <div className="space-y-2 pt-6 border-t border-gray-50">

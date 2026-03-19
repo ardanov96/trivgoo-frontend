@@ -61,6 +61,7 @@ import AgentRating    from './pages/agent/AgentRating';      // J.12
 
 // Customer Pages
 import CustomerBookings from './pages/customer/Bookings';
+import CustomerProfileSettings from './pages/customer/ProfileSettings';
 
 // ── H. Loyalty & Membership (Customer) ───────────────────────────────────────
 import LoyaltyPage from './pages/customer/LoyaltyPage';
@@ -142,7 +143,7 @@ const AppRoutes = () => {
         <Route path="/register/agent" element={<PublicOnlyRoute><RegisterAgent /></PublicOnlyRoute>} />
         <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
         <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
-        <Route path="/verify-email" element={<PublicOnlyRoute><VerifyEmail /></PublicOnlyRoute>} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/payment/result" element={<PaymentResult />} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/about-us" element={<AboutUs />} />
@@ -164,6 +165,12 @@ const AppRoutes = () => {
         <Route path="/my-bookings" element={
           <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
             <CustomerBookings />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/my-account" element={
+          <ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}>
+            <CustomerProfileSettings />
           </ProtectedRoute>
         } />
 

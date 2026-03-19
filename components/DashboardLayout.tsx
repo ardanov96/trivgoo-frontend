@@ -28,6 +28,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { authService } from '../services/authService';
 import { UserRole, VerificationStatus } from '../types';
+import UserAvatar from './UserAvatar';
 
 interface DashboardLayoutProps {
   role: UserRole;
@@ -184,17 +185,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
         {/* User footer */}
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center mb-4 px-2">
-            <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden mr-3 flex-shrink-0">
-              <img
-                src={user.avatar || '/favicon-black-bg.png'}
-                alt="User"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
-            </div>
+            <button className="flex items-center gap-2 hover:bg-gray-100 p-2 rounded-lg transition-colors">
+              <UserAvatar user={user} className="w-8 h-8" />
+              <span className="text-sm font-medium text-gray-700 hidden sm:block">
+                <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              </span>
+            </button>
           </div>
 
           <button

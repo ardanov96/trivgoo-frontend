@@ -28,6 +28,11 @@ function normalize_user(api_user: any): AuthUser {
     role: api_user.role as UserRole,
     specialization: api_user.specialization as AgentSpecialization,
     verification_status: api_user?.verification_status as VerificationStatus,
+    tanggal_lahir: api_user.tanggal_lahir,
+    jenis_kelamin: api_user.jenis_kelamin,
+    tempat_tinggal: api_user.tempat_tinggal,
+    phone_number: api_user.phone_number,
+    pending_email: api_user.pending_email,
   };
 }
 

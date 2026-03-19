@@ -1,0 +1,694 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, ChevronRight, Check, ChevronDown, X } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { useAuth } from '../../AuthContext';
+import { authService } from '../../services/authService';
+import UserAvatar from '../../components/UserAvatar';
+
+const ProfileSettings: React.FC = () => {
+  const { user, updateUser, refreshMe } = useAuth();
+  const [activeTab, setActiveTab] = useState<'info' | 'security'>('info');
+
+  // Date parsing
+  let defaultY = '', defaultM = '', defaultD = '';
+  if (user?.tanggal_lahir) {
+    const d = new Date(user.tanggal_lahir);
+    if (!isNaN(d.getTime())) {
+      defaultY = d.getFullYear().toString();
+      defaultM = (d.getMonth() + 1).toString();
+      defaultD = d.getDate().toString();
+    }
+  }
+
+  const [isGenderOpen, setIsGenderOpen] = useState(false);
+  const [selectedGender, setSelectedGender] = useState(user?.jenis_kelamin || '');
+  
+  const [profileName, setProfileName] = useState(user?.name || '');
+  const [profileAddress, setProfileAddress] = useState(user?.tempat_tinggal || '');
+  
+  const [isDayOpen, setIsDayOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(defaultD);
+  const [isMonthOpen, setIsMonthOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(defaultM);
+  const [isYearOpen, setIsYearOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(defaultY);
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || '');
+      setSelectedGender(user.jenis_kelamin || '');
+      setProfileAddress(user.tempat_tinggal || '');
+
+      if (user.tanggal_lahir) {
+        const d = new Date(user.tanggal_lahir);
+        if (!isNaN(d.getTime())) {
+          setSelectedYear(d.getFullYear().toString());
+          setSelectedMonth((d.getMonth() + 1).toString());
+          setSelectedDay(d.getDate().toString());
+        }
+      }
+    }
+  }, [user]);
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  // New states for modals
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [isSavingPhone, setIsSavingPhone] = useState(false);
+  
+  const [isResending, setIsResending] = useState(false);
+
+  // States & Refs for Profile Photo Upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+
+  const handlePhotoSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Load preview and store file
+    const previewUrl = URL.createObjectURL(file);
+    setSelectedPhotoFile(file);
+    setPhotoPreviewUrl(previewUrl);
+  };
+
+  const handleUploadConfirm = async () => {
+    if (!selectedPhotoFile) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append('profile_photo', selectedPhotoFile);
+      await authService.updateProfile(fd);
+      await refreshMe();
+      Swal.fire({
+        icon: 'success',
+        title: 'Foto Terunggah',
+        text: 'Foto profil Anda berhasil diperbarui.',
+        toast: true,
+        position: 'top-end',
+        timer: 3000,
+        showConfirmButton: false,
+      });
+      // Clear preview state
+      setSelectedPhotoFile(null);
+      setPhotoPreviewUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Upload Gagal',
+        text: err?.response?.data?.message || 'Gagal mengunggah foto profil',
+      });
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleUploadCancel = () => {
+    setSelectedPhotoFile(null);
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    setPhotoPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSaveEmail = async () => {
+    if (!emailInput || emailInput === user?.email) return;
+    setIsSavingEmail(true);
+    try {
+      const fd = new FormData();
+      fd.append('email', emailInput);
+      const updatedUser = await authService.updateProfile(fd);
+      updateUser(updatedUser);
+      setIsEmailModalOpen(false);
+      setEmailInput('');
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'Silakan cek email baru Anda untuk instruksi verifikasi.',
+        confirmButtonColor: '#006CE4'
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: err?.response?.data?.message || 'Gagal mengubah email',
+        confirmButtonColor: '#006CE4'
+      });
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
+
+  const handleSavePhone = async () => {
+    setIsSavingPhone(true);
+    try {
+      const fd = new FormData();
+      fd.append('phone_number', phoneInput);
+      const updatedUser = await authService.updateProfile(fd);
+      updateUser(updatedUser);
+      setIsPhoneModalOpen(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Tersimpan',
+        text: 'Nomor handphone berhasil disimpan!',
+        confirmButtonColor: '#006CE4'
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: err?.response?.data?.message || 'Gagal menyimpan nomor handphone',
+        confirmButtonColor: '#006CE4'
+      });
+    } finally {
+      setIsSavingPhone(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    setIsResending(true);
+    try {
+      await authService.resendVerification();
+      Swal.fire({
+        icon: 'success',
+        title: 'Terkirim',
+        text: 'Email verifikasi ulang telah dikirim!',
+        confirmButtonColor: '#006CE4'
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: err?.response?.data?.message || 'Gagal mengirim ulang email',
+        confirmButtonColor: '#006CE4'
+      });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    try {
+      const fd = new FormData();
+      if (profileName) fd.append('name', profileName);
+      if (selectedGender) fd.append('jenis_kelamin', selectedGender);
+      if (profileAddress) fd.append('tempat_tinggal', profileAddress);
+
+      if (selectedYear && selectedMonth && selectedDay) {
+        let numericMonth = typeof selectedMonth === 'string' && isNaN(Number(selectedMonth)) ? (['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'].indexOf(selectedMonth) + 1).toString() : selectedMonth;
+        const padM = numericMonth.toString().padStart(2, '0');
+        const padD = selectedDay.toString().padStart(2, '0');
+        fd.append('tanggal_lahir', `${selectedYear}-${padM}-${padD}`);
+      }
+
+      const updatedUser = await authService.updateProfile(fd);
+      updateUser(updatedUser);
+      Swal.fire({
+        icon: 'success',
+        title: 'Profil Tersimpan',
+        text: 'Perubahan pada profil Anda telah berhasil disimpan.',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Tersimpan',
+        text: err?.response?.data?.message || 'Terjadi kesalahan saat menyimpan profil Anda.',
+        confirmButtonColor: '#006CE4'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const navItems = [
+    { id: 'kartu', label: 'Kartu Saya' },
+    { id: 'pesanan', label: 'Pesanan Saya' },
+    { id: 'pembelian', label: 'Daftar Pembelian' },
+    { id: 'refunds', label: 'Refunds' },
+    { id: 'notif-harga', label: 'Notifikasi Harga Penerbangan' },
+    { id: 'penumpang', label: 'Detail Penumpang Tersimpan' },
+    { id: 'notif-pengaturan', label: 'Pengaturan Notifikasi' },
+    { id: 'akun', label: 'Akun Saya', active: true },
+    { id: 'logout', label: 'Log Out' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50 pt-20 md:pt-28 pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* 2 Column Layout Container */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* ── Sidebar Kiri (Fixed Width) ── */}
+          <div className="w-full lg:w-1/4 flex-shrink-0">
+            {/* Bagian Profile User */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 mb-4">
+              <div className="flex flex-col mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 relative flex-shrink-0 flex items-center justify-center group">
+                    <UserAvatar 
+                      user={user} 
+                      previewUrl={photoPreviewUrl} 
+                      className="w-16 h-16 shadow-inner" 
+                    />
+
+                    {/* Overlay Upload */}
+                    {!photoPreviewUrl && (
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`absolute inset-0 bg-black/40 rounded-full flex items-center justify-center cursor-pointer transition-opacity ${isUploadingPhoto ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                      >
+                        {isUploadingPhoto ? (
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <Camera className="text-white w-5 h-5" />
+                        )}
+                      </div>
+                    )}
+                    
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/png, image/jpeg, image/jpg"
+                      onChange={handlePhotoSelection}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-bold text-gray-900 truncate">{user?.name || 'Customer Name'}</h2>
+                    <p className="text-sm text-gray-500 truncate">Google</p>
+                  </div>
+                </div>
+                
+                {/* Upload Action Buttons */}
+                {photoPreviewUrl && (
+                  <div className="mt-4 flex items-center gap-2">
+                    <button 
+                      onClick={handleUploadCancel}
+                      disabled={isUploadingPhoto}
+                      className="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      onClick={handleUploadConfirm}
+                      disabled={isUploadingPhoto}
+                      className="px-4 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {isUploadingPhoto && <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                      Simpan Foto
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Badge Status */}
+              <div className="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 mb-6 w-fit">
+                Bronze Priority
+              </div>
+
+              {/* Menu Navigasi Vertikal */}
+              <div className="flex flex-col gap-1 -mx-2">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`flex justify-between items-center w-full px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${
+                      item.active 
+                        ? 'bg-primary-50 text-primary-700 font-bold' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Konten Utama Kanan (Flexible) ── */}
+          <div className="w-full lg:w-3/4 min-w-0">
+            {/* Header & Tabs */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-6">Pengaturan</h1>
+              
+              <div className="flex border-b border-gray-100 gap-6">
+                <button
+                  onClick={() => setActiveTab('info')}
+                  className={`pb-3 text-sm font-bold transition-colors ${
+                    activeTab === 'info' 
+                      ? 'border-b-2 border-primary-600 text-primary-600' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Informasi Akun
+                </button>
+                <button
+                  onClick={() => setActiveTab('security')}
+                  className={`pb-3 text-sm font-bold transition-colors ${
+                    activeTab === 'security' 
+                      ? 'border-b-2 border-primary-600 text-primary-600' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Password & Keamanan
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {activeTab === 'info' && (
+                <div className="mt-8 space-y-8">
+                  
+                  {/* Section: Data Pribadi */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6">Data Pribadi</h3>
+                    <div className="space-y-5">
+                      {/* Input Nama Lengkap (full width) */}
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Nama Lengkap</label>
+                        <input
+                          type="text"
+                          value={profileName}
+                          onChange={(e) => setProfileName(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                          placeholder="Masukkan nama lengkap"
+                        />
+                      </div>
+
+                      {/* Row 2 kolom: Jenis Kelamin & Tanggal Lahir */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Dropdown Jenis Kelamin Custom */}
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-1.5">Jenis Kelamin</label>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => { setIsGenderOpen(!isGenderOpen); setIsDayOpen(false); setIsMonthOpen(false); setIsYearOpen(false); }}
+                              className={`w-full flex justify-between items-center pl-4 pr-10 py-2.5 bg-gray-50 border rounded-xl text-sm outline-none transition-all ${
+                                isGenderOpen 
+                                  ? 'border-primary-500 ring-2 ring-primary-500/20' 
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <span className={selectedGender ? "text-gray-900" : "text-gray-500"}>
+                                {selectedGender || 'Pilih jenis kelamin'}
+                              </span>
+                              <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${isGenderOpen ? 'rotate-180 text-primary-500' : ''}`} />
+                            </button>
+                            
+                            {/* Dropdown Options */}
+                            {isGenderOpen && (
+                              <div className="absolute z-20 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-lg py-1 animate-in fade-in slide-in-from-top-2">
+                                {['Laki-laki', 'Perempuan'].map((g, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedGender(g);
+                                      setIsGenderOpen(false);
+                                    }}
+                                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                                      selectedGender === g
+                                        ? 'bg-primary-50 text-primary-700 font-bold'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    {g}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {/* Hidden input to pass value if part of a form */}
+                            <input type="hidden" name="jenis_kelamin" value={selectedGender} />
+                          </div>
+                        </div>
+
+                        {/* 3 dropdown Tanggal Lahir (hari, bulan, tahun) */}
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-1.5">Tanggal Lahir</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {/* Hari */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => { setIsDayOpen(!isDayOpen); setIsMonthOpen(false); setIsYearOpen(false); setIsGenderOpen(false); }}
+                                className={`w-full flex justify-between items-center pl-3 pr-8 py-2.5 bg-gray-50 border rounded-xl text-sm outline-none transition-all ${
+                                  isDayOpen ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <span className={selectedDay ? "text-gray-900 truncate" : "text-gray-500 truncate"}>{selectedDay || 'Hari'}</span>
+                                <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${isDayOpen ? 'rotate-180 text-primary-500' : ''}`} />
+                              </button>
+                              {isDayOpen && (
+                                <div className="absolute z-20 w-min min-w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2 scrollbar-thin scrollbar-thumb-gray-200">
+                                  {Array.from({length: 31}, (_, i) => String(i + 1)).map((d) => (
+                                    <button
+                                      key={d} type="button"
+                                      onClick={() => { setSelectedDay(d); setIsDayOpen(false); }}
+                                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${selectedDay === d ? 'bg-primary-50 text-primary-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                                    >{d}</button>
+                                  ))}
+                                </div>
+                              )}
+                              <input type="hidden" name="hari" value={selectedDay} />
+                            </div>
+
+                            {/* Bulan */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => { setIsMonthOpen(!isMonthOpen); setIsDayOpen(false); setIsYearOpen(false); setIsGenderOpen(false); }}
+                                className={`w-full flex justify-between items-center pl-3 pr-8 py-2.5 bg-gray-50 border rounded-xl text-sm outline-none transition-all ${
+                                  isMonthOpen ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <span className={selectedMonth ? "text-gray-900 truncate" : "text-gray-500 truncate"}>{selectedMonth || 'Bulan'}</span>
+                                <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${isMonthOpen ? 'rotate-180 text-primary-500' : ''}`} />
+                              </button>
+                              {isMonthOpen && (
+                                <div className="absolute z-20 w-min min-w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2 scrollbar-thin scrollbar-thumb-gray-200">
+                                  {['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'].map((m) => (
+                                    <button
+                                      key={m} type="button"
+                                      onClick={() => { setSelectedMonth(m); setIsMonthOpen(false); }}
+                                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${selectedMonth === m ? 'bg-primary-50 text-primary-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                                    >{m}</button>
+                                  ))}
+                                </div>
+                              )}
+                              <input type="hidden" name="bulan" value={selectedMonth} />
+                            </div>
+
+                            {/* Tahun */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => { setIsYearOpen(!isYearOpen); setIsDayOpen(false); setIsMonthOpen(false); setIsGenderOpen(false); }}
+                                className={`w-full flex justify-between items-center pl-3 pr-8 py-2.5 bg-gray-50 border rounded-xl text-sm outline-none transition-all ${
+                                  isYearOpen ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              >
+                                <span className={selectedYear ? "text-gray-900 truncate" : "text-gray-500 truncate"}>{selectedYear || 'Tahun'}</span>
+                                <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${isYearOpen ? 'rotate-180 text-primary-500' : ''}`} />
+                              </button>
+                              {isYearOpen && (
+                                <div className="absolute z-20 w-min min-w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2 scrollbar-thin scrollbar-thumb-gray-200">
+                                  {Array.from({length: 80}, (_, i) => String(new Date().getFullYear() - 10 - i)).map((y) => (
+                                    <button
+                                      key={y} type="button"
+                                      onClick={() => { setSelectedYear(y); setIsYearOpen(false); }}
+                                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${selectedYear === y ? 'bg-primary-50 text-primary-700 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                                    >{y}</button>
+                                  ))}
+                                </div>
+                              )}
+                              <input type="hidden" name="tahun" value={selectedYear} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Input Kota Tempat Tinggal (full width) */}
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Kota Tempat Tinggal</label>
+                        <input
+                          type="text"
+                          value={profileAddress}
+                          onChange={(e) => setProfileAddress(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                          placeholder="Masukkan kota tempat tinggal"
+                        />
+                      </div>
+
+                      {/* Tombol aksi di kanan bawah */}
+                      <div className="flex justify-end gap-3 pt-4">
+                        <button className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-bold text-sm transition-colors">
+                          Nanti saja
+                        </button>
+                        <button 
+                          onClick={handleSaveProfile}
+                          disabled={isSaving}
+                          className="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          {isSaving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                          Simpan
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section: Email */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-1">Email</h3>
+                        <p className="text-sm text-gray-500">Amankan akun dengan verifikasi email.</p>
+                        <div className="mt-3 flex items-center gap-2 text-sm font-medium text-gray-900">
+                          <span>{user?.email || 'email@example.com'}</span>
+                          <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold">
+                            <Check className="w-3 h-3" /> Terverifikasi
+                          </span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => { setEmailInput(''); setIsEmailModalOpen(true); }}
+                        className="px-5 py-2 border border-primary-200 text-primary-600 hover:bg-primary-50 rounded-xl font-bold text-sm transition-colors whitespace-nowrap"
+                      >
+                        {user?.email ? 'Ubah Email' : '+ Tambah Email'}
+                      </button>
+                    </div>
+
+                    {user?.pending_email && (
+                      <div className="w-full mt-2 pt-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                          <span>{user.pending_email}</span>
+                          <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-bold">
+                            Belum Verifikasi
+                          </span>
+                        </div>
+                        <button 
+                          onClick={handleResendEmail}
+                          disabled={isResending}
+                          className="px-4 py-1.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+                        >
+                          {isResending ? 'Mengirim...' : 'Kirim Ulang Email'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section: No. Handphone */}
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">No. Handphone</h3>
+                      <p className="text-sm text-gray-500">Gunakan nomor handphone untuk kemudahan login.</p>
+                      {user?.phone_number && (
+                        <div className="mt-3 text-sm font-medium text-gray-900">
+                          {user.phone_number}
+                        </div>
+                      )}
+                    </div>
+                    <button 
+                      onClick={() => { setPhoneInput(user?.phone_number || ''); setIsPhoneModalOpen(true); }}
+                      className="px-5 py-2 border border-primary-200 text-primary-600 hover:bg-primary-50 rounded-xl font-bold text-sm transition-colors whitespace-nowrap"
+                    >
+                      {user?.phone_number ? 'Ubah Nomor' : '+ Tambah No. Handphone'}
+                    </button>
+                  </div>
+
+                </div>
+              )}
+
+              {activeTab === 'security' && (
+                <div className="mt-8">
+                  <p className="text-gray-500 text-sm">Pengaturan password dan keamanan akun.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Modals Container */}
+      {isEmailModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-in zoom-in-95">
+            <button onClick={() => setIsEmailModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Ubah Email</h3>
+            <p className="text-sm text-gray-500 mb-6">Masukkan alamat email baru Anda. Kami akan mengirimkan pesan verifikasi ke email ini.</p>
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Email Baru</label>
+              <input 
+                type="email" 
+                value={emailInput} 
+                onChange={e => setEmailInput(e.target.value)} 
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                placeholder="emailbaru@example.com"
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button disabled={isSavingEmail} onClick={() => setIsEmailModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Batal</button>
+              <button 
+                onClick={handleSaveEmail} 
+                disabled={isSavingEmail || !emailInput}
+                className="px-5 py-2.5 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isSavingEmail ? 'Menyimpan...' : 'Simpan Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPhoneModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-in zoom-in-95">
+            <button onClick={() => setIsPhoneModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Nomor Handphone</h3>
+            <p className="text-sm text-gray-500 mb-6">Masukkan nomor handphone aktif Anda untuk mempermudah pemesanan dan verifikasi keamanan.</p>
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Nomor Handphone</label>
+              <input 
+                type="tel" 
+                value={phoneInput} 
+                onChange={e => setPhoneInput(e.target.value)} 
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                placeholder="Contoh: 08123456789"
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button disabled={isSavingPhone} onClick={() => setIsPhoneModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Batal</button>
+              <button 
+                onClick={handleSavePhone} 
+                disabled={isSavingPhone || !phoneInput}
+                className="px-5 py-2.5 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isSavingPhone ? 'Menyimpan...' : 'Simpan Nomor'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ProfileSettings;

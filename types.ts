@@ -83,6 +83,11 @@ export type AuthUser = {
   role: UserRole;
   specialization?: AgentSpecialization | null;
   verification_status?: VerificationStatus;
+  tanggal_lahir?: string | null;
+  jenis_kelamin?: string | null;
+  tempat_tinggal?: string | null;
+  phone_number?: string | null;
+  pending_email?: string | null;
 };
 
 export type UploadedMediaItem = {
@@ -234,6 +239,10 @@ export interface User {
   verification_status?: VerificationStatus;
   agentType?: AgentType | null;
   specialization?: AgentSpecialization | null;
+  tanggal_lahir?: string | null;
+  jenis_kelamin?: string | null;
+  tempat_tinggal?: string | null;
+  phone_number?: string | null;
   documents?: {
     idCard?: string;
     taxId?: string;
