@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import http from '../../services/http';
 import { BookingStatus } from '../../types';
 import { useAuth } from '../../AuthContext';
@@ -90,8 +91,8 @@ const ConfirmModal: React.FC<{
   onConfirm: () => void;
   onClose: () => void;
   isLoading: boolean;
-}> = ({ title, message, confirmLabel, confirmColor, onConfirm, onClose, isLoading }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+}> = ({ title, message, confirmLabel, confirmColor, onConfirm, onClose, isLoading }) => createPortal(
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
     <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 relative">
       <button onClick={onClose} disabled={isLoading} className="absolute top-4 right-4 bg-gray-100 p-1 rounded-full text-gray-600 hover:bg-gray-200">
         <X className="w-5 h-5" />
@@ -112,7 +113,8 @@ const ConfirmModal: React.FC<{
         </button>
       </div>
     </div>
-  </div>
+  </div>,
+  document.body
 );
 
 // ── Detail Modal ──────────────────────────────────────────────────────────────
@@ -131,8 +133,8 @@ const BookingDetailModal: React.FC<{
     onShowToast(`${label} disalin ke clipboard!`);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
       <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl relative my-8">
         <button onClick={onClose} className="absolute top-4 right-4 bg-gray-100 p-1.5 rounded-full text-gray-600 hover:bg-gray-200 z-10">
           <X className="w-5 h-5" />
@@ -328,7 +330,8 @@ const BookingDetailModal: React.FC<{
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
