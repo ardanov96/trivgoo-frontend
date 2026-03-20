@@ -86,6 +86,37 @@ export type AttachCampaignProductsResponse = ApiResponse<{
   inserted: number;
 }>;
 
+export type FlashSaleRequest = {
+  id: number;
+  product_id: number;
+  agent_id: number;
+  discount_pct: number;
+  sale_price: number | null;
+  status: "pending" | "approved" | "rejected";
+  campaign_id: number | null;
+  admin_note: string | null;
+  created_at: string;
+  updated_at: string;
+  // joined fields dari query
+  product_name: string;
+  product_price: number;
+  product_currency: string;
+  product_image: string | null;
+  agent_name: string;
+};
+
+export type FlashSaleRequestListPayload = {
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  };
+  data: FlashSaleRequest[];
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function assertPositiveId(idLike: number | string, label = "id"): number {
   const id = Number(idLike);
   if (!Number.isFinite(id) || id <= 0) throw new Error(`Invalid ${label}`);
@@ -159,7 +190,6 @@ export const adminService = {
     return res.data;
   },
 
-  // ✅ FIX: return ApiResponse<CampaignListPayload> (bukan Campaign[])
   async listCampaigns(params?: {
     q?: string;
     status?: CampaignStatus;
@@ -211,6 +241,35 @@ export const adminService = {
       { product_ids: payload.product_ids }
     );
 
+    return res.data;
+  },
+
+  async listFlashSaleRequests(params?: {
+    status?: "pending" | "approved" | "rejected";
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<FlashSaleRequestListPayload>> {
+    const res = await http.get<ApiResponse<FlashSaleRequestListPayload>>(
+      "/promo-campaigns/flash-sale-requests",
+      {
+        params: {
+          status: params?.status ?? "pending",
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 20,
+        },
+      }
+    );
+    return res.data;
+  },
+
+  async updateFlashSaleRequest(
+    id: number,
+    action: "approve" | "reject"
+  ): Promise<ApiResponse<{ id: number; status: string }>> {
+    const res = await http.patch<ApiResponse<{ id: number; status: string }>>(
+      `/promo-campaigns/flash-sale-requests/${id}`,
+      { action }
+    );
     return res.data;
   },
 };

@@ -1,4 +1,4 @@
-import { Edit3, Eye, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { Edit3, Eye, ToggleLeft, ToggleRight, Trash2, Zap, Clock } from 'lucide-react';
 import React, { useMemo } from 'react';
 import type { AgentProduct } from '../../../types';
 import { getImageUrl, FALLBACK_IMAGE } from '../../../utils/imageUtils';
@@ -18,17 +18,25 @@ const ProductCard: React.FC<Props> = ({
   onJoinFlashSale,
   onNavigateEdit,
 }) => {
-  // sesuai interface: AgentProductImage[]
   const images = useMemo(
     () => (Array.isArray(product.images) ? product.images : []),
     [product.images],
   );
 
   const cover = product.image;
-
-  // thumbs ambil setelah cover biar gak dobel
-  const thumbs = images.slice(1, 5); // max 4 thumbs
+  const thumbs = images.slice(1, 5);
   const extraCount = Math.max(0, images.length - 1);
+
+  // Flash sale status dari backend
+  const flashStatus = (product as any).flash_sale_status as
+    | 'pending'
+    | 'approved'
+    | 'rejected'
+    | null
+    | undefined;
+
+  const hasPendingFlashSale  = flashStatus === 'pending';
+  const hasApprovedFlashSale = flashStatus === 'approved';
 
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
@@ -66,7 +74,7 @@ const ProductCard: React.FC<Props> = ({
               <p className="text-sm text-gray-500 truncate">{product.location || '-'}</p>
             </div>
 
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <div className="text-sm font-extrabold text-gray-900">
                 {product.currency} {Number(product.price || 0).toLocaleString()}
               </div>
@@ -75,6 +83,20 @@ const ProductCard: React.FC<Props> = ({
               ) : null}
             </div>
           </div>
+
+          {/* Flash sale status label */}
+          {hasPendingFlashSale && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold">
+              <Clock className="w-3 h-3" />
+              Flash Sale — Menunggu Persetujuan Admin
+            </div>
+          )}
+          {hasApprovedFlashSale && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-50 border border-green-200 text-green-700 text-xs font-bold">
+              <Zap className="w-3 h-3" />
+              Flash Sale Aktif
+            </div>
+          )}
 
           {/* Mini thumbnails */}
           {thumbs.length > 0 && (
@@ -112,22 +134,21 @@ const ProductCard: React.FC<Props> = ({
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 text-gray-900 text-sm font-bold hover:bg-gray-200"
             >
               {product.is_active ? (
-                <>
-                  <ToggleRight className="w-4 h-4" /> Disable
-                </>
+                <><ToggleRight className="w-4 h-4" /> Disable</>
               ) : (
-                <>
-                  <ToggleLeft className="w-4 h-4" /> Enable
-                </>
+                <><ToggleLeft className="w-4 h-4" /> Enable</>
               )}
             </button>
 
-            <button
-              onClick={onJoinFlashSale}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-600 text-white text-sm font-bold hover:bg-primary-700"
-            >
-              <Eye className="w-4 h-4" /> Flash Sale
-            </button>
+            {/* Flash sale button — sembunyikan jika pending atau approved */}
+            {!hasPendingFlashSale && !hasApprovedFlashSale && (
+              <button
+                onClick={onJoinFlashSale}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-600 text-white text-sm font-bold hover:bg-primary-700"
+              >
+                <Zap className="w-4 h-4" /> Flash Sale
+              </button>
+            )}
 
             <button
               onClick={onDelete}

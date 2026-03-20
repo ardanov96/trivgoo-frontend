@@ -24,6 +24,7 @@ import { agentProductService } from "../../services/agentProductService";
 import { mediaService } from "../../services/mediaService";
 import http from "../../services/http";
 import VoucherSelector from "../../components/VoucherSelector";
+import SearchableSelect from './components/SearchableSelect';
 
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -1158,23 +1159,52 @@ const AgentAddProduct: React.FC = () => {
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                   <Car className="w-5 h-5 mr-2 text-primary-500" />Select Vehicle
                 </h3>
-                <select
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary-500 text-sm font-medium"
+
+                <SearchableSelect
+                  options={carList.map(car => ({
+                    value:    car.id,
+                    label:    `${car.brand ?? ''} ${car.name ?? ''}`.trim(),
+                    sublabel: [
+                      car.model_year   ? String(car.model_year)  : null,
+                      car.transmission ?? null,
+                      car.seats        ? `${car.seats} seats`    : null,
+                    ].filter(Boolean).join(' · '),
+                    image: car.image || null,
+                  }))}
                   value={selectedCarId ?? ''}
-                  onChange={(e) => { const val = parseInt(e.target.value, 10); if (!isNaN(val)) handleCarSelect(val); }}
-                >
-                  <option value="" disabled>-- Select a vehicle --</option>
-                  {carList.map((car) => (
-                    <option key={car.id} value={car.id}>
-                      {car.brand} {car.name} {car.model_year ? `(${car.model_year})` : ''}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => {
+                    if (!val) { setSelectedCarId(null); return; }
+                    handleCarSelect(Number(val));
+                  }}
+                  placeholder="-- Pilih kendaraan --"
+                  searchPlaceholder="Cari merek atau nama kendaraan..."
+                />
+
                 {selectedCarId && (() => {
                   const car = carList.find(c => c.id === selectedCarId);
-                  return car ? (
+                  return car?.image ? (
                     <div className="mt-4 p-4 rounded-xl border border-primary-100">
-                      {car.image && <img src={car.image} alt={car.name} className="w-full h-32 object-cover rounded-lg mb-3" />}
+                      <img src={car.image} alt={car.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                      <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                        {car.seats && (
+                          <div className="bg-gray-50 rounded-lg p-2">
+                            <p className="font-bold text-gray-700">{car.seats}</p>
+                            <p className="text-gray-400">Seats</p>
+                          </div>
+                        )}
+                        {car.transmission && (
+                          <div className="bg-gray-50 rounded-lg p-2">
+                            <p className="font-bold text-gray-700">{car.transmission}</p>
+                            <p className="text-gray-400">Trans.</p>
+                          </div>
+                        )}
+                        {car.model_year && (
+                          <div className="bg-gray-50 rounded-lg p-2">
+                            <p className="font-bold text-gray-700">{car.model_year}</p>
+                            <p className="text-gray-400">Year</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : null;
                 })()}
