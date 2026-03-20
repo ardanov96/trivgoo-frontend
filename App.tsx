@@ -47,6 +47,7 @@ import AdminReferralStats from './pages/admin/AdminReferralStats';
 import AgentAddProduct from './pages/agent/AddProduct';
 import AgentCommissions from './pages/agent/Commissions';
 import AgentCustomerBookings from './pages/agent/CustomerBookings';
+import AgentCustomerManagement from './pages/agent/CustomerManagement';
 import AgentDashboard from './pages/agent/Dashboard';
 import AgentProducts from './pages/agent/products/MyProducts';
 import AgentVerification from './pages/agent/Verification';
@@ -233,6 +234,7 @@ const AppRoutes = () => {
         <Route path="products/new" element={<AgentAddProduct />} />
         <Route path="products/edit/:id" element={<AgentAddProduct />} />
         <Route path="bookings" element={<AgentCustomerBookings />} />
+        <Route path="customers" element={<AgentCustomerManagement />} />
         <Route path="commissions" element={<AgentCommissions />} />
         <Route path="verification" element={<AgentVerification />} />
         <Route path="profile/settings" element={<ProfileSetting />} />

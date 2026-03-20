@@ -1,5 +1,5 @@
 import { AgentSpecialization, AgentType } from '../types';
-import http from './http';
+import http, { unwrap } from './http';
 import { mediaService } from './mediaService';
 
 export interface VerifyAgentPayload {
@@ -75,5 +75,27 @@ export const agentService = {
   async getMyVerification() {
     const res = await http.get('/agent/verification');
     return res.data;
+  },
+
+  async getProfileSettings() {
+    const res = await http.get('/agent/profile/settings');
+    return unwrap(res.data);
+  },
+
+  async updateProfile(formData: FormData) {
+    const res = await http.put('/agent/profile', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return unwrap(res.data);
+  },
+
+  async updatePassword(payload: any) {
+    const res = await http.put('/agent/password', payload);
+    return unwrap(res.data);
+  },
+
+  async requestBankChange(payload: any) {
+    const res = await http.post('/agent/bank/request-change', payload);
+    return unwrap(res.data);
   },
 };
