@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { useAuth } from '../../AuthContext';
 import http from '../../services/http';
 import { loyaltyService } from '../../services/loyaltyService';
@@ -7,12 +10,13 @@ import {
   Calendar, Edit2, Package, History, ChevronRight, TrendingUp, Award,
   Wallet, Camera, Shield, QrCode, MessageSquare, MessageCircle, Star, X,
   CreditCard, Gift, Coins, Clock, AlertTriangle, ExternalLink, Trash2,
-  AlertCircle, ChevronLeft, Filter, Search,
+  AlertCircle, ChevronLeft, Filter, Search, Download, RefreshCw, FileText,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { useCart } from '../../components/CartContext';
 import UserAvatar from '../../components/UserAvatar';
+import InvoiceTemplate from '../../components/InvoiceTemplate';
 import { getImageUrl, FALLBACK_IMAGE } from '../../utils/imageUtils';
 import { encodeId } from '../../utils/hashids';
 import { generateSlug } from '../../utils/slugify';
@@ -24,10 +28,10 @@ const getStatusColor = (status: BookingStatus | string) => {
   const s = (status || '').toLowerCase();
   switch (s) {
     case 'confirmed': return 'bg-green-100 text-green-700 border-green-200';
-    case 'pending':   return 'bg-amber-100 text-amber-700 border-amber-200';
+    case 'pending': return 'bg-amber-100 text-amber-700 border-amber-200';
     case 'cancelled': return 'bg-red-50 text-red-600 border-red-100';
     case 'completed': return 'bg-blue-50 text-blue-600 border-blue-100';
-    default:          return 'bg-gray-100 text-gray-600';
+    default: return 'bg-gray-100 text-gray-600';
   }
 };
 
@@ -74,18 +78,17 @@ const PaymentCountdown: React.FC<{ expiredAt?: string; compact?: boolean }> = ({
   if (compact) return (
     <span className={`flex items-center gap-1 font-bold text-[10px] ${isUrgent ? 'text-red-500' : 'text-amber-600'}`}>
       <Clock className="w-3 h-3" />
-      {remaining.h > 0 && `${remaining.h}j `}{String(remaining.m).padStart(2,'00')}m {String(remaining.s).padStart(2,'00')}d
+      {remaining.h > 0 && `${remaining.h}j `}{String(remaining.m).padStart(2, '00')}m {String(remaining.s).padStart(2, '00')}d
     </span>
   );
   return (
-    <div className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${
-      isUrgent ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-    }`}>
+    <div className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${isUrgent ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+      }`}>
       <Clock className="w-3.5 h-3.5" />
       Bayar dalam{' '}
       {remaining.h > 0 && <span>{remaining.h}j </span>}
-      <span>{String(remaining.m).padStart(2,'00')}m</span>
-      <span>{String(remaining.s).padStart(2,'00')}d</span>
+      <span>{String(remaining.m).padStart(2, '00')}m</span>
+      <span>{String(remaining.s).padStart(2, '00')}d</span>
     </div>
   );
 };
@@ -94,11 +97,11 @@ const PaymentCountdown: React.FC<{ expiredAt?: string; compact?: boolean }> = ({
 const ExpiredBadge: React.FC<{ compact?: boolean }> = ({ compact }) => (
   compact
     ? <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
-        <AlertTriangle className="w-3 h-3" /> Pembayaran Expired
-      </span>
+      <AlertTriangle className="w-3 h-3" /> Pembayaran Expired
+    </span>
     : <span className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border bg-gray-100 text-gray-500 border-gray-200 w-fit">
-        <AlertTriangle className="w-3 h-3" /> Expired
-      </span>
+      <AlertTriangle className="w-3 h-3" /> Expired
+    </span>
 );
 
 // ── Pagination ────────────────────────────────────────────────────────────────
@@ -108,7 +111,7 @@ const Pagination: React.FC<{
 }> = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }) => {
   if (totalPages <= 1) return null;
   const start = (currentPage - 1) * itemsPerPage + 1;
-  const end   = Math.min(currentPage * itemsPerPage, totalItems);
+  const end = Math.min(currentPage * itemsPerPage, totalItems);
   const pages: (number | '...')[] = [];
   if (totalPages <= 7) {
     for (let i = 1; i <= totalPages; i++) pages.push(i);
@@ -133,8 +136,7 @@ const Pagination: React.FC<{
         {pages.map((p, i) => p === '...'
           ? <span key={`e${i}`} className="px-2 text-gray-400 text-sm">…</span>
           : <button key={p} onClick={() => onPageChange(p as number)}
-              className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-                currentPage === p ? 'bg-primary-600 text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+            className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${currentPage === p ? 'bg-primary-600 text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
               }`}>{p}</button>
         )}
         <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}
@@ -201,7 +203,8 @@ const MobileBookingCard: React.FC<{
   booking: Booking;
   onPay: (b: Booking) => void; onContact: (b: Booking) => void;
   onTicket: (b: Booking) => void; onReview: (b: Booking) => void; onCancel: (b: Booking) => void;
-}> = ({ booking, onPay, onContact, onTicket, onReview, onCancel }) => {
+  onReschedule: (b: Booking) => void; onInvoice: (b: Booking) => void;
+}> = ({ booking, onPay, onContact, onTicket, onReview, onCancel, onReschedule, onInvoice }) => {
   const expired = isPaymentExpired(booking);
   return (
     <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-4 active:scale-[0.98] transition-transform">
@@ -212,8 +215,8 @@ const MobileBookingCard: React.FC<{
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start mb-1">
-            {/* Jika PENDING + expired → tampilkan ExpiredBadge saja */}
-            {booking.status === BookingStatus.PENDING && expired ? (
+            {/* Jika PENDING + expired + belum PAID → tampilkan ExpiredBadge saja */}
+            {booking.status === BookingStatus.PENDING && expired && booking.paymentStatus !== 'PAID' ? (
               <ExpiredBadge compact />
             ) : (
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${getStatusColor(booking.status)}`}>
@@ -225,8 +228,8 @@ const MobileBookingCard: React.FC<{
           <h4 className="font-bold text-gray-900 truncate leading-tight mb-1">{booking.productName}</h4>
           <div className="text-xs text-gray-500 flex items-center mb-1"><Calendar className="w-3 h-3 mr-1" /> {booking.date}</div>
 
-          {/* Countdown — hanya jika PENDING dan BELUM expired */}
-          {booking.status === BookingStatus.PENDING && !expired && (booking as any).paymentExpiredAt && (
+          {/* Countdown — hanya jika PENDING dan BELUM expired dan BELUM dibayar */}
+          {booking.status === BookingStatus.PENDING && !expired && (booking as any).paymentExpiredAt && booking.paymentStatus !== 'PAID' && (
             <div className="mb-2">
               <PaymentCountdown expiredAt={(booking as any).paymentExpiredAt} compact />
             </div>
@@ -235,21 +238,29 @@ const MobileBookingCard: React.FC<{
           <div className="flex justify-between items-end">
             <span className="font-bold text-primary-700">Rp {Number(booking.totalPrice).toLocaleString('id-ID')}</span>
             <div className="flex gap-1.5">
-              {/* Tombol Bayar & Batalkan hanya muncul jika PENDING dan BELUM expired */}
-              {booking.status === BookingStatus.PENDING && !expired && (
+              {/* Tombol Bayar & Batalkan hanya muncul jika PENDING, BELUM expired, dan BELUM dibayar */}
+              {booking.status === BookingStatus.PENDING && !expired && booking.paymentStatus !== 'PAID' && (
                 <>
                   <button onClick={() => onPay(booking)} className="p-1.5 bg-primary-600 rounded-lg text-white hover:bg-primary-700 shadow-sm" title="Bayar"><CreditCard className="w-4 h-4" /></button>
                   <button onClick={() => onCancel(booking)} className="p-1.5 bg-red-50 rounded-lg text-red-500 hover:bg-red-100" title="Batalkan"><Trash2 className="w-4 h-4" /></button>
                 </>
               )}
-              {(booking.status === BookingStatus.CONFIRMED || booking.status === BookingStatus.PENDING) && (
+              {(booking.paymentStatus === 'PAID' || booking.status === BookingStatus.PENDING) && (
                 <button onClick={() => onContact(booking)} className="p-1.5 bg-green-50 rounded-lg text-green-600 hover:text-green-700"><MessageCircle className="w-4 h-4" /></button>
               )}
-              {booking.status === BookingStatus.CONFIRMED && (
-                <button onClick={() => onTicket(booking)} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900"><QrCode className="w-4 h-4" /></button>
+              {booking.paymentStatus === 'PAID' && booking.status !== BookingStatus.CANCELLED && (
+                <>
+                  <button onClick={() => onTicket(booking)} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900" title="E-Ticket"><QrCode className="w-4 h-4" /></button>
+                  {booking.status !== BookingStatus.COMPLETED && ((booking as any).rescheduleCount || 0) < 1 && (
+                    <button onClick={() => onReschedule(booking)} className="p-1.5 bg-orange-50 rounded-lg text-orange-600 hover:bg-orange-100" title="Reschedule"><RefreshCw className="w-4 h-4" /></button>
+                  )}
+                </>
+              )}
+              {booking.paymentStatus === 'PAID' && (
+                <button onClick={() => onInvoice(booking)} className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100" title="Download Invoice"><FileText className="w-4 h-4" /></button>
               )}
               {booking.status === BookingStatus.COMPLETED && (
-                <button onClick={() => onReview(booking)} className="p-1.5 bg-yellow-50 rounded-lg text-yellow-600 hover:text-yellow-700"><MessageSquare className="w-4 h-4" /></button>
+                <button onClick={() => onReview(booking)} className="p-1.5 bg-yellow-50 rounded-lg text-yellow-600 hover:text-yellow-700" title="Review"><MessageSquare className="w-4 h-4" /></button>
               )}
               <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
                 <ChevronRight className="w-4 h-4" />
@@ -269,14 +280,15 @@ interface BookingTableProps {
   onPay: (b: Booking) => void; onContact: (b: Booking) => void;
   onTicket: (b: Booking) => void; onReview: (b: Booking) => void;
   onCancel: (b: Booking) => void; onSimulateComplete: (id: number) => void;
+  onReschedule: (b: Booking) => void; onInvoice: (b: Booking) => void;
 }
 
 const BookingTable: React.FC<BookingTableProps> = ({
-  data, activeTab, onPay, onContact, onTicket, onReview, onCancel, onSimulateComplete
+  data, activeTab, onPay, onContact, onTicket, onReview, onCancel, onSimulateComplete, onReschedule, onInvoice
 }) => {
-  const topRef    = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const syncing   = useRef(false);
+  const syncing = useRef(false);
   const [showTopScroll, setShowTopScroll] = useState(false);
 
   useEffect(() => {
@@ -343,19 +355,18 @@ const BookingTable: React.FC<BookingTableProps> = ({
                 </td>
               </tr>
             ) : data.map((booking) => {
-              const expiredAt     = (booking as any).paymentExpiredAt;
+              const expiredAt = (booking as any).paymentExpiredAt;
               const isExpiredSoon = expiredAt && (new Date(expiredAt).getTime() - Date.now()) < 3 * 3600000;
-              const expired       = isPaymentExpired(booking);
+              const expired = isPaymentExpired(booking);
 
               return (
                 <tr key={booking.id}
-                  className={`hover:bg-gray-50/50 transition-colors ${
-                    expired && booking.status === BookingStatus.PENDING
+                  className={`hover:bg-gray-50/50 transition-colors ${expired && booking.status === BookingStatus.PENDING
                       ? 'bg-gray-50/60 opacity-75'                         // expired → redup
                       : isExpiredSoon && booking.status === BookingStatus.PENDING
                         ? 'bg-red-50/30'                                   // hampir expired → merah tipis
                         : ''
-                  }`}>
+                    }`}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-xs font-bold text-primary-600 font-mono tracking-wide">
                       {(booking as any).externalId || `#${booking.id}`}
@@ -381,15 +392,15 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col gap-1">
-                      {/* Jika PENDING + expired → tampilkan HANYA ExpiredBadge, sembunyikan badge PENDING */}
-                      {booking.status === BookingStatus.PENDING && expired ? (
+                      {/* Jika PENDING + expired + BELUM dibayar → tampilkan HANYA ExpiredBadge, sembunyikan badge PENDING */}
+                      {booking.status === BookingStatus.PENDING && expired && booking.paymentStatus !== 'PAID' ? (
                         <ExpiredBadge />
                       ) : (
                         <>
                           <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border w-fit ${getStatusColor(booking.status)}`}>
                             {booking.status}
                           </span>
-                          {booking.status === BookingStatus.PENDING && expiredAt && (
+                          {booking.status === BookingStatus.PENDING && expiredAt && booking.paymentStatus !== 'PAID' && (
                             <PaymentCountdown expiredAt={expiredAt} />
                           )}
                         </>
@@ -401,8 +412,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
-                      {/* Tombol Bayar & Batalkan — hanya jika PENDING dan BELUM expired */}
-                      {booking.status === BookingStatus.PENDING && !expired && (
+                      {/* Tombol Bayar & Batalkan — hanya jika PENDING, BELUM expired, dan BELUM dibayar */}
+                      {booking.status === BookingStatus.PENDING && !expired && booking.paymentStatus !== 'PAID' && (
                         <>
                           <button onClick={() => onPay(booking)}
                             className="flex items-center text-white bg-primary-600 hover:bg-primary-700 px-3 py-1.5 rounded-lg transition-colors text-xs font-bold shadow-sm gap-1">
@@ -414,23 +425,35 @@ const BookingTable: React.FC<BookingTableProps> = ({
                           </button>
                         </>
                       )}
-                      {(booking.status === BookingStatus.CONFIRMED || booking.status === BookingStatus.PENDING) && (
+                      {(booking.paymentStatus === 'PAID' || booking.status === BookingStatus.PENDING) && (
                         <button onClick={() => onContact(booking)}
                           className="flex items-center text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
                           <MessageCircle className="w-3.5 h-3.5 mr-1" /> Contact
                         </button>
                       )}
-                      {booking.status === BookingStatus.CONFIRMED && (
+                      {booking.paymentStatus === 'PAID' && booking.status !== BookingStatus.CANCELLED && (
                         <>
                           <button onClick={() => onTicket(booking)}
                             className="flex items-center text-primary-600 bg-primary-50 hover:bg-primary-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
                             <QrCode className="w-3.5 h-3.5 mr-1" /> Ticket
                           </button>
+                          {booking.status !== BookingStatus.COMPLETED && ((booking as any).rescheduleCount || 0) < 1 && (
+                            <button onClick={() => onReschedule(booking)}
+                              className="flex items-center text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
+                              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Reschedule
+                            </button>
+                          )}
                           <button onClick={() => onSimulateComplete(booking.id)}
                             className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg text-[10px]">
                             Simulate Complete
                           </button>
                         </>
+                      )}
+                      {booking.paymentStatus === 'PAID' && (
+                        <button onClick={() => onInvoice(booking)}
+                          className="flex items-center text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
+                          <FileText className="w-3.5 h-3.5 mr-1" /> Invoice
+                        </button>
                       )}
                       {booking.status === BookingStatus.COMPLETED && (
                         <button onClick={() => onReview(booking)}
@@ -456,38 +479,50 @@ const BookingTable: React.FC<BookingTableProps> = ({
 // ── Main Component ────────────────────────────────────────────────────────────
 const CustomerBookings: React.FC = () => {
   const { user, updateUser } = useAuth();
-  const navigate   = useNavigate();
-  const location   = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { clearCart } = useCart();
 
-  const [bookings, setBookings]         = useState<Booking[]>([]);
-  const [activeTab, setActiveTab]       = useState<'active' | 'history'>('active');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [showTicketModal, setShowTicketModal]  = useState(false);
-  const [showReviewModal, setShowReviewModal]  = useState(false);
-  const [showCancelModal, setShowCancelModal]  = useState(false);
-  const [bookingToCancel, setBookingToCancel]  = useState<Booking | null>(null);
-  const [isCancelling, setIsCancelling]        = useState(false);
-  const [cancelSuccess, setCancelSuccess]      = useState<string | null>(null);
-  const [reviewRating, setReviewRating]        = useState(5);
-  const [reviewComment, setReviewComment]      = useState('');
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [membershipTier, setMembershipTier]    = useState<{ name: string; color: string | null } | null>(null);
-  const [pointBalance, setPointBalance]        = useState<number>(0);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isDownloadingTicket, setIsDownloadingTicket] = useState(false);
+  const ticketRef = useRef<HTMLDivElement>(null);
 
-  const [activePage, setActivePage]   = useState(1);
+  const [bookingToInvoice, setBookingToInvoice] = useState<Booking | null>(null);
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
+
+  const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [bookingToReschedule, setBookingToReschedule] = useState<Booking | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [rescheduleSuccess, setRescheduleSuccess] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [membershipTier, setMembershipTier] = useState<{ name: string; color: string | null } | null>(null);
+  const [pointBalance, setPointBalance] = useState<number>(0);
+
+  const [activePage, setActivePage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
-  const [dateFrom, setDateFrom]       = useState('');
-  const [dateTo, setDateTo]           = useState('');
-  const [searchText, setSearchText]   = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [searchText, setSearchText] = useState('');
 
 
 
   useEffect(() => {
     if (user) {
       loadBookings();
-      loyaltyService.getMembership().then(m => setMembershipTier({ name: m.tier.name, color: m.tier.color })).catch(() => {});
-      loyaltyService.getBalance().then(b => setPointBalance(b.balance)).catch(() => {});
+      loyaltyService.getMembership().then(m => setMembershipTier({ name: m.tier.name, color: m.tier.color })).catch(() => { });
+      loyaltyService.getBalance().then(b => setPointBalance(b.balance)).catch(() => { });
     }
   }, [user]);
 
@@ -501,6 +536,10 @@ const CustomerBookings: React.FC = () => {
   useEffect(() => {
     if (cancelSuccess) { const t = setTimeout(() => setCancelSuccess(null), 4000); return () => clearTimeout(t); }
   }, [cancelSuccess]);
+
+  useEffect(() => {
+    if (rescheduleSuccess) { const t = setTimeout(() => setRescheduleSuccess(null), 4000); return () => clearTimeout(t); }
+  }, [rescheduleSuccess]);
 
   useEffect(() => {
     if (activeTab === 'active') setActivePage(1);
@@ -520,11 +559,11 @@ const CustomerBookings: React.FC = () => {
     }
   };
 
-  const activeBookings  = bookings.filter(b => b.status === BookingStatus.PENDING || b.status === BookingStatus.CONFIRMED);
-  const pastBookings    = bookings.filter(b => b.status === BookingStatus.COMPLETED || b.status === BookingStatus.CANCELLED);
-  const completedTrips  = bookings.filter(b => b.status === BookingStatus.COMPLETED).length;
-  const totalSpent      = bookings
-    .filter(b => b.status === BookingStatus.CONFIRMED || b.status === BookingStatus.COMPLETED)
+  const activeBookings = bookings.filter(b => b.status === BookingStatus.PENDING || b.status === BookingStatus.CONFIRMED);
+  const pastBookings = bookings.filter(b => b.status === BookingStatus.COMPLETED || b.status === BookingStatus.CANCELLED);
+  const completedTrips = bookings.filter(b => b.status === BookingStatus.COMPLETED).length;
+  const totalSpent = bookings
+    .filter(b => b.paymentStatus === 'PAID' && b.status !== BookingStatus.CANCELLED)
     .reduce((sum, b) => sum + b.totalPrice, 0);
 
   const applyFilters = (list: Booking[]) => {
@@ -538,19 +577,19 @@ const CustomerBookings: React.FC = () => {
       );
     }
     if (dateFrom) result = result.filter(b => (b.date?.split(' - ')[0] || b.date || '') >= dateFrom);
-    if (dateTo)   result = result.filter(b => (b.date?.split(' - ')[0] || b.date || '') <= dateTo);
+    if (dateTo) result = result.filter(b => (b.date?.split(' - ')[0] || b.date || '') <= dateTo);
     return result;
   };
 
   const hasActiveFilter = dateFrom || dateTo || searchText.trim();
   const clearFilters = () => { setDateFrom(''); setDateTo(''); setSearchText(''); };
 
-  const rawData        = activeTab === 'active' ? activeBookings : pastBookings;
-  const filteredData   = applyFilters(rawData);
-  const currentPage    = activeTab === 'active' ? activePage : historyPage;
+  const rawData = activeTab === 'active' ? activeBookings : pastBookings;
+  const filteredData = applyFilters(rawData);
+  const currentPage = activeTab === 'active' ? activePage : historyPage;
   const setCurrentPage = activeTab === 'active' ? setActivePage : setHistoryPage;
-  const totalPages     = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-  const pagedData      = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  const pagedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handlePageChange = (p: number) => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
@@ -559,6 +598,63 @@ const CustomerBookings: React.FC = () => {
   const openTicket = (b: Booking) => { setSelectedBooking(b); setShowTicketModal(true); };
   const openReview = (b: Booking) => { setSelectedBooking(b); setReviewRating(5); setReviewComment(''); setShowReviewModal(true); };
   const openCancelModal = (b: Booking) => { setBookingToCancel(b); setShowCancelModal(true); };
+  const openRescheduleModal = (b: Booking) => { setBookingToReschedule(b); setRescheduleDate(''); setShowRescheduleModal(true); };
+
+  // ── Download E-Ticket as PNG ─────────────────────────────────────────────────
+  const handleDownloadTicket = async () => {
+    if (!ticketRef.current || !selectedBooking) return;
+    setIsDownloadingTicket(true);
+    try {
+      const canvas = await html2canvas(ticketRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+      const link = document.createElement('a');
+      link.download = `e-ticket-${(selectedBooking as any).externalId || selectedBooking.id}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Download ticket error:', err);
+      // Fallback: trigger print
+      window.print();
+    } finally {
+      setIsDownloadingTicket(false);
+    }
+  };
+
+  // ── Download Invoice as PDF ──────────────────────────────────────────────────
+  const handleDownloadInvoice = async (b: Booking) => {
+    setBookingToInvoice(b);
+    setIsDownloadingInvoice(true);
+
+    // Tunggu DOM update untuk merender InvoiceTemplate
+    setTimeout(async () => {
+      try {
+        if (!invoiceRef.current) return;
+        const canvas = await html2canvas(invoiceRef.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        // A4 params: format a4, orientation portrait, unit mm
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Invoice-${(b as any).externalId || b.id}.pdf`);
+      } catch (err) {
+        console.error('Invoice download error:', err);
+        alert('Gagal mendownload Invoice. Silakan coba lagi.');
+      } finally {
+        setIsDownloadingInvoice(false);
+        setBookingToInvoice(null);
+      }
+    }, 500); // delay pendek untuk memastikan DOM rendered sempurna
+  };
 
   const handleConfirmCancel = async () => {
     if (!bookingToCancel) return;
@@ -570,6 +666,18 @@ const CustomerBookings: React.FC = () => {
       await loadBookings();
     } catch (err: any) { alert(err.response?.data?.message || 'Gagal membatalkan booking.'); }
     finally { setIsCancelling(false); }
+  };
+
+  const handleConfirmReschedule = async () => {
+    if (!bookingToReschedule || !rescheduleDate) return;
+    setIsRescheduling(true);
+    try {
+      await http.patch(`/bookings/${bookingToReschedule.id}/reschedule`, { new_date: rescheduleDate });
+      setShowRescheduleModal(false); setBookingToReschedule(null);
+      setRescheduleSuccess(`Booking "${bookingToReschedule.productName}" berhasil di-reschedule ke ${rescheduleDate}.`);
+      await loadBookings();
+    } catch (err: any) { alert(err.response?.data?.message || 'Gagal melakukan reschedule.'); }
+    finally { setIsRescheduling(false); }
   };
 
   const handleSimulateComplete = async (id: number) => {
@@ -618,6 +726,14 @@ const CustomerBookings: React.FC = () => {
           </div>
         </div>
       )}
+      {rescheduleSuccess && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 pointer-events-none">
+          <div className="bg-orange-500 text-white px-5 py-3 rounded-2xl shadow-lg flex items-center gap-3 text-sm font-bold max-w-sm">
+            <RefreshCw className="w-4 h-4 flex-shrink-0" />
+            {rescheduleSuccess}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -627,15 +743,15 @@ const CustomerBookings: React.FC = () => {
             <div className="bg-white rounded-3xl shadow-soft border border-gray-100 p-6 md:p-8 sticky top-28">
               <div className="flex flex-col items-center text-center mb-8">
                 <div className="w-24 h-24 md:w-28 md:h-28 rounded-full border-4 border-white shadow-xl flex items-center justify-center relative group overflow-hidden mb-5">
-                  <UserAvatar 
-                    user={user} 
-                    className="w-full h-full shadow-inner" 
+                  <UserAvatar
+                    user={user}
+                    className="w-full h-full shadow-inner"
                   />
                 </div>
-                
+
                 <h2 className="text-xl font-bold text-gray-900 mb-1">{user?.name}</h2>
                 <p className="text-gray-400 text-sm font-medium mb-4">{user?.email}</p>
-                
+
                 <div className="flex flex-col items-center gap-2">
                   {membershipTier && (
                     <span className="px-3 py-1 text-white text-[10px] font-bold uppercase tracking-wider rounded-full flex items-center"
@@ -780,7 +896,8 @@ const CustomerBookings: React.FC = () => {
                 ) : pagedData.map(b => (
                   <MobileBookingCard key={b.id} booking={b}
                     onPay={handlePayNow} onContact={handleContactAgent}
-                    onTicket={openTicket} onReview={openReview} onCancel={openCancelModal} />
+                    onTicket={openTicket} onReview={openReview} onCancel={openCancelModal}
+                    onReschedule={openRescheduleModal} onInvoice={handleDownloadInvoice} />
                 ))}
               </div>
 
@@ -790,6 +907,7 @@ const CustomerBookings: React.FC = () => {
                 onPay={handlePayNow} onContact={handleContactAgent}
                 onTicket={openTicket} onReview={openReview}
                 onCancel={openCancelModal} onSimulateComplete={handleSimulateComplete}
+                onReschedule={openRescheduleModal} onInvoice={handleDownloadInvoice}
               />
 
               <Pagination
@@ -812,35 +930,98 @@ const CustomerBookings: React.FC = () => {
       {showTicketModal && selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden relative">
-            <button onClick={() => setShowTicketModal(false)} className="absolute top-4 right-4 bg-gray-100 p-1 rounded-full text-gray-600 hover:bg-gray-200 z-10"><X className="w-5 h-5" /></button>
-            <div className="bg-primary-600 p-6 text-white text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent" />
-              <h3 className="text-xl font-bold font-serif relative z-10">E-Ticket</h3>
-              <p className="text-primary-100 text-sm relative z-10">Show this at check-in</p>
-            </div>
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <h4 className="text-lg font-bold text-gray-900 mb-1">{selectedBooking.productName}</h4>
-                <p className="text-sm text-gray-500">{selectedBooking.date} • {selectedBooking.quantity} Guest(s)</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-6 text-center">
-                <div className="bg-white p-4 rounded-xl inline-block shadow-sm mb-3"><QrCode className="w-32 h-32 text-gray-900" /></div>
-                <p className="text-xs font-mono text-gray-400 font-bold uppercase tracking-widest">
-                  {(selectedBooking as any).externalId || `#${selectedBooking.id}`}
-                </p>
-              </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between border-b border-dashed border-gray-100 pb-2">
-                  <span className="text-gray-500">Name</span>
-                  <span className="font-bold text-gray-900">{(selectedBooking as any).contactDetails?.name || user?.name}</span>
-                </div>
-                <div className="flex justify-between border-b border-dashed border-gray-100 pb-2">
-                  <span className="text-gray-500">Status</span>
-                  <span className="font-bold text-green-600 uppercase text-xs px-2 py-0.5 bg-green-50 rounded-full">{selectedBooking.status}</span>
+            <button onClick={() => setShowTicketModal(false)} className="absolute top-4 right-4 bg-white/80 backdrop-blur p-1.5 rounded-full text-gray-600 hover:bg-gray-200 z-10 shadow-sm"><X className="w-5 h-5" /></button>
+
+            {/* Printable ticket area */}
+            <div ref={ticketRef} className="bg-white relative">
+              {/* Header */}
+              <div className="bg-gray-900 px-6 py-5 text-white flex justify-between items-center relative overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '12px 12px' }}></div>
+                <div className="relative z-10 w-full text-center">
+                  <h3 className="text-xl font-black tracking-[0.25em] uppercase">Trivgoo</h3>
+                  <p className="text-gray-400 text-[10px] tracking-widest uppercase mt-1">E-Ticket / Voucher</p>
                 </div>
               </div>
+
+              {/* Body */}
+              <div className="p-6 relative">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex-1 pr-4 border-r border-gray-100">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Passanger</p>
+                    <p className="text-base font-bold text-gray-900 leading-tight">{(selectedBooking as any).contactDetails?.name || user?.name}</p>
+                  </div>
+                  <div className="pl-4">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1 text-right">Status</p>
+                    <span className="font-bold text-green-600 uppercase text-[10px] px-2 py-0.5 bg-green-50 rounded-sm border border-green-200 block text-center min-w-[70px]">{selectedBooking.status}</span>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Experience</p>
+                  <p className="text-lg font-bold text-gray-800 leading-snug">{selectedBooking.productName}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-y-5 gap-x-4">
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Date</p>
+                    <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gray-400" />{selectedBooking.date}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Guests</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedBooking.quantity} Person(s)</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Total Paid</p>
+                    <p className="text-sm font-bold text-primary-600">Rp {Number(selectedBooking.totalPrice).toLocaleString('id-ID')}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Booking ID</p>
+                    <p className="text-xs font-mono font-bold text-gray-900 uppercase">{(selectedBooking as any).externalId || `#${selectedBooking.id}`}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Perforation effect / Separator */}
+              <div className="relative flex items-center">
+                <div className="absolute left-[-12px] bg-black/60 w-6 h-6 rounded-full" />
+                <div className="w-full border-t-[2.5px] border-dashed border-gray-200 mx-5" />
+                <div className="absolute right-[-12px] bg-black/60 w-6 h-6 rounded-full" />
+              </div>
+
+              {/* QR Code Section */}
+              <div className="px-6 pb-8 pt-6 flex flex-col items-center justify-center relative bg-gray-50/50">
+                <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm relative z-10 transition-transform hover:scale-105 duration-300">
+                  <QRCodeSVG
+                    value={JSON.stringify({
+                      platform: 'trivgoo',
+                      bookingId: (selectedBooking as any).externalId || String(selectedBooking.id),
+                      product: selectedBooking.productName,
+                      date: selectedBooking.date,
+                      guests: selectedBooking.quantity,
+                    })}
+                    size={150}
+                    level="H"
+                    includeMargin={false}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-5">Scan QR code at the entry</p>
+              </div>
             </div>
-            <div className="bg-gray-50 p-4 text-center text-xs text-gray-400 font-medium">Trivgoo Travel Platform</div>
+
+            {/* Download button (outside printable area) */}
+            <div className="p-5 pt-0 bg-white">
+              <button
+                onClick={handleDownloadTicket}
+                disabled={isDownloadingTicket}
+                className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0"
+              >
+                {isDownloadingTicket ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Mengunduh...</>
+                ) : (
+                  <><Download className="w-4 h-4" /> Download E-Ticket</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -852,7 +1033,7 @@ const CustomerBookings: React.FC = () => {
             <h3 className="text-xl font-bold text-gray-900 mb-2">Write a Review</h3>
             <p className="text-gray-500 text-sm mb-6">How was your experience with <strong>{selectedBooking.productName}</strong>?</p>
             <div className="flex justify-center gap-2 mb-6">
-              {[1,2,3,4,5].map(star => (
+              {[1, 2, 3, 4, 5].map(star => (
                 <button key={star} onClick={() => setReviewRating(star)} className="p-1 transition-transform hover:scale-110 focus:outline-none">
                   <Star className={`w-8 h-8 ${star <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
                 </button>
@@ -865,6 +1046,86 @@ const CustomerBookings: React.FC = () => {
               {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Reschedule Modal ── */}
+      {showRescheduleModal && bookingToReschedule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 relative">
+            <button onClick={() => { if (!isRescheduling) { setShowRescheduleModal(false); setBookingToReschedule(null); } }} disabled={isRescheduling} className="absolute top-4 right-4 bg-gray-100 p-1 rounded-full text-gray-600 hover:bg-gray-200 disabled:opacity-50">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center">
+                <RefreshCw className="w-8 h-8 text-orange-500" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Reschedule Booking</h3>
+            <p className="text-gray-500 text-sm text-center mb-5">Pilih tanggal baru untuk booking ini.</p>
+
+            <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+              <div className="flex gap-3">
+                <img src={getImageUrl(bookingToReschedule.productImage)} alt={bookingToReschedule.productName}
+                  className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-900 text-sm line-clamp-2">{bookingToReschedule.productName}</p>
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> Tanggal saat ini: <span className="font-bold">{bookingToReschedule.date}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-bold text-gray-700 mb-2">Tanggal Baru</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6">
+              <p className="text-amber-700 text-xs flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                Reschedule hanya dapat dilakukan 1 kali per booking. Pastikan tanggal baru sudah benar.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => { setShowRescheduleModal(false); setBookingToReschedule(null); }} disabled={isRescheduling}
+                className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50">
+                Batal
+              </button>
+              <button onClick={handleConfirmReschedule} disabled={isRescheduling || !rescheduleDate}
+                className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold text-sm hover:bg-orange-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                {isRescheduling
+                  ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  : <><RefreshCw className="w-4 h-4" /> Reschedule</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Invoice Template (Hidden from viewport, used for PDF generation) ── */}
+      {bookingToInvoice && (
+        <InvoiceTemplate ref={invoiceRef} booking={bookingToInvoice} user={user} />
+      )}
+
+      {/* Invoice Download Overlay */}
+      {isDownloadingInvoice && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
+          <p className="text-lg font-bold text-gray-900">Mencetak Invoice...</p>
+          <p className="text-sm text-gray-500 mt-1">Harap tunggu sebentar</p>
         </div>
       )}
     </div>
