@@ -151,7 +151,6 @@ const LinkAjaLogo = () => (
 const QrisLogo = () => (
   <svg viewBox="0 0 72 30" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-auto">
     <rect width="72" height="30" rx="4" fill="white"/>
-    {/* QR pattern blocks */}
     <rect x="4" y="4" width="9" height="9" rx="1.5" fill="#E31837"/>
     <rect x="5.5" y="5.5" width="6" height="6" rx="0.8" fill="white"/>
     <rect x="7" y="7" width="3" height="3" fill="#E31837"/>
@@ -165,7 +164,6 @@ const QrisLogo = () => (
     <rect x="22" y="15" width="4" height="3" fill="#E31837"/>
     <rect x="17" y="20" width="9" height="3" fill="#E31837"/>
     <rect x="17" y="24" width="4" height="2" fill="#E31837"/>
-    {/* QRIS text */}
     <text x="30" y="20" fontFamily="Arial Black,sans-serif" fontSize="11.5" fontWeight="900" fill="#E31837">QRIS</text>
   </svg>
 );
@@ -173,7 +171,6 @@ const QrisLogo = () => (
 const AlfamartLogo = () => (
   <svg viewBox="0 0 88 30" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-auto">
     <rect width="88" height="30" rx="4" fill="#E31837"/>
-    {/* Alfa triangle A */}
     <path d="M7 22L14 8l7 14M9 18h10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
     <text x="23" y="20" fontFamily="Arial Black,sans-serif" fontSize="9.5" fontWeight="900" fill="white">ALFAMART</text>
   </svg>
@@ -210,9 +207,8 @@ const PublicLayout: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node))
         setIsProfileDropdownOpen(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -237,13 +233,47 @@ const PublicLayout: React.FC = () => {
 
   const handleLogout = () => { logout(); navigate("/"); };
 
-  const navigateToDashboard = () => {
-    if (user?.role === UserRole.ADMIN) navigate("/admin");
-    if (user?.role === UserRole.AGENT) navigate("/agent");
-    if (user?.role === UserRole.CUSTOMER) navigate("/my-bookings");
-  };
-
   const isHome = location.pathname === "/";
+  const iconCls = scrolled || !isHome ? "text-gray-600 hover:bg-gray-100" : "text-white/90 hover:bg-white/20";
+
+  // ── Shared icon components to avoid repetition ────────────────────────────
+  const WishlistIcon = ({ mobile = false }: { mobile?: boolean }) => (
+    <Link
+      to="/wishlist"
+      title="Wishlist"
+      className={mobile
+        ? `relative p-2 ${scrolled || !isHome ? "text-gray-600" : "text-white"}`
+        : `p-2 rounded-full transition-colors relative ${iconCls}`
+      }
+    >
+      <Heart className={mobile ? "w-6 h-6" : "w-5 h-5"} />
+      {wishlist.length > 0 && (
+        <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white" />
+      )}
+    </Link>
+  );
+
+  const CartIcon = ({ mobile = false }: { mobile?: boolean }) => (
+    <button
+      onClick={() => setIsCartOpen(true)}
+      title="Keranjang"
+      className={mobile
+        ? `relative p-2 ${scrolled || !isHome ? "text-gray-600" : "text-white"}`
+        : `relative p-2 rounded-full transition-colors ${iconCls}`
+      }
+    >
+      <ShoppingCart className={mobile ? "w-6 h-6" : "w-5 h-5"} />
+      {cartCount > 0 && (
+        <span className={`absolute font-bold rounded-full flex items-center justify-center shadow border border-white bg-primary-600 text-white ${
+          mobile
+            ? "top-0 right-0 min-w-[16px] h-[16px] text-[9px] px-0.5"
+            : "-top-0.5 -right-0.5 min-w-[18px] h-[18px] text-[10px] px-1"
+        }`}>
+          {cartCount > 9 ? "9+" : cartCount}
+        </span>
+      )}
+    </button>
+  );
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-gray-50">
@@ -255,6 +285,8 @@ const PublicLayout: React.FC = () => {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-12">
+
+            {/* Logo + nav links */}
             <div className="flex items-center">
               <Link to="/" className="flex-shrink-0 flex items-center group relative z-10">
                 <img src="/offest_inline_trp.png" alt="Trivgoo Logo" className="h-10 md:h-16 w-auto" />
@@ -274,67 +306,43 @@ const PublicLayout: React.FC = () => {
               </div>
             </div>
 
+            {/* Desktop right side */}
             <div className="hidden md:flex md:items-center space-x-2">
-              {user && (
-                <>
-                  <Link to="/wishlist" title="Wishlist" className={`p-2 rounded-full transition-colors relative ${scrolled || !isHome ? "text-gray-600 hover:bg-gray-100" : "text-white/90 hover:bg-white/20"}`}>
-                    <Heart className="w-5 h-5" />
-                    {wishlist.length > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white" />}
-                  </Link>
-                  <button onClick={() => setIsCartOpen(true)} title="Keranjang" className={`relative p-2 rounded-full transition-colors ${scrolled || !isHome ? "text-gray-600 hover:bg-gray-100" : "text-white/90 hover:bg-white/20"}`}>
-                    <ShoppingCart className="w-5 h-5" />
-                    {cartCount > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow border border-white">{cartCount > 9 ? "9+" : cartCount}</span>}
-                  </button>
-                </>
-              )}
+
+              {/* ── Wishlist & Cart — always visible ── */}
+              <WishlistIcon />
+              <CartIcon />
+
+              {/* ── Auth section ── */}
               {user ? (
                 <div className="flex items-center space-x-4 pl-2 border-l border-gray-200/20">
                   <div className="relative" ref={dropdownRef}>
-                    <button 
-                      onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} 
+                    <button
+                      onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                       className={`flex items-center text-sm font-medium transition-colors group ${scrolled || !isHome ? "text-gray-700 hover:text-primary-600" : "text-white hover:text-primary-200"}`}
                     >
-                      <UserAvatar 
-                        user={user} 
-                        className="h-9 w-9 border-2 border-white shadow-sm mr-2 group-hover:border-primary-200 transition-colors" 
-                      />
+                      <UserAvatar user={user} className="h-9 w-9 border-2 border-white shadow-sm mr-2 group-hover:border-primary-200 transition-colors" />
                       <span>{user.name}</span>
-                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isProfileDropdownOpen ? "rotate-180" : ""}`} />
                     </button>
-                    
-                    {/* Dropdown Menu */}
+
                     {isProfileDropdownOpen && (
                       <div className="absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-2 animate-in fade-in zoom-in-95 duration-200 z-50">
-                        <Link 
-                          to={user.role === UserRole.CUSTOMER ? '/my-account' : '/profile'} 
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                          className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors"
-                        >
+                        <Link to={user.role === UserRole.CUSTOMER ? "/my-account" : "/profile"} onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">
                           <UserIcon className="w-4 h-4 mr-3 text-gray-400" /> Profil Saya
                         </Link>
                         {user.role === UserRole.CUSTOMER && (
-                          <Link 
-                            to="/my-bookings" 
-                            onClick={() => setIsProfileDropdownOpen(false)}
-                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors"
-                          >
+                          <Link to="/my-bookings" onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">
                             <Package className="w-4 h-4 mr-3 text-gray-400" /> My Booking
                           </Link>
                         )}
                         {(user.role === UserRole.ADMIN || user.role === UserRole.AGENT) && (
-                          <Link 
-                            to={user.role === UserRole.ADMIN ? '/admin' : '/agent'} 
-                            onClick={() => setIsProfileDropdownOpen(false)}
-                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors"
-                          >
+                          <Link to={user.role === UserRole.ADMIN ? "/admin" : "/agent"} onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">
                             <LayoutDashboard className="w-4 h-4 mr-3 text-gray-400" /> Dashboard
                           </Link>
                         )}
-                        <div className="h-px bg-gray-100 my-1"></div>
-                        <button 
-                          onClick={() => { setIsProfileDropdownOpen(false); handleLogout(); }} 
-                          className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left font-medium"
-                        >
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => { setIsProfileDropdownOpen(false); handleLogout(); }} className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left font-medium">
                           <LogOut className="w-4 h-4 mr-3 text-red-500" /> Logout
                         </button>
                       </div>
@@ -349,15 +357,12 @@ const PublicLayout: React.FC = () => {
               )}
             </div>
 
+            {/* Mobile right side */}
             <div className="-mr-2 flex items-center md:hidden gap-1">
-              <Link to="/wishlist" className={`relative p-2 ${scrolled || !isHome ? "text-gray-600" : "text-white"}`}>
-                <Heart className="w-6 h-6" />
-                {wishlist.length > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white" />}
-              </Link>
-              <button onClick={() => setIsCartOpen(true)} className={`relative p-2 ${scrolled || !isHome ? "text-gray-600" : "text-white"}`}>
-                <ShoppingCart className="w-6 h-6" />
-                {cartCount > 0 && <span className="absolute top-0 right-0 min-w-[16px] h-[16px] bg-primary-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 shadow border border-white">{cartCount > 9 ? "9+" : cartCount}</span>}
-              </button>
+              {/* ── Wishlist & Cart — always visible on mobile ── */}
+              <WishlistIcon mobile />
+              <CartIcon mobile />
+
               <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={`inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition-colors ${scrolled || !isHome ? "text-gray-500 hover:bg-gray-100" : "text-white hover:bg-white/20"}`}>
                 {isMenuOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
               </button>
@@ -365,6 +370,7 @@ const PublicLayout: React.FC = () => {
           </div>
         </div>
 
+        {/* Mobile menu */}
         {isMenuOpen && (
           <div className="md:hidden bg-white/95 backdrop-blur-xl shadow-xl border-t absolute w-full left-0 top-full">
             <div className="pt-2 pb-6 space-y-1 px-4">
@@ -379,6 +385,7 @@ const PublicLayout: React.FC = () => {
                 <span className="flex items-center gap-2"><ShoppingCart className="w-5 h-5" /> Keranjang</span>
                 {cartCount > 0 && <span className="bg-primary-600 text-white text-xs px-2 py-0.5 rounded-full">{cartCount}</span>}
               </button>
+
               {!user ? (
                 <div className="mt-6 grid grid-cols-2 gap-4">
                   <Link to="/login" onClick={() => setIsMenuOpen(false)} className="flex justify-center items-center px-4 py-3 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50">Login</Link>
@@ -408,8 +415,6 @@ const PublicLayout: React.FC = () => {
       {/* ── FOOTER ──────────────────────────────────────────────────────────── */}
       <footer className="bg-gray-900 text-white pt-20 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* Top grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
             <div className="space-y-6">
               <img src="/Lapisan.png" alt="Trivgoo Logo" className="h-16 w-auto" />
@@ -452,12 +457,10 @@ const PublicLayout: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Payment Methods Section ────────────────────────────────────── */}
+          {/* Payment Methods */}
           <div className="border-t border-gray-800 pt-8 pb-6">
             <div className="bg-white rounded-2xl px-6 py-5">
               <div className="flex flex-wrap gap-3 items-center">
-
-                {/* ── Bank ── */}
                 <img src="/payment_service/bca.png"     alt="BCA"          className="h-7 w-auto object-contain" />
                 <img src="/payment_service/bni.png"     alt="BNI"          className="h-7 w-auto object-contain" />
                 <img src="/payment_service/bri.png"     alt="BRI"          className="h-7 w-auto object-contain" />
@@ -465,32 +468,20 @@ const PublicLayout: React.FC = () => {
                 <img src="/payment_service/permata.png" alt="Permata Bank" className="h-7 w-auto object-contain" />
                 <img src="/payment_service/cimb.png"    alt="CIMB Niaga"   className="h-7 w-auto object-contain" />
                 <img src="/payment_service/danamon.png" alt="Danamon"      className="h-7 w-auto object-contain" />
-
                 <div className="w-px h-6 bg-gray-200 mx-1" />
-
-                {/* ── Kartu ── */}
                 <img src="/payment_service/visa.png"       alt="Visa"       className="h-6 w-auto object-contain" />
                 <img src="/payment_service/mastercard.jpg" alt="Mastercard" className="h-8 w-auto object-contain" />
-
                 <div className="w-px h-6 bg-gray-200 mx-1" />
-
-                {/* ── Dompet Digital ── */}
                 <img src="/payment_service/gopay.png"     alt="GoPay"     className="h-7 w-auto object-contain" />
                 <img src="/payment_service/ovo.png"       alt="OVO"       className="h-6 w-auto object-contain" />
                 <img src="/payment_service/dana.png"      alt="Dana"      className="h-7 w-auto object-contain" />
                 <img src="/payment_service/shopeepay.png" alt="ShopeePay" className="h-6 w-auto object-contain" />
-
                 <div className="w-px h-6 bg-gray-200 mx-1" />
-
-                {/* ── Minimarket ── */}
                 <img src="/payment_service/alfamart.png"  alt="Alfamart"  className="h-7 w-auto object-contain" />
                 <img src="/payment_service/indomaret.png" alt="Indomaret" className="h-7 w-auto object-contain" />
-
-                {/* ── Separator + DOKU di paling kanan/bawah ── */}
                 <div className="w-px h-6 bg-gray-200 mx-1" />
                 <img src="/payment_service/doku.png" alt="DOKU" className="h-7 w-auto object-contain" />
                 <span className="text-xs text-gray-400 font-medium">Secured by DOKU</span>
-
               </div>
             </div>
           </div>
@@ -499,7 +490,6 @@ const PublicLayout: React.FC = () => {
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">© {new Date().getFullYear()} Trivgoo Inc. All rights reserved.</p>
           </div>
-
         </div>
       </footer>
     </div>
