@@ -8,41 +8,57 @@ import http from "./http";
 
 export type CampaignStatus = "DRAFT" | "ACTIVE" | "ENDED" | "CANCELLED";
 
+// ── Types disesuaikan dengan response backend /promo-campaigns ────────────────
+
 export type Campaign = {
-  id: number;
-  name: string;
-  description: string | null;
-  start_date: string;
-  end_date: string;
-  min_discount_percent: number;
-  agent_fee_percent: number;
-  status: CampaignStatus;
+  // Field dari backend /promo-campaigns
+  id:              number;
+  name:            string;
+  slug?:           string;
+  description:     string | null;
+  banner_image?:   string | null;
+  type?:           string;
+  discount_type?:  string;
+  discount_value?: number;
+  max_discount?:   number | null;
+  min_transaction?: number;
+  scope?:          string;
+  min_tier_id?:    number | null;
+  min_tier_name?:  string | null;
+  starts_at?:      string;
+  ends_at?:        string;
+  max_usage?:      number | null;
+  used_count?:     number;
+  per_user?:       number;
+  is_active?:      number;
+  created_by?:     number | null;
+  created_at?:     string;
+  updated_at?:     string;
 
-  product_count?: number;
-  created_at?: string;
-  updated_at?: string;
-
-  created_by?: {
-    id: number;
-    name: string | null;
-    email: string | null;
-  } | null;
+  // Field lama — dipertahankan agar komponen lain tidak break
+  start_date?:           string;
+  end_date?:             string;
+  min_discount_percent?: number;
+  agent_fee_percent?:    number;
+  status?:               CampaignStatus;
+  product_count?:        number;
 };
 
 export type CampaignDetail = Campaign & {
+  scope_items?: Array<{ scope_type: string; scope_id: number }>;
   products?: Array<{
-    id: number;
-    owner_id: number;
+    id:          number;
+    owner_id:    number;
     category_id: number;
-    name: string;
-    location: string;
-    price: number;
-    currency: string;
-    image: string | null;
-    image_url: string | null;
-    owner: { id: number; name: string; email: string };
+    name:        string;
+    location:    string;
+    price:       number;
+    currency:    string;
+    image:       string | null;
+    image_url:   string | null;
+    owner:       { id: number; name: string; email: string };
     override?: {
-      discount_percent: number | null;
+      discount_percent:  number | null;
       agent_fee_percent: number | null;
     };
     attached_at?: string;
@@ -51,29 +67,29 @@ export type CampaignDetail = Campaign & {
 
 export type CampaignListPayload = {
   meta: {
-    page: number;
-    limit: number;
-    total: number;
+    page:        number;
+    limit:       number;
+    total:       number;
     total_pages: number;
   };
   data: Campaign[];
 };
 
 export type CreateCampaignPayload = {
-  name: string;
-  description?: string | null;
-  start_date: string;
-  end_date: string;
+  name:                 string;
+  description?:         string | null;
+  start_date:           string;
+  end_date:             string;
   min_discount_percent: number;
-  agent_fee_percent: number;
-  status?: CampaignStatus;
-  product_ids?: Array<number | string>;
+  agent_fee_percent:    number;
+  status?:              CampaignStatus;
+  product_ids?:         Array<number | string>;
 };
 
 export type CreateCampaignResponse = ApiResponse<{
   campaign_id: number;
-  attached: number;
-  campaign: CampaignDetail | null;
+  attached:    number;
+  campaign:    CampaignDetail | null;
 }>;
 
 export type AttachCampaignProductsPayload = {
@@ -82,34 +98,33 @@ export type AttachCampaignProductsPayload = {
 
 export type AttachCampaignProductsResponse = ApiResponse<{
   campaign_id: number;
-  requested: number;
-  inserted: number;
+  requested:   number;
+  inserted:    number;
 }>;
 
 export type FlashSaleRequest = {
-  id: number;
-  product_id: number;
-  agent_id: number;
-  discount_pct: number;
-  sale_price: number | null;
-  status: "pending" | "approved" | "rejected";
-  campaign_id: number | null;
-  admin_note: string | null;
-  created_at: string;
-  updated_at: string;
-  // joined fields dari query
-  product_name: string;
-  product_price: number;
+  id:               number;
+  product_id:       number;
+  agent_id:         number;
+  discount_pct:     number;
+  sale_price:       number | null;
+  status:           "pending" | "approved" | "rejected";
+  campaign_id:      number | null;
+  admin_note:       string | null;
+  created_at:       string;
+  updated_at:       string;
+  product_name:     string;
+  product_price:    number;
   product_currency: string;
-  product_image: string | null;
-  agent_name: string;
+  product_image:    string | null;
+  agent_name:       string;
 };
 
 export type FlashSaleRequestListPayload = {
   meta: {
-    page: number;
-    limit: number;
-    total: number;
+    page:        number;
+    limit:       number;
+    total:       number;
     total_pages: number;
   };
   data: FlashSaleRequest[];
@@ -124,6 +139,8 @@ function assertPositiveId(idLike: number | string, label = "id"): number {
 }
 
 export const adminService = {
+  // ── Users ───────────────────────────────────────────────────────────────────
+
   async getAllAgents() {
     const res = await http.get("/admin/users/agents");
     return res.data || [];
@@ -138,24 +155,25 @@ export const adminService = {
     await http.post(`/admin/agents/${userId}/verification`, { action });
   },
 
+  // ── Agent Products ──────────────────────────────────────────────────────────
+
   async listAgentProducts(params?: {
     owner_id?: number | string;
-    q?: string;
-    page?: number;
-    limit?: number;
+    q?:        string;
+    page?:     number;
+    limit?:    number;
   }): Promise<ListAgentProductsResponse> {
     const res = await http.get<ListAgentProductsResponse>(
       "/admin/agents/products",
       {
         params: {
           owner_id: params?.owner_id ?? undefined,
-          q: (params?.q ?? "").trim() || undefined,
-          page: params?.page ?? 1,
-          limit: params?.limit ?? 10,
+          q:        (params?.q ?? "").trim() || undefined,
+          page:     params?.page ?? 1,
+          limit:    params?.limit ?? 10,
         },
       }
     );
-
     return res.data;
   },
 
@@ -169,63 +187,86 @@ export const adminService = {
     return res.data;
   },
 
-  /** ✅ campaigns */
+  // ── Campaigns — semua pakai /promo-campaigns ────────────────────────────────
 
+  /**
+   * GET /api/v1/promo-campaigns
+   * Backend returns: { data: { campaigns: [...], total, page, limit, total_pages } }
+   * Dinormalisasi ke CampaignListPayload agar kompatibel dengan AdminProducts.tsx
+   */
+  async listCampaigns(params?: {
+    q?:      string;
+    status?: CampaignStatus;
+    page?:   number;
+    limit?:  number;
+  }): Promise<ApiResponse<CampaignListPayload>> {
+    const res = await http.get("/promo-campaigns", {
+      params: {
+        q:     (params?.q ?? "").trim() || undefined,
+        page:  params?.page ?? 1,
+        limit: params?.limit ?? 10,
+      },
+    });
+
+    // Backend: res.data = { error, message, data: { campaigns, total, page, limit, total_pages } }
+    const payload     = res.data?.data ?? res.data ?? {};
+    const campaigns   = (payload.campaigns ?? []) as Campaign[];
+    const total       = Number(payload.total       ?? 0);
+    const page        = Number(payload.page        ?? params?.page  ?? 1);
+    const limit       = Number(payload.limit       ?? params?.limit ?? 10);
+    const total_pages = Number(payload.total_pages ?? (Math.ceil(total / limit) || 1));
+
+    return {
+      ...res.data,
+      data: {
+        data: campaigns,
+        meta: { page, limit, total, total_pages },
+      },
+    } as ApiResponse<CampaignListPayload>;
+  },
+
+  /**
+   * POST /api/v1/promo-campaigns
+   * Map field frontend (start_date, end_date, min_discount_percent)
+   * ke field backend  (starts_at,  ends_at,  discount_value)
+   */
   async createCampaign(
     payload: CreateCampaignPayload
   ): Promise<CreateCampaignResponse> {
-    const res = await http.post<CreateCampaignResponse>("/admin/campaigns", {
-      name: String(payload.name).trim(),
-      description: payload.description ?? null,
-      start_date: payload.start_date,
-      end_date: payload.end_date,
-      min_discount_percent: Number(payload.min_discount_percent ?? 0),
-      agent_fee_percent: Number(payload.agent_fee_percent ?? 0),
-      status: payload.status ?? undefined,
-      product_ids: Array.isArray(payload.product_ids)
-        ? payload.product_ids
-        : undefined,
+    const res = await http.post<CreateCampaignResponse>("/promo-campaigns", {
+      name:            String(payload.name).trim(),
+      description:     payload.description ?? null,
+      starts_at:       payload.start_date,
+      ends_at:         payload.end_date,
+      type:            "seasonal",
+      discount_type:   "percent",
+      discount_value:  Number(payload.min_discount_percent ?? 0),
+      min_transaction: 0,
+      scope:           "all",
+      is_active:       payload.status === "ACTIVE" ? 1 : 0,
     });
-
     return res.data;
   },
 
-  async listCampaigns(params?: {
-    q?: string;
-    status?: CampaignStatus;
-    date?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<ApiResponse<CampaignListPayload>> {
-    const res = await http.get<ApiResponse<CampaignListPayload>>(
-      "/admin/campaigns",
-      {
-        params: {
-          q: (params?.q ?? "").trim() || undefined,
-          status: params?.status ?? undefined,
-          date: (params?.date ?? "").trim() || undefined,
-          page: params?.page ?? 1,
-          limit: params?.limit ?? 10,
-        },
-      }
-    );
-
-    return res.data;
-  },
-
+  /**
+   * GET /api/v1/promo-campaigns/:id
+   */
   async getCampaignDetail(
     campaignId: number | string
   ): Promise<ApiResponse<CampaignDetail>> {
-    const id = assertPositiveId(campaignId, "campaignId");
+    const id  = assertPositiveId(campaignId, "campaignId");
     const res = await http.get<ApiResponse<CampaignDetail>>(
-      `/admin/campaigns/${id}`
+      `/promo-campaigns/${id}`
     );
     return res.data;
   },
 
+  /**
+   * POST /api/v1/promo-campaigns/:id/join
+   */
   async attachCampaignProducts(
     campaignId: number | string,
-    payload: AttachCampaignProductsPayload
+    payload:    AttachCampaignProductsPayload
   ): Promise<AttachCampaignProductsResponse> {
     const id = assertPositiveId(campaignId, "campaignId");
     if (
@@ -235,27 +276,27 @@ export const adminService = {
     ) {
       throw new Error("product_ids must be a non-empty array");
     }
-
     const res = await http.post<AttachCampaignProductsResponse>(
-      `/admin/campaigns/${id}/products`,
+      `/promo-campaigns/${id}/join`,
       { product_ids: payload.product_ids }
     );
-
     return res.data;
   },
 
+  // ── Flash Sale ──────────────────────────────────────────────────────────────
+
   async listFlashSaleRequests(params?: {
     status?: "pending" | "approved" | "rejected";
-    page?: number;
-    limit?: number;
+    page?:   number;
+    limit?:  number;
   }): Promise<ApiResponse<FlashSaleRequestListPayload>> {
     const res = await http.get<ApiResponse<FlashSaleRequestListPayload>>(
       "/promo-campaigns/flash-sale-requests",
       {
         params: {
           status: params?.status ?? "pending",
-          page: params?.page ?? 1,
-          limit: params?.limit ?? 20,
+          page:   params?.page   ?? 1,
+          limit:  params?.limit  ?? 20,
         },
       }
     );
@@ -263,7 +304,7 @@ export const adminService = {
   },
 
   async updateFlashSaleRequest(
-    id: number,
+    id:     number,
     action: "approve" | "reject"
   ): Promise<ApiResponse<{ id: number; status: string }>> {
     const res = await http.patch<ApiResponse<{ id: number; status: string }>>(
