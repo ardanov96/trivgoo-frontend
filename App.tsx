@@ -285,6 +285,16 @@ const AppRoutes = () => (
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Push Notifications Sync
+// ─────────────────────────────────────────────────────────────────────────────
+import { usePushNotifications } from './hooks/usePushNotifications';
+
+const PushNotificationSync = () => {
+  usePushNotifications();
+  return null;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // App
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -296,6 +306,7 @@ const App: React.FC = () => (
           <WishlistProvider>
             <BrowserRouter>
               <ScrollToTop />
+              <PushNotificationSync />
               {/* Gate: maintenance + offline intercept seluruh app */}
               <AppGates>
                 {/* Gate: unhandled React errors → ServerError500 */}
