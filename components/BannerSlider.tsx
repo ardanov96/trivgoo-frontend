@@ -201,8 +201,8 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
           exit="exit"
           transition={slideTransition}
           className="absolute inset-0 cursor-pointer"
-          onClick={() => navigate('/explore')}
-          title="Lihat semua promo"
+          onClick={() => navigate(`/promo/campaign/${c.id}`)}
+          title={`Lihat promo ${c.name}`}
         >
           {hasBanner ? (
             <img
@@ -298,7 +298,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
       {/* ══ LAYER 4: CTA button — kiri bawah ════════════════════════════ */}
       <div className="absolute bottom-3 left-6 md:bottom-4 md:left-10 pointer-events-auto z-[3]">
         <Link
-          to="/explore"
+          to={`/promo/campaign/${c.id}`}
           onClick={e => e.stopPropagation()}
           className="inline-flex items-center gap-1.5 bg-white text-gray-900 font-bold text-xs px-4 py-2 rounded-lg hover:bg-primary-50 hover:text-primary-700 transition-all shadow-lg active:scale-95 group"
         >

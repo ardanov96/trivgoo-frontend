@@ -327,6 +327,58 @@ export const promoService = {
   },
 };
 
+/**
+ * GET /api/v1/promo-campaigns/:id
+ * Ambil detail satu campaign by ID.
+ */
+export async function getCampaignById(id: number): Promise<PromoCampaign> {
+  const res = await fetch(`/api/v1/promo-campaigns/${id}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const body = await res.json();
+  // Response: { data: { campaign: {...} } }
+  return body?.data?.campaign ?? body?.campaign;
+}
+ 
+/**
+ * GET /api/v1/promo-campaigns/:id/joined-products?page=&limit=
+ * Ambil daftar produk yang sudah diapprove di campaign tertentu (status = active).
+ * Khusus untuk tampilan publik — hanya tampilkan yang active.
+ */
+export async function getCampaignJoinedProducts(
+  id: number,
+  page = 1,
+  limit = 12
+): Promise<{
+  products: Array<{
+    join_id:          number;
+    product_id:       number;
+    product_name:     string;
+    product_price:    number;
+    product_currency: string;
+    product_image:    string | null;
+    product_location: string | null;
+    discount_pct:     number | null;
+    sale_price:       number | null;
+    join_status:      string;
+    agent_name:       string;
+  }>;
+  meta: { total: number; page: number; limit: number; total_pages: number };
+}> {
+  const res = await fetch(
+    `/api/v1/promo-campaigns/${id}/joined-products?page=${page}&limit=${limit}&status=active`,
+    { credentials: 'include' }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const body = await res.json();
+  const data = body?.data ?? body ?? {};
+  return {
+    products: data?.products ?? [],
+    meta:     data?.meta     ?? { total: 0, page, limit, total_pages: 1 },
+  };
+}
+
 // ── Helper: resolve URL gambar banner ─────────────────────────────────────────
 
 /**
