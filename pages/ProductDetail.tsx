@@ -104,7 +104,6 @@ const ProductDetail: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [rentalDays, setRentalDays] = useState(3);
   const [pickupType, setPickupType] = useState<'kantor' | 'lokasi_lain'>('kantor');
   const [dropoffType, setDropoffType] = useState<'kantor' | 'lokasi_lain'>('kantor');
   const [pickupAddress, setPickupAddress] = useState('');
@@ -118,6 +117,9 @@ const ProductDetail: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
   const [carPickupDate, setCarPickupDate] = useState('');
+  const [carPickupTime, setCarPickupTime] = useState('09:00');
+  const [carDropoffDate, setCarDropoffDate] = useState('');
+  const [carDropoffTime, setCarDropoffTime] = useState('09:00');
   const [stayGuests, setStayGuests] = useState(2);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -160,7 +162,12 @@ const ProductDetail: React.FC = () => {
       }
     } else {
       if (!carPickupDate) errors.carPickupDate = 'Pilih tanggal pengambilan';
-      if (rentalDays < 1) errors.rentalDays = 'Minimal 1 hari sewa';
+      if (!carDropoffDate) errors.carDropoffDate = 'Pilih tanggal pengembalian';
+      if (carPickupDate && carDropoffDate) {
+        const start = new Date(`${carPickupDate}T${carPickupTime}`);
+        const end = new Date(`${carDropoffDate}T${carDropoffTime}`);
+        if (start >= end) errors.carDropoffDate = 'Waktu pengembalian tidak valid';
+      }
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -187,6 +194,11 @@ const ProductDetail: React.FC = () => {
         availableVouchers: productVouchers,
       };
     } else {
+      const start = new Date(`${carPickupDate}T${carPickupTime}`);
+      const end = new Date(`${carDropoffDate}T${carDropoffTime}`);
+      let calculatedDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      if (calculatedDays < 1) calculatedDays = 1;
+
       const driverPrice    = addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
       const insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
       const childSeatPrice = addOns.childSeat ? 50_000 : 0;
@@ -194,8 +206,9 @@ const ProductDetail: React.FC = () => {
       return {
         productId: product.id, productName: product.name, location: product.location,
         image: product.image_url || product.image, currency: product.currency || 'IDR',
-        pricePerPax: totalPerDay, basePricePerPax: Number(product.price), pax: 1, guestCount: 1, duration: rentalDays,
-        totalPrice: totalPerDay * rentalDays, date: carPickupDate,
+        pricePerPax: totalPerDay, basePricePerPax: Number(product.price), pax: 1, guestCount: 1, duration: calculatedDays,
+        totalPrice: totalPerDay * calculatedDays, date: `${carPickupDate} - ${carDropoffDate}`,
+        startTime: start.toISOString(), endTime: end.toISOString(),
         unitLabel: 'Hari', priceUnitLabel: 'hari', vehicleType: 'car',
         transmission: (product.details as CarDetails)?.transmission,
         seats: (product.details as CarDetails)?.seats,
@@ -359,6 +372,14 @@ const ProductDetail: React.FC = () => {
   // ════════════════════════════════════════════════════════
   //  CAR RENTAL
   // ════════════════════════════════════════════════════════
+  let rentalDays = 0;
+  if (carPickupDate && carDropoffDate) {
+    const start = new Date(`${carPickupDate}T${carPickupTime}`);
+    const end = new Date(`${carDropoffDate}T${carDropoffTime}`);
+    rentalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (rentalDays < 1) rentalDays = 0;
+  }
+
   const basePrice      = Number(product.price);
   const driverPrice    = addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
   const insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
@@ -415,35 +436,32 @@ const ProductDetail: React.FC = () => {
 
                 <ProductVoucherBanner vouchers={productVouchers} />
 
-                {/* Pickup Date */}
+                {/* Pickup & Dropoff Date & Time */}
                 <div className="mb-4">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Tanggal Pengambilan <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input 
-                      type="date" 
-                      value={carPickupDate} 
-                      onChange={(e) => {
-                        setCarPickupDate(e.target.value);
-                        setFieldErrors(p => ({...p, carPickupDate: ''}));
-                      }} 
-                      min={new Date().toISOString().split('T')[0]} 
-                      className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.carPickupDate ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`}
-                    />
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Waktu Pengambilan <span className="text-red-500">*</span></label>
+                  <div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.carPickupDate?'border-red-400':'border-gray-200'}`}>
+                    <div className="p-3 bg-gray-50 border-r border-gray-200">
+                      <input type="date" value={carPickupDate} onChange={(e)=>{setCarPickupDate(e.target.value);setFieldErrors(p=>({...p,carPickupDate:''}))}} min={new Date().toISOString().split('T')[0]} className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none"/>
+                    </div>
+                    <div className="p-3 bg-gray-50">
+                      <input type="time" value={carPickupTime} onChange={(e)=>setCarPickupTime(e.target.value)} className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none"/>
+                    </div>
                   </div>
                   <FieldError name="carPickupDate"/>
                 </div>
 
-                {/* Duration */}
                 <div className="mb-5">
-
-                  <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><CalendarDays className="w-4 h-4 text-primary-500"/> Duration <span className="text-red-500">*</span></p>
-                  <div className={`flex items-center gap-3 bg-gray-50 rounded-2xl p-3 border ${fieldErrors.rentalDays?'border-red-400':'border-transparent'}`}>
-                    <button onClick={()=>setRentalDays(d=>Math.max(1,d-1))} className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5"/></button>
-                    <span className="flex-1 text-center font-extrabold text-gray-900">{rentalDays} hari<span className="text-xs font-medium text-gray-400 ml-1">= {product.currency} {(basePrice*rentalDays).toLocaleString('id-ID')}</span></span>
-                    <button onClick={()=>setRentalDays(d=>d+1)} className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5"/></button>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Waktu Pengembalian <span className="text-red-500">*</span></label>
+                  <div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.carDropoffDate?'border-red-400':'border-gray-200'}`}>
+                    <div className="p-3 bg-gray-50 border-r border-gray-200">
+                      <input type="date" value={carDropoffDate} onChange={(e)=>{setCarDropoffDate(e.target.value);setFieldErrors(p=>({...p,carDropoffDate:''}))}} min={carPickupDate||new Date().toISOString().split('T')[0]} className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none"/>
+                    </div>
+                    <div className="p-3 bg-gray-50">
+                      <input type="time" value={carDropoffTime} onChange={(e)=>setCarDropoffTime(e.target.value)} className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none"/>
+                    </div>
                   </div>
-                  <FieldError name="rentalDays"/>
+                  {rentalDays > 0 && <p className="text-xs text-primary-600 font-semibold mt-1.5 pl-1">Durasi: {rentalDays} hari</p>}
+                  <FieldError name="carDropoffDate"/>
                 </div>
 
                 {/* ── Add-Ons: sopir + insurance + child seat ── */}

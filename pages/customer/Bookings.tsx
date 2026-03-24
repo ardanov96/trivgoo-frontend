@@ -171,7 +171,7 @@ const CancelModal: React.FC<{
             onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900 text-sm line-clamp-2">{booking.productName}</p>
-            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> {booking.date}</p>
+            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> {booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date}</p>
             <p className="text-sm font-bold text-primary-600 mt-1">Rp {Number(booking.totalPrice).toLocaleString('id-ID')}</p>
           </div>
         </div>
@@ -226,7 +226,7 @@ const MobileBookingCard: React.FC<{
             <span className="text-[10px] text-gray-400 font-mono">{(booking as any).externalId || `#${booking.id}`}</span>
           </div>
           <h4 className="font-bold text-gray-900 truncate leading-tight mb-1">{booking.productName}</h4>
-          <div className="text-xs text-gray-500 flex items-center mb-1"><Calendar className="w-3 h-3 mr-1" /> {booking.date}</div>
+          <div className="text-xs text-gray-500 flex items-center mb-1"><Calendar className="w-3 h-3 mr-1" /> {booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date}</div>
 
           {/* Countdown — hanya jika PENDING dan BELUM expired dan BELUM dibayar */}
           {booking.status === BookingStatus.PENDING && !expired && (booking as any).paymentExpiredAt && booking.paymentStatus !== 'PAID' && (
@@ -387,7 +387,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     <div className="flex items-center font-medium">
-                      <Calendar className="w-4 h-4 mr-2 text-gray-300 flex-shrink-0" />{booking.date}
+                      <Calendar className="w-4 h-4 mr-2 text-gray-300 flex-shrink-0" />{booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -964,7 +964,7 @@ const CustomerBookings: React.FC = () => {
                 <div className="grid grid-cols-2 gap-y-5 gap-x-4">
                   <div>
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Date</p>
-                    <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gray-400" />{selectedBooking.date}</p>
+                    <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gray-400" />{selectedBooking.startTime && selectedBooking.endTime ? `${selectedBooking.date}, ${new Date(selectedBooking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(selectedBooking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : selectedBooking.date}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Guests</p>
