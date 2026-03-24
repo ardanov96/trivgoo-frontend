@@ -259,8 +259,11 @@ const MobileBookingCard: React.FC<{
               {booking.paymentStatus === 'PAID' && (
                 <button onClick={() => onInvoice(booking)} className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100" title="Download Invoice"><FileText className="w-4 h-4" /></button>
               )}
-              {booking.status === BookingStatus.COMPLETED && (
+              {booking.status === BookingStatus.COMPLETED && !(booking as any).reviewId && (
                 <button onClick={() => onReview(booking)} className="p-1.5 bg-yellow-50 rounded-lg text-yellow-600 hover:text-yellow-700" title="Review"><MessageSquare className="w-4 h-4" /></button>
+              )}
+              {booking.status === BookingStatus.COMPLETED && (booking as any).reviewId && (
+                <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-amber-50 rounded-lg text-amber-600 hover:bg-amber-100" title="Ulasan Saya"><Star className="w-4 h-4 fill-amber-600" /></Link>
               )}
               <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
                 <ChevronRight className="w-4 h-4" />
@@ -455,11 +458,17 @@ const BookingTable: React.FC<BookingTableProps> = ({
                           <FileText className="w-3.5 h-3.5 mr-1" /> Invoice
                         </button>
                       )}
-                      {booking.status === BookingStatus.COMPLETED && (
+                      {booking.status === BookingStatus.COMPLETED && !(booking as any).reviewId && (
                         <button onClick={() => onReview(booking)}
                           className="flex items-center text-yellow-600 bg-yellow-50 hover:bg-yellow-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
                           <Star className="w-3.5 h-3.5 mr-1" /> Review
                         </button>
+                      )}
+                      {booking.status === BookingStatus.COMPLETED && (booking as any).reviewId && (
+                        <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`}
+                          className="flex items-center text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
+                          <Star className="w-3.5 h-3.5 mr-1 fill-amber-600" /> Ulasan Saya
+                        </Link>
                       )}
                       <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
                         <span className="sr-only">Details</span> <ChevronRight className="w-4 h-4" />
@@ -688,9 +697,22 @@ const CustomerBookings: React.FC = () => {
   const submitReview = async () => {
     if (!selectedBooking || !user) return;
     setIsSubmittingReview(true);
-    try { await new Promise(r => setTimeout(r, 500)); alert('Thank you for your review!'); }
-    catch { alert('Failed to submit review'); }
-    setIsSubmittingReview(false); setShowReviewModal(false);
+    try {
+      await http.post('/bookings/reviews', {
+        booking_id: selectedBooking.id,
+        product_id: selectedBooking.productId,
+        rating: reviewRating,
+        comment: reviewComment
+      });
+      alert('Terima kasih atas ulasan Anda!');
+      setShowReviewModal(false);
+      setReviewComment('');
+      setReviewRating(5);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal mengirim ulasan');
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   const handleContactAgent = (b: Booking) => {

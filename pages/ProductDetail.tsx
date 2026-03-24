@@ -11,10 +11,12 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { agentProductService } from '../services/agentProductService';
+import http from '../services/http';
 import { useCart } from '../components/CartContext';
 import { useWishlist } from '../components/WishlistContext';
 import { useToast } from '../components/ToastContext';
 import { useAuth } from '../AuthContext';
+import UserAvatar from '../components/UserAvatar';
 import { getImageUrl, FALLBACK_IMAGE } from '../utils/imageUtils';
 import { Product, CarDetails, TourDetails, StayDetails } from '../types';
 import { decodeId } from '../utils/hashids';
@@ -38,11 +40,7 @@ const formatLocation = (location: string): string => {
 const formatRp = (n: number) => `Rp ${Number(n).toLocaleString('id-ID')}`;
 const DRIVER_PRICE_PER_12H = 150_000;
 
-const MOCK_REVIEWS = [
-  { id: 1, name: 'Rania User', avatar: 'https://randomuser.me/api/portraits/women/44.jpg', rating: 5, text: 'Mobil sangat bersih dan nyaman. Pickup mudah dan tepat waktu!', date: '2 hari lalu' },
-  { id: 2, name: 'Marius User', avatar: 'https://randomuser.me/api/portraits/men/32.jpg', rating: 5, text: 'Sopir ramah, mobil dalam kondisi bagus. Sangat direkomendasikan!', date: '5 hari lalu' },
-  { id: 3, name: 'Sari W.', avatar: 'https://randomuser.me/api/portraits/women/68.jpg', rating: 4, text: 'Pelayanan memuaskan, harga sesuai ekspektasi. Akan rental lagi.', date: '1 minggu lalu' },
-];
+
 
 interface ProductVoucherBannerProps { vouchers: any[]; }
 const ProductVoucherBanner: React.FC<ProductVoucherBannerProps> = ({ vouchers }) => {
@@ -101,6 +99,7 @@ const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,6 +121,9 @@ const ProductDetail: React.FC = () => {
   const [carDropoffTime, setCarDropoffTime] = useState('09:00');
   const [stayGuests, setStayGuests] = useState(2);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [expandedReplies, setExpandedReplies] = useState<Record<number, boolean>>({});
+
+  const toggleReply = (id: number) => setExpandedReplies(p => ({ ...p, [id]: !p[id] }));
 
   const { addToCart, isInCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -141,6 +143,11 @@ const ProductDetail: React.FC = () => {
         if (data.image_url && !data.image_url.startsWith('http')) data.image_url = `${BASE_URL}/${data.image_url.replace(/^\//, '')}`;
         if (data.image && !data.image.startsWith('http')) data.image = `${BASE_URL}/${data.image.replace(/^\//, '')}`;
         setProduct(data);
+        
+        try {
+          const revRes = await http.get(`/bookings/reviews/product/${numericId}`);
+          if (!revRes.data?.error) setReviews(revRes.data.data);
+        } catch (err) { console.error('Failed to fetch reviews', err); }
       } catch (e) { console.error(e); } finally { setIsLoading(false); }
     };
     load();
@@ -296,6 +303,17 @@ const ProductDetail: React.FC = () => {
     ];
     const inclusions: string[] = (product as any).inclusions || (isTourProduct ? ['Transportasi AC','Pemandu wisata','Tiket masuk','Makan siang'] : ['Sarapan','Kolam renang','WiFi gratis','Parkir gratis']);
     const exclusions: string[] = (product as any).exclusions || (isTourProduct ? ['Pengeluaran pribadi','Tips pemandu','Foto/video profesional'] : ['Airport transfer','Laundry','Minibar']);
+    
+    const reviewCount = reviews.length;
+    const avgRatingStr = reviewCount > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / reviewCount).toFixed(1) : (product.rating || '0.0');
+    const getPct = (filterFn: (r: any) => boolean) => reviewCount === 0 ? 0 : Math.round((reviews.filter(filterFn).length / reviewCount) * 100);
+    const reviewDistribution = [
+      ['Sangat Baik', getPct(r => Number(r.rating) === 5)],
+      ['Baik', getPct(r => Number(r.rating) === 4)],
+      ['Cukup', getPct(r => Number(r.rating) === 3)],
+      ['Buruk', getPct(r => Number(r.rating) <= 2)]
+    ];
+
     const itinerary: { time: string; desc: string }[] = isTourProduct ? [
       { time: '07:00', desc: 'Penjemputan dari hotel' }, { time: '09:00', desc: 'Tiba di destinasi pertama' },
       { time: '12:00', desc: 'Makan siang bersama' }, { time: '14:00', desc: 'Kunjungan destinasi kedua' },
@@ -317,7 +335,7 @@ const ProductDetail: React.FC = () => {
           <div className="mb-4">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">{product.name}</h1>
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1"><span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">{product.rating || '8.2'}/10</span><span className="text-sm font-semibold text-gray-700 ml-1">{(product as any).reviewCount || 48} ulasan</span></div>
+              <div className="flex items-center gap-1"><span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded"><Star className="w-3 h-3 inline mr-0.5" />{avgRatingStr}</span><span className="text-sm font-semibold text-gray-700 ml-1">{reviewCount} ulasan</span></div>
               <span className="text-gray-300">·</span>
               <span className="text-gray-500 text-sm flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-primary-500" />{formatLocation(product.location || '')}</span>
               {productVouchers.filter((v: any) => v.is_active).length > 0 && (<><span className="text-gray-300">·</span><span className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full"><Tag className="w-3 h-3" />{productVouchers.filter((v: any) => v.is_active).length} Promo</span></>)}
@@ -338,12 +356,12 @@ const ProductDetail: React.FC = () => {
               {isTourProduct && itinerary.length > 0 && (<div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary-600" /> Itinerary</h2><div className="relative pl-4"><div className="absolute left-0 top-2 bottom-2 w-0.5 bg-primary-100 rounded" /><div className="space-y-4">{itinerary.map((item, i) => (<div key={i} className="relative pl-5"><div className="absolute left-[-17px] top-1 w-3 h-3 rounded-full bg-primary-500 border-2 border-white shadow-sm" /><span className="text-xs font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full mr-2">{item.time}</span><span className="text-sm text-gray-700">{item.desc}</span></div>))}</div></div></div>)}
               <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2"><MapPinned className="w-4 h-4 text-primary-600" />{isTourProduct ? 'Titik Penjemputan' : 'Lokasi'}</h2><div className="flex items-start gap-3 bg-gray-50 rounded-xl p-4"><MapPin className="w-4 h-4 text-primary-500 mt-0.5 shrink-0" /><p className="text-sm text-gray-600">{product.location || 'Lokasi akan dikonfirmasi setelah booking'}</p></div></div>
               <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2"><Shield className="w-4 h-4 text-primary-600" /> Kebijakan Pembatalan</h2><div className="space-y-2">{[{label:'Batalkan 24 jam sebelum',value:'Refund penuh',color:'text-green-600'},{label:'Batalkan kurang dari 24 jam',value:'Tidak ada refund',color:'text-red-500'},{label:'No Show',value:'Tidak ada refund',color:'text-red-500'}].map((row,i) => (<div key={i} className="flex justify-between items-center text-sm py-2 border-b border-gray-50 last:border-0"><span className="text-gray-600">{row.label}</span><span className={`font-bold ${row.color}`}>{row.value}</span></div>))}</div></div>
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /> Ulasan Traveler</h2><div className="flex items-center gap-6 mb-5 pb-5 border-b border-gray-100"><div className="text-center"><p className="text-5xl font-extrabold text-gray-900">{product.rating || '8.2'}</p><div className="flex justify-center gap-0.5 my-1">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3.5 h-3.5 ${i<4?'text-amber-400 fill-amber-400':'text-gray-200 fill-gray-200'}`}/>)}</div><p className="text-xs text-gray-400">{(product as any).reviewCount||48} ulasan</p></div><div className="flex-1 space-y-1.5">{[['Sangat Baik',72],['Baik',20],['Cukup',6],['Buruk',2]].map(([label,pct])=>(<div key={label as string} className="flex items-center gap-2 text-xs"><span className="text-gray-500 w-20">{label}</span><div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-amber-400 rounded-full" style={{width:`${pct}%`}}/></div><span className="text-gray-400 w-6">{pct}%</span></div>))}</div></div><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{MOCK_REVIEWS.map(review=>(<div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100"><div className="flex items-center gap-3 mb-3"><img src={review.avatar} alt={review.name} className="w-9 h-9 rounded-full object-cover border-2 border-primary-100" onError={(e)=>{(e.currentTarget as HTMLImageElement).src=FALLBACK_IMAGE;}}/><div><p className="font-bold text-gray-900 text-sm">{review.name}</p><p className="text-xs text-gray-400">{review.date}</p></div></div><div className="flex gap-0.5 mb-2">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3 h-3 ${i<review.rating?'text-amber-400 fill-amber-400':'text-gray-200 fill-gray-200'}`}/>)}</div><p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{review.text}</p></div>))}</div></div>
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /> Ulasan Traveler</h2><div className="flex items-center gap-6 mb-5 pb-5 border-b border-gray-100"><div className="text-center"><p className="text-5xl font-extrabold text-gray-900">{avgRatingStr}</p><div className="flex justify-center gap-0.5 my-1">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3.5 h-3.5 ${i<Math.round(Number(avgRatingStr))?'text-amber-400 fill-amber-400':'text-gray-200 fill-gray-200'}`}/>)}</div><p className="text-xs text-gray-400">{reviewCount} ulasan</p></div><div className="flex-1 space-y-1.5">{reviewDistribution.map(([label,pct])=>(<div key={label as string} className="flex items-center gap-2 text-xs"><span className="text-gray-500 w-20">{label}</span><div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-amber-400 rounded-full" style={{width:`${pct}%`}}/></div><span className="text-gray-400 w-6">{pct}%</span></div>))}</div></div><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{reviews.length > 0 ? reviews.map(review=>(<div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100"><div className="flex items-center gap-3 mb-3"><UserAvatar user={{ name: review.customer_name, avatar: review.customer_avatar }} className="w-9 h-9 border-2 border-primary-100" /><div><p className="font-bold text-gray-900 text-sm">{review.customer_name || 'Customer'}</p><p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString('id-ID')}</p></div></div><div className="flex gap-0.5 mb-2">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3 h-3 ${i<review.rating?'text-amber-400 fill-amber-400':'text-gray-200 fill-gray-200'}`}/>)}</div><p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{review.comment || 'No comment provided.'}</p>{review.agent_reply && (<div className="mt-3"><button onClick={() => toggleReply(review.id)} className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">{expandedReplies[review.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}{expandedReplies[review.id] ? 'Tutup Balasan' : 'Lihat Balasan'}</button>{expandedReplies[review.id] && (<div className="mt-2 bg-primary-50 rounded-xl p-3 border border-primary-100 relative"><div className="absolute -top-1.5 left-4 w-3 h-3 bg-primary-50 border-t border-l border-primary-100 transform rotate-45" /><div className="flex items-center gap-2 mb-1.5 relative z-10"><div className="w-4 h-4 bg-primary-100 rounded-full flex items-center justify-center shrink-0"><BadgeCheck className="w-2.5 h-2.5 text-primary-600" /></div><span className="text-xs font-bold text-primary-900">Respon Agen</span></div><p className="text-xs text-primary-800 leading-relaxed relative z-10">{review.agent_reply}</p></div>)}</div>)}</div>)) : <p className="text-sm text-gray-500 col-span-full">Belum ada ulasan untuk produk ini.</p>}</div></div>
             </div>
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-4">
                 <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xl">
-                  <div className="mb-5 pb-4 border-b border-gray-100"><p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Mulai dari</p><p className="text-3xl font-extrabold text-gray-900">{product.currency} {Number(product.price).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-400 ml-1">/{isTourProduct?'orang':'malam'}</span></p><div className="flex items-center gap-1.5 mt-1"><span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">{product.rating||'8.2'}/10</span><span className="text-xs text-gray-500">{(product as any).reviewCount||48} ulasan</span></div></div>
+                  <div className="mb-5 pb-4 border-b border-gray-100"><p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Mulai dari</p><p className="text-3xl font-extrabold text-gray-900">{product.currency} {Number(product.price).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-400 ml-1">/{isTourProduct?'orang':'malam'}</span></p><div className="flex items-center gap-1.5 mt-1"><span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded"><Star className="w-3 h-3 inline mr-0.5" />{avgRatingStr}</span><span className="text-xs text-gray-500">{reviewCount} ulasan</span></div></div>
                   <ProductVoucherBanner vouchers={productVouchers} />
                   {isTourProduct ? (<>
                     <div className="mb-4"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Tanggal <span className="text-red-500">*</span></label><div className="relative"><CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="date" value={tourDate} onChange={(e)=>{setTourDate(e.target.value);setFieldErrors(p=>({...p,tourDate:''}));}} min={new Date().toISOString().split('T')[0]} className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.tourDate?'border-red-400 focus:ring-red-500/20':'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`}/></div><FieldError name="tourDate"/></div>
@@ -380,6 +398,9 @@ const ProductDetail: React.FC = () => {
     if (rentalDays < 1) rentalDays = 0;
   }
 
+  const reviewCount = reviews.length;
+  const avgRatingStr = reviewCount > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / reviewCount).toFixed(1) : (product.rating || '0.0');
+
   const basePrice      = Number(product.price);
   const driverPrice    = addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
   const insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
@@ -404,7 +425,7 @@ const ProductDetail: React.FC = () => {
             </div>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">{product.name}</h1>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
-              <div className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-400 fill-amber-400"/><span className="font-bold text-gray-800 text-sm">{product.rating||'7.5'}/10.0</span><span className="text-gray-400 text-sm">({(product as any).reviewCount||24} reviews)</span></div>
+              <div className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-400 fill-amber-400"/><span className="font-bold text-gray-800 text-sm">{avgRatingStr}</span><span className="text-gray-400 text-sm">({reviewCount} reviews)</span></div>
               <span className="text-gray-300">·</span>
               <p className="text-sm text-gray-500 flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-primary-500"/>{formatLocation(product.location||'')}</p>
             </div>
@@ -421,7 +442,7 @@ const ProductDetail: React.FC = () => {
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><MapPinned className="w-5 h-5 text-primary-600"/> Lokasi Pengambilan</h2><div className="flex gap-3 mb-4">{[{value:'kantor',label:'Kantor Rental'},{value:'lokasi_lain',label:'Lokasi Lainnya'}].map(opt=>(<button key={opt.value} onClick={()=>setPickupType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${pickupType===opt.value?'border-primary-500 bg-primary-50 text-primary-700':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>{pickupType===opt.value&&<Check className="w-3.5 h-3.5 inline mr-1"/>}{opt.label}</button>))}</div>{pickupType==='lokasi_lain'?<input type="text" placeholder="Masukkan alamat pickup lengkap..." value={pickupAddress} onChange={(e)=>setPickupAddress(e.target.value)} className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50"/>:<div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3"><MapPin className="w-4 h-4 text-gray-400"/><span className="text-sm text-gray-500">{formatLocation(product.location||'Lokasi Kantor Rental')}</span></div>}</div>
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Navigation className="w-5 h-5 text-primary-600"/> Lokasi Pengembalian</h2><div className="flex gap-3 mb-4">{[{value:'kantor',label:'Kantor Rental'},{value:'lokasi_lain',label:'Lokasi Lainnya'}].map(opt=>(<button key={opt.value} onClick={()=>setDropoffType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${dropoffType===opt.value?'border-primary-500 bg-primary-50 text-primary-700':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>{dropoffType===opt.value&&<Check className="w-3.5 h-3.5 inline mr-1"/>}{opt.label}</button>))}</div>{dropoffType==='lokasi_lain'?<input type="text" placeholder="Masukkan alamat pengembalian..." value={dropoffAddress} onChange={(e)=>setDropoffAddress(e.target.value)} className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50"/>:<div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3"><MapPin className="w-4 h-4 text-gray-400"/><span className="text-sm text-gray-500">{formatLocation(product.location||'Lokasi Kantor Rental')}</span></div>}</div>
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2"><Info className="w-5 h-5 text-primary-600"/> Notes</h2><textarea rows={3} placeholder="Tambahkan catatan atau permintaan khusus..." className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 resize-none"/></div>
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400 fill-amber-400"/> Reviews</h2><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{MOCK_REVIEWS.map(review=>(<div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100"><div className="flex items-center gap-3 mb-3"><img src={review.avatar} alt={review.name} className="w-10 h-10 rounded-full border-2 border-primary-100 object-cover" onError={(e)=>{(e.currentTarget as HTMLImageElement).src=FALLBACK_IMAGE;}}/><div><p className="font-bold text-gray-900 text-sm">{review.name}</p><p className="text-xs text-gray-400">{review.date}</p></div></div><div className="flex gap-0.5 mb-2">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3.5 h-3.5 ${i<review.rating?'text-amber-400 fill-amber-400':'text-gray-200 fill-gray-200'}`}/>)}</div><p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{review.text}</p></div>))}</div></div>
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400 fill-amber-400"/> Reviews</h2><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{reviews.length > 0 ? reviews.map(review=>(<div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100"><div className="flex items-center gap-3 mb-3"><UserAvatar user={{ name: review.customer_name, avatar: review.customer_avatar }} className="w-10 h-10 border-2 border-primary-100" /><div><p className="font-bold text-gray-900 text-sm">{review.customer_name || 'Customer'}</p><p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString('id-ID')}</p></div></div><div className="flex gap-0.5 mb-2">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3.5 h-3.5 ${i<review.rating?'text-amber-400 fill-amber-400':'text-gray-200 fill-gray-200'}`}/>)}</div><p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{review.comment || 'No comment provided.'}</p>{review.agent_reply && (<div className="mt-3 border-t border-gray-100 pt-3"><button onClick={() => toggleReply(review.id)} className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">{expandedReplies[review.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}{expandedReplies[review.id] ? 'Tutup Balasan' : 'Lihat Balasan'}</button>{expandedReplies[review.id] && (<div className="mt-2 bg-primary-50 rounded-xl p-3 border border-primary-100 relative"><div className="absolute -top-1.5 left-4 w-3 h-3 bg-primary-50 border-t border-l border-primary-100 transform rotate-45" /><div className="flex items-center gap-2 mb-1.5 relative z-10"><div className="w-4 h-4 bg-primary-100 rounded-full flex items-center justify-center shrink-0"><BadgeCheck className="w-2.5 h-2.5 text-primary-600" /></div><span className="text-xs font-bold text-primary-900">Respon Agen</span></div><p className="text-xs text-primary-800 leading-relaxed relative z-10">{review.agent_reply}</p></div>)}</div>)}</div>)) : <p className="text-sm text-gray-500 col-span-full">Belum ada ulasan untuk mobil ini.</p>}</div></div>
           </div>
 
           {/* RIGHT — Car Booking Panel */}
@@ -431,7 +452,7 @@ const ProductDetail: React.FC = () => {
                 <div className="mb-5 pb-4 border-b border-gray-100">
                   <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">No. ID: {String(product.id).padStart(6,'0')}</p>
                   <p className="text-3xl font-extrabold text-gray-900">{product.currency} {Number(product.price).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-400 ml-1">/hari</span></p>
-                  <div className="flex items-center gap-1 mt-1"><Star className="w-4 h-4 text-amber-400 fill-amber-400"/><span className="text-sm font-bold text-gray-700">{product.rating||'7.5'}/10.0</span><span className="text-xs text-gray-400">({(product as any).reviewCount||24} reviews)</span></div>
+                  <div className="flex items-center gap-1 mt-1"><Star className="w-4 h-4 text-amber-400 fill-amber-400"/><span className="text-sm font-bold text-gray-700">{avgRatingStr}</span><span className="text-xs text-gray-400">({reviewCount} reviews)</span></div>
                 </div>
 
                 <ProductVoucherBanner vouchers={productVouchers} />
