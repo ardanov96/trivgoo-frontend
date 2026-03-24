@@ -32,6 +32,12 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
     created_at: (data as any).created_at,
     updated_at: (data as any).updated_at,
     car_id: (data as any).car_id ? Number(data.car_id) : undefined,
+    seo_title: (data as any).seo_title,
+    seo_description: (data as any).seo_description,
+    seo_slug: (data as any).seo_slug,
+    seo_keyword: (data as any).seo_keyword,
+    seo_canonical: (data as any).seo_canonical,
+    seo_og_image: (data as any).seo_og_image,
   };
 }
 
