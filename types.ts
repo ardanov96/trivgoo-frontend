@@ -480,6 +480,13 @@ export interface AgentProduct {
   // when transport products are linked to a specific vehicle
   car_id?: number;
 
+  seo_title?: string;
+  seo_description?: string;
+  seo_slug?: string;
+  seo_keyword?: string;
+  seo_canonical?: string;
+  seo_og_image?: string;
+
   vouchers?: VoucherItem[];
 }
 
@@ -508,6 +515,13 @@ export interface AgentProductPayload {
   details?: ProductDetails;
   daily_capacity?: number;
   blocked_dates?: string[];
+  
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_slug?: string | null;
+  seo_keyword?: string | null;
+  seo_canonical?: string | null;
+  seo_og_image?: string | null;
 }
 
 export interface ApiResponse<T> {

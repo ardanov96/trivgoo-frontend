@@ -104,6 +104,12 @@ const AgentAddProduct: React.FC = () => {
     features: [""],
     dailyCapacity: 10,
     blockedDates: [] as string[],
+    seoTitle: "",
+    seoDescription: "",
+    seoSlug: "",
+    seoKeyword: "",
+    seoCanonical: "",
+    seoOgImage: "",
   });
 
   // ── NEW: Voucher state ───────────────────────────────────────────────────
@@ -310,6 +316,12 @@ const AgentAddProduct: React.FC = () => {
               blockedDates: (product as any).blocked_dates || [],
               lat: prodLat,
               lng: prodLng,
+              seoTitle: (product as any).seo_title || "",
+              seoDescription: (product as any).seo_description || "",
+              seoSlug: (product as any).seo_slug || "",
+              seoKeyword: (product as any).seo_keyword || "",
+              seoCanonical: (product as any).seo_canonical || "",
+              seoOgImage: (product as any).seo_og_image || "",
             });
 
             if (coordsValid) {
@@ -706,6 +718,12 @@ const AgentAddProduct: React.FC = () => {
         blocked_dates: formData.blockedDates,
         lat: finalMarkerPos.lat,
         lng: finalMarkerPos.lng,
+        seo_title: formData.seoTitle || null,
+        seo_description: formData.seoDescription || null,
+        seo_slug: formData.seoSlug || null,
+        seo_keyword: formData.seoKeyword || null,
+        seo_canonical: formData.seoCanonical || null,
+        seo_og_image: formData.seoOgImage || null,
       } as any;
 
       if (isTransport) {
@@ -1221,6 +1239,67 @@ const AgentAddProduct: React.FC = () => {
                   </div>
                 ))}
                 <button type="button" onClick={addFeature} className="text-primary-600 text-xs font-bold hover:underline">+ Add Highlight</button>
+              </div>
+            </div>
+
+            {/* SEO Settings */}
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center justify-between">
+                <span>SEO Settings</span>
+                <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-full">Optional</span>
+              </h3>
+              
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6">
+                <p className="text-xs text-gray-500 mb-3 font-semibold uppercase">Google Preview</p>
+                <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                  <p className="text-[#1a0dab] text-sm md:text-base font-medium truncate">
+                    {formData.seoTitle || (formData.name ? `${formData.name} | Trivgoo` : 'Product Title | Trivgoo')}
+                  </p>
+                  <p className="text-[#006621] text-[11px] md:text-xs truncate mb-1">
+                    https://trivgoo.com/product/xxx/{formData.seoSlug || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || 'product-slug'}
+                  </p>
+                  <p className="text-[#545454] text-xs md:text-sm line-clamp-2 leading-snug">
+                    {formData.seoDescription || formData.description.substring(0, 155) || 'Product description will appear here...'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 flex justify-between">
+                    Meta Title
+                    <span className={formData.seoTitle.length > 60 ? 'text-red-500' : ''}>
+                      {formData.seoTitle.length}/60
+                    </span>
+                  </label>
+                  <input type="text" name="seoTitle" value={formData.seoTitle} onChange={handleChange} placeholder="Custom SEO Title" className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 flex justify-between">
+                    Meta Description
+                    <span className={formData.seoDescription.length > 155 ? 'text-red-500' : ''}>
+                      {formData.seoDescription.length}/155
+                    </span>
+                  </label>
+                  <textarea name="seoDescription" value={formData.seoDescription} onChange={handleChange} placeholder="Custom SEO Description" rows={3} className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white text-sm resize-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">SEO Slug</label>
+                  <div className="flex bg-gray-50 border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary-500 focus-within:bg-white">
+                    <span className="px-3 py-2 bg-gray-100 text-gray-500 text-sm border-r border-gray-200 flex items-center">/product/xxx/</span>
+                    <input type="text" name="seoSlug" value={formData.seoSlug} onChange={handleChange} placeholder="custom-slug" className="w-full px-3 py-2 bg-transparent border-none focus:outline-none text-sm" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Focus Keyword</label>
+                    <input type="text" name="seoKeyword" value={formData.seoKeyword} onChange={handleChange} placeholder="e.g. bali tour promo" className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">OG Image URL</label>
+                    <input type="text" name="seoOgImage" value={formData.seoOgImage} onChange={handleChange} placeholder="https://..." className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 bg-gray-50 focus:bg-white text-sm" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

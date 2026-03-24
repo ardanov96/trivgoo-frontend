@@ -324,7 +324,11 @@ const ProductDetail: React.FC = () => {
 
     return (
       <div className="min-h-screen bg-gray-50 pt-20">
-        <SEO title={`${product.name} | Trivgoo`} description={(product as any).description || `Book ${product.name} at ${formatLocation(product.location || '')} on Trivgoo.`} image={product.image_url || product.image || FALLBACK_IMAGE} />
+        <SEO 
+          title={(product as any).seo_title || `${product.name} | Trivgoo`} 
+          description={(product as any).seo_description || (product as any).description || `Book ${product.name} at ${formatLocation(product.location || '')} on Trivgoo.`} 
+          image={(product as any).seo_og_image || product.image_url || product.image || FALLBACK_IMAGE} 
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
             <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 font-medium text-gray-500"><ChevronLeft className="w-3.5 h-3.5" /> Kembali</button>
@@ -410,7 +414,11 @@ const ProductDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-16">
-      <SEO title={`${product.name} Rental | Trivgoo`} description={`Rent ${product.name} starting from ${product.currency} ${Number(product.price).toLocaleString('id-ID')}/day on Trivgoo.`} image={product.image_url || product.image || FALLBACK_IMAGE} />
+      <SEO 
+        title={(product as any).seo_title || `${product.name} Rental | Trivgoo`} 
+        description={(product as any).seo_description || `Rent ${product.name} starting from ${product.currency} ${Number(product.price).toLocaleString('id-ID')}/day on Trivgoo.`} 
+        image={(product as any).seo_og_image || product.image_url || product.image || FALLBACK_IMAGE} 
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-6 pt-4">
           <button onClick={()=>navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 transition-colors font-medium"><ChevronLeft className="w-4 h-4"/> Kembali</button>
