@@ -215,7 +215,7 @@ const ProductDetail: React.FC = () => {
         image: product.image_url || product.image, currency: product.currency || 'IDR',
         pricePerPax: totalPerDay, basePricePerPax: Number(product.price), pax: 1, guestCount: 1, duration: calculatedDays,
         totalPrice: totalPerDay * calculatedDays, date: `${carPickupDate} - ${carDropoffDate}`,
-        startTime: start.toISOString(), endTime: end.toISOString(),
+        startTime: `${carPickupDate} ${carPickupTime}:00`, endTime: `${carDropoffDate} ${carDropoffTime}:00`,
         unitLabel: 'Hari', priceUnitLabel: 'hari', vehicleType: 'car',
         transmission: (product.details as CarDetails)?.transmission,
         seats: (product.details as CarDetails)?.seats,
