@@ -328,13 +328,15 @@ const PublicLayout: React.FC = () => {
 
                     {isProfileDropdownOpen && (
                       <div className="absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-2 animate-in fade-in zoom-in-95 duration-200 z-50">
-                        <Link to={user.role === UserRole.CUSTOMER ? "/my-account" : "/profile"} onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-                          <UserIcon className="w-4 h-4 mr-3 text-gray-400" /> Profil Saya
-                        </Link>
                         {user.role === UserRole.CUSTOMER && (
-                          <Link to="/my-bookings" onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-                            <Package className="w-4 h-4 mr-3 text-gray-400" /> My Booking
-                          </Link>
+                          <>
+                            <Link to="/my-account" onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">
+                              <UserIcon className="w-4 h-4 mr-3 text-gray-400" /> Profil Saya
+                            </Link>
+                            <Link to="/my-bookings" onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">
+                              <Package className="w-4 h-4 mr-3 text-gray-400" /> My Booking
+                            </Link>
+                          </>
                         )}
                         {(user.role === UserRole.ADMIN || user.role === UserRole.AGENT) && (
                           <Link to={user.role === UserRole.ADMIN ? "/admin" : "/agent"} onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">

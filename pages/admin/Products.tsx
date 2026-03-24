@@ -13,8 +13,11 @@ import {
   Zap,
   Percent,
   ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { encodeId } from "../../utils/hashids";
 import { generateSlug } from "../../utils/slugify";
@@ -50,13 +53,162 @@ interface CampaignWithProducts extends Campaign {
   joined_products?:     JoinedProduct[];
   is_expanded?:         boolean;
   is_loading_products?: boolean;
-  // pagination state di dalam accordion
   join_page?:           number;
   join_total_pages?:    number;
   join_total?:          number;
-  // pending count dari backend (tanpa expand)
   pending_count?:       number;
 }
+
+// ── Confirm Dialog ────────────────────────────────────────────────────────────
+
+interface ConfirmDialogProps {
+  open:       boolean;
+  action:     "approve" | "reject";
+  type:       "campaign" | "flash";
+  productName: string;
+  context:    string;   // campaign name or "Flash Sale"
+  image:      string | null;
+  onConfirm:  () => void;
+  onCancel:   () => void;
+  isLoading?: boolean;
+}
+
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
+  open, action, type, productName, context, image, onConfirm, onCancel, isLoading,
+}) => {
+  const isApprove = action === "approve";
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, onCancel]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(3px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 12 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top accent */}
+            <div
+              className="h-1 w-full"
+              style={{
+                background: isApprove
+                  ? "linear-gradient(to right, #22c55e, #16a34a)"
+                  : "linear-gradient(to right, #ef4444, #dc2626)",
+              }}
+            />
+
+            <div className="p-6">
+              {/* Icon */}
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
+                style={{
+                  background: isApprove ? "#EAF3DE" : "#FCEBEB",
+                  border: `1px solid ${isApprove ? "#97C459" : "#F09595"}`,
+                }}
+              >
+                {isApprove
+                  ? <CheckCircle className="w-6 h-6" style={{ color: "#27500A" }} />
+                  : <XCircle    className="w-6 h-6" style={{ color: "#791F1F" }} />
+                }
+              </div>
+
+              {/* Title */}
+              <h3 className="text-base font-bold text-gray-900 mb-1">
+                {isApprove ? "Setujui pengajuan ini?" : "Tolak pengajuan ini?"}
+              </h3>
+              <p className="text-xs text-gray-400 mb-5">
+                {type === "campaign" ? "Campaign submission" : "Flash sale request"}
+              </p>
+
+              {/* Product preview */}
+              <div
+                className="flex items-center gap-3 rounded-xl p-3 mb-5"
+                style={{ background: "#FAFAF9", border: "0.5px solid #ECEAE6" }}
+              >
+                {image ? (
+                  <img
+                    src={image}
+                    alt=""
+                    className="w-11 h-11 rounded-lg object-cover shrink-0 bg-gray-100"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <div className="w-11 h-11 rounded-lg bg-gray-100 shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">{productName}</p>
+                  <p className="text-xs truncate" style={{ color: type === "campaign" ? "#534AB7" : "#854F0B" }}>
+                    {type === "campaign"
+                      ? <span className="inline-flex items-center gap-1"><Tag className="w-3 h-3" />{context}</span>
+                      : <span className="inline-flex items-center gap-1"><Zap className="w-3 h-3" />{context}</span>
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Warning text for reject */}
+              {!isApprove && (
+                <div
+                  className="flex items-start gap-2 rounded-xl px-3 py-2.5 mb-5 text-xs"
+                  style={{ background: "#FFF8EC", border: "0.5px solid #FAC775", color: "#633806" }}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#BA7517" }} />
+                  Produk tidak akan tampil di campaign / flash sale. Agent bisa mengajukan ulang.
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2.5">
+                <button
+                  onClick={onCancel}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={onConfirm}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  style={{
+                    background: isApprove ? "#16a34a" : "#dc2626",
+                  }}
+                >
+                  {isLoading && (
+                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  )}
+                  {isApprove ? "Ya, Setujui" : "Ya, Tolak"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+};
 
 // ── Konstanta ─────────────────────────────────────────────────────────────────
 
@@ -138,31 +290,50 @@ const joinStatusLabel = (status: string) => {
   return "Menunggu Review";
 };
 
+// ── Pending dialog state type ─────────────────────────────────────────────────
+
+interface PendingAction {
+  kind:        "campaign" | "flash";
+  action:      "approve" | "reject";
+  productName: string;
+  context:     string;
+  image:       string | null;
+  // campaign-specific
+  campaignId?: number;
+  joinId?:     number;
+  // flash-specific
+  flashId?:   number;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const AdminProducts: React.FC = () => {
   const { showToast } = useToast();
 
-  const [products, setProducts]           = useState<AgentProduct[]>([]);
-  const [campaigns, setCampaigns]         = useState<CampaignWithProducts[]>([]);
+  const [products,      setProducts]      = useState<AgentProduct[]>([]);
+  const [campaigns,     setCampaigns]     = useState<CampaignWithProducts[]>([]);
   const [flashRequests, setFlashRequests] = useState<FlashSaleRequest[]>([]);
 
-  const [activeTab, setActiveTab]     = useState<"all" | "flash_sale" | "campaigns">("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading]     = useState(true);
+  const [activeTab,    setActiveTab]    = useState<"all" | "flash_sale" | "campaigns">("all");
+  const [searchQuery,  setSearchQuery]  = useState("");
+  const [isLoading,    setIsLoading]    = useState(true);
 
-  const [page, setPage]             = useState(1);
+  const [page,       setPage]       = useState(1);
   const [limit]                     = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
-  const [campaignPage, setCampaignPage]             = useState(1);
+  const [campaignPage,       setCampaignPage]       = useState(1);
   const [campaignTotalPages, setCampaignTotalPages] = useState(1);
 
-  const [flashPage, setFlashPage]             = useState(1);
+  const [flashPage,       setFlashPage]       = useState(1);
   const [flashTotalPages, setFlashTotalPages] = useState(1);
-  const [pendingCount, setPendingCount]       = useState(0);
+  const [pendingCount,    setPendingCount]    = useState(0);
 
   const [ownerId] = useState<number | undefined>(undefined);
+
+  // ── Confirm dialog state ──────────────────────────────────────────────────
+  const [pendingAction,   setPendingAction]   = useState<PendingAction | null>(null);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
@@ -269,113 +440,113 @@ const AdminProducts: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, activeTab]);
 
-  // ── Load joined products (dengan page) ───────────────────────────────────
+  // ── Load joined products ──────────────────────────────────────────────────
 
   const loadJoinedProducts = async (campaignId: number, page: number) => {
     setCampaigns((prev) =>
-      prev.map((c) =>
-        c.id === campaignId ? { ...c, is_loading_products: true } : c
-      )
+      prev.map((c) => c.id === campaignId ? { ...c, is_loading_products: true } : c)
     );
     try {
       const result = await fetchJoinedProducts(campaignId, page, JOIN_LIMIT);
       setCampaigns((prev) =>
         prev.map((c) =>
           c.id === campaignId
-            ? {
-                ...c,
-                joined_products:  result.products,
-                join_page:        result.page,
-                join_total_pages: result.total_pages,
-                join_total:       result.total,
-                is_loading_products: false,
-              }
+            ? { ...c, joined_products: result.products, join_page: result.page, join_total_pages: result.total_pages, join_total: result.total, is_loading_products: false }
             : c
         )
       );
     } catch (e: any) {
       showToast(e?.message || "Gagal memuat produk campaign", "error");
       setCampaigns((prev) =>
-        prev.map((c) =>
-          c.id === campaignId
-            ? { ...c, joined_products: [], is_loading_products: false }
-            : c
-        )
+        prev.map((c) => c.id === campaignId ? { ...c, joined_products: [], is_loading_products: false } : c)
       );
     }
   };
 
-  // ── Campaign accordion toggle ─────────────────────────────────────────────
-
   const handleToggleCampaign = async (campaignId: number) => {
     const campaign = campaigns.find((c) => c.id === campaignId);
     if (!campaign) return;
-
     if (campaign.is_expanded) {
-      // Tutup saja
-      setCampaigns((prev) =>
-        prev.map((c) => c.id === campaignId ? { ...c, is_expanded: false } : c)
-      );
+      setCampaigns((prev) => prev.map((c) => c.id === campaignId ? { ...c, is_expanded: false } : c));
       return;
     }
-
-    // Buka — set expanded dulu
-    setCampaigns((prev) =>
-      prev.map((c) => c.id === campaignId ? { ...c, is_expanded: true } : c)
-    );
-
-    // Fetch jika belum pernah load
+    setCampaigns((prev) => prev.map((c) => c.id === campaignId ? { ...c, is_expanded: true } : c));
     if (campaign.joined_products === undefined) {
       await loadJoinedProducts(campaignId, 1);
     }
   };
 
-  // ── Approve / Reject joined product ──────────────────────────────────────
+  // ── Confirm dialog triggers ───────────────────────────────────────────────
 
-  const handleReviewJoin = async (
+  const promptReviewJoin = (
     campaignId: number,
     joinId: number,
-    action: "approve" | "reject"
+    action: "approve" | "reject",
+    p: JoinedProduct,
+    campaignName: string
   ) => {
-    try {
-      await reviewJoinedProduct(campaignId, joinId, action);
-      showToast(
-        action === "approve" ? "Produk disetujui ke campaign" : "Produk ditolak",
-        "success"
-      );
-      // Update status lokal tanpa refetch
-      setCampaigns((prev) =>
-        prev.map((c) => {
-          if (c.id !== campaignId) return c;
-          const new_status = action === "approve" ? "active" : "rejected";
-          return {
-            ...c,
-            // kurangi pending_count
-            pending_count: Math.max(0, (c.pending_count ?? 0) - 1),
-            joined_products: c.joined_products?.map((p) =>
-              p.join_id === joinId ? { ...p, join_status: new_status } : p
-            ),
-          };
-        })
-      );
-    } catch (e: any) {
-      showToast(e?.message || "Gagal memproses pengajuan", "error");
-    }
+    setPendingAction({
+      kind: "campaign", action,
+      productName: p.product_name,
+      context:     campaignName,
+      image:       p.product_image,
+      campaignId,
+      joinId,
+    });
   };
 
-  // ── Flash sale handlers ───────────────────────────────────────────────────
+  const promptFlashAction = (
+    req: FlashSaleRequest,
+    action: "approve" | "reject"
+  ) => {
+    setPendingAction({
+      kind: "flash", action,
+      productName: req.product_name,
+      context:     `Flash Sale -${req.discount_pct}%`,
+      image:       req.product_image,
+      flashId:     req.id,
+    });
+  };
 
-  const handleFlashSaleAction = async (id: number, action: "approve" | "reject") => {
+  // ── Execute confirmed action ──────────────────────────────────────────────
+
+  const handleConfirm = async () => {
+    if (!pendingAction) return;
+    setIsConfirmLoading(true);
     try {
-      await adminService.updateFlashSaleRequest(id, action);
-      showToast(
-        `Flash sale request ${action === "approve" ? "approved" : "rejected"}`,
-        "success"
-      );
-      await fetchFlashRequests();
-      await fetchPendingCount();
+      if (pendingAction.kind === "campaign") {
+        await reviewJoinedProduct(pendingAction.campaignId!, pendingAction.joinId!, pendingAction.action);
+        showToast(
+          pendingAction.action === "approve" ? "Produk disetujui ke campaign" : "Produk ditolak",
+          "success"
+        );
+        const new_status = pendingAction.action === "approve" ? "active" : "rejected";
+        setCampaigns((prev) =>
+          prev.map((c) => {
+            if (c.id !== pendingAction.campaignId) return c;
+            return {
+              ...c,
+              pending_count: Math.max(0, (c.pending_count ?? 0) - 1),
+              joined_products: c.joined_products?.map((p) =>
+                p.join_id === pendingAction.joinId ? { ...p, join_status: new_status } : p
+              ),
+            };
+          })
+        );
+      } else {
+        await adminService.updateFlashSaleRequest(pendingAction.flashId!, pendingAction.action);
+        showToast(
+          `Flash sale request ${pendingAction.action === "approve" ? "approved" : "rejected"}`,
+          "success"
+        );
+        await fetchFlashRequests();
+        await fetchPendingCount();
+      }
+      setPendingAction(null);
     } catch (e: any) {
-      showToast(e?.message || "Failed to process request", "error");
+      showToast(e?.message || "Gagal memproses pengajuan", "error");
+    } finally {
+      setIsConfirmLoading(false);
     }
   };
 
@@ -388,6 +559,19 @@ const AdminProducts: React.FC = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={!!pendingAction}
+        action={pendingAction?.action ?? "approve"}
+        type={pendingAction?.kind ?? "campaign"}
+        productName={pendingAction?.productName ?? ""}
+        context={pendingAction?.context ?? ""}
+        image={pendingAction?.image ?? null}
+        onConfirm={handleConfirm}
+        onCancel={() => setPendingAction(null)}
+        isLoading={isConfirmLoading}
+      />
 
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -460,18 +644,13 @@ const AdminProducts: React.FC = () => {
                 </div>
               ) : (
                 campaigns.map((c) => {
-                  // Gunakan pending_count dari backend jika accordion belum dibuka,
-                  // atau hitung ulang dari data lokal jika sudah dibuka
-                  const pending = c.joined_products !== undefined
+                  const pending        = c.joined_products !== undefined
                     ? c.joined_products.filter((p) => p.join_status === "pending").length
                     : (c.pending_count ?? 0);
-
-                  // Jumlah total produk — join_total lebih akurat dari product_count
                   const total_products = c.join_total ?? c.product_count ?? 0;
 
                   return (
                     <div key={c.id} className="overflow-hidden">
-
                       {/* Campaign header */}
                       <button
                         onClick={() => handleToggleCampaign(c.id)}
@@ -480,7 +659,6 @@ const AdminProducts: React.FC = () => {
                         <div className="mt-0.5 shrink-0 text-gray-400">
                           {c.is_expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         </div>
-
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-sm font-bold text-gray-900">{c.name}</h3>
@@ -497,9 +675,7 @@ const AdminProducts: React.FC = () => {
                               </span>
                             )}
                           </div>
-
                           {c.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{c.description}</p>}
-
                           <div className="flex items-center gap-3 mt-2 flex-wrap">
                             <span className="text-[11px] text-gray-500 flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
@@ -511,21 +687,18 @@ const AdminProducts: React.FC = () => {
                               <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
                                 {c.discount_type === "fixed"
                                   ? `min -Rp ${Number(c.discount_value).toLocaleString("id-ID")}`
-                                  : `min -${c.discount_value}%`
-                                }
+                                  : `min -${c.discount_value}%`}
                               </span>
                             )}
                           </div>
                         </div>
-
-                        {/* Product count — sekarang akurat dari backend */}
                         <div className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-gray-500">
                           <Package2 className="w-4 h-4" />
                           {total_products} produk
                         </div>
                       </button>
 
-                      {/* Expanded: tabel produk */}
+                      {/* Expanded: product table */}
                       {c.is_expanded && (
                         <div className="bg-gray-50 border-t border-gray-100 px-6 pb-5">
                           {c.is_loading_products ? (
@@ -598,10 +771,18 @@ const AdminProducts: React.FC = () => {
                                             </Link>
                                             {p.join_status === "pending" && (
                                               <>
-                                                <button onClick={() => handleReviewJoin(c.id, p.join_id, "approve")} className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors" title="Setujui">
+                                                <button
+                                                  onClick={() => promptReviewJoin(c.id, p.join_id, "approve", p, c.name)}
+                                                  className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+                                                  title="Setujui"
+                                                >
                                                   <CheckCircle className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleReviewJoin(c.id, p.join_id, "reject")} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Tolak">
+                                                <button
+                                                  onClick={() => promptReviewJoin(c.id, p.join_id, "reject", p, c.name)}
+                                                  className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                                  title="Tolak"
+                                                >
                                                   <XCircle className="w-4 h-4" />
                                                 </button>
                                               </>
@@ -614,7 +795,6 @@ const AdminProducts: React.FC = () => {
                                 </table>
                               </div>
 
-                              {/* Pagination di dalam accordion */}
                               {(c.join_total_pages ?? 1) > 1 && (
                                 <div className="flex items-center justify-between mt-3 px-1">
                                   <span className="text-xs text-gray-500">
@@ -622,20 +802,8 @@ const AdminProducts: React.FC = () => {
                                     <span className="ml-2 text-gray-400">({c.join_total} produk)</span>
                                   </span>
                                   <div className="flex gap-2">
-                                    <button
-                                      disabled={c.join_page === 1 || c.is_loading_products}
-                                      onClick={() => loadJoinedProducts(c.id, (c.join_page ?? 1) - 1)}
-                                      className="px-3 py-1 text-xs font-bold rounded-lg border border-gray-200 disabled:opacity-50 hover:bg-white transition-colors"
-                                    >
-                                      Prev
-                                    </button>
-                                    <button
-                                      disabled={c.join_page === c.join_total_pages || c.is_loading_products}
-                                      onClick={() => loadJoinedProducts(c.id, (c.join_page ?? 1) + 1)}
-                                      className="px-3 py-1 text-xs font-bold rounded-lg border border-gray-200 disabled:opacity-50 hover:bg-white transition-colors"
-                                    >
-                                      Next
-                                    </button>
+                                    <button disabled={c.join_page === 1 || c.is_loading_products} onClick={() => loadJoinedProducts(c.id, (c.join_page ?? 1) - 1)} className="px-3 py-1 text-xs font-bold rounded-lg border border-gray-200 disabled:opacity-50 hover:bg-white transition-colors">Prev</button>
+                                    <button disabled={c.join_page === c.join_total_pages || c.is_loading_products} onClick={() => loadJoinedProducts(c.id, (c.join_page ?? 1) + 1)} className="px-3 py-1 text-xs font-bold rounded-lg border border-gray-200 disabled:opacity-50 hover:bg-white transition-colors">Next</button>
                                   </div>
                                 </div>
                               )}
@@ -649,7 +817,6 @@ const AdminProducts: React.FC = () => {
               )}
             </div>
 
-            {/* Pagination campaigns */}
             <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
               <div className="text-xs text-gray-500">
                 Page <span className="font-bold text-gray-700">{campaignPage}</span> / <span className="font-bold text-gray-700">{campaignTotalPages}</span>
@@ -662,7 +829,6 @@ const AdminProducts: React.FC = () => {
           </>
 
         ) : activeTab === "flash_sale" ? (
-          /* ── Flash Sale Requests Tab ── */
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">
               <thead className="bg-gray-50">
@@ -712,10 +878,18 @@ const AdminProducts: React.FC = () => {
                           <Link to={`/product/${encodeId(req.product_id)}/${generateSlug(req.product_name)}`} target="_blank" rel="noopener noreferrer" className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="View Product">
                             <Eye className="w-5 h-5" />
                           </Link>
-                          <button onClick={() => handleFlashSaleAction(req.id, "approve")} className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors" title="Approve">
+                          <button
+                            onClick={() => promptFlashAction(req, "approve")}
+                            className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+                            title="Approve"
+                          >
                             <CheckCircle className="w-5 h-5" />
                           </button>
-                          <button onClick={() => handleFlashSaleAction(req.id, "reject")} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" title="Reject">
+                          <button
+                            onClick={() => promptFlashAction(req, "reject")}
+                            className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                            title="Reject"
+                          >
                             <XCircle className="w-5 h-5" />
                           </button>
                         </div>
@@ -735,7 +909,6 @@ const AdminProducts: React.FC = () => {
           </div>
 
         ) : (
-          /* ── All Products Tab ── */
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">
               <thead className="bg-gray-50">

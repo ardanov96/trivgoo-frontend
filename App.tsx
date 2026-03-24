@@ -34,6 +34,8 @@ import Wishlist       from './pages/Wishlist';
 import TrivPay        from './pages/TrivPay';
 import VerifyEmail    from './pages/VerifyEmail';
 import PaymentResult  from './pages/PaymentResult';
+import PromoCampaignPage from './pages/PromoCampaignPage';
+
 
 // ── Admin Pages ───────────────────────────────────────────────────────────────
 import AdminBookings        from './pages/admin/Bookings';
@@ -178,6 +180,7 @@ const AppRoutes = () => (
       <Route path="/verify-email"    element={<VerifyEmail />} />
       <Route path="/payment/result"  element={<PaymentResult />} />
       <Route path="/wishlist"        element={<Wishlist />} />
+      <Route path="/promo/campaign/:id" element={<PromoCampaignPage />} />
       <Route path="/about-us"        element={<AboutUs />} />
       <Route path="/career"          element={<Career />} />
       <Route path="/press-and-media" element={<PressAndMedia />} />

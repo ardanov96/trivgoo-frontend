@@ -216,15 +216,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* ══ LAYER 2: Left-to-right dark gradient ══════════════════════════ */}
-      <div
-        className="absolute inset-0 pointer-events-none z-[1]"
-        style={{
-          background: 'linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.15) 60%, transparent 80%)',
-        }}
-      />
-
-      {/* ══ LAYER 3: Konten info — pojok KIRI ════════════════════════════ */}
+      {/* ══ LAYER 2: Konten info — pojok KIRI ════════════════════════════ */}
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={`info-${c.id}`}
@@ -236,66 +228,10 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
           transition={infoTransition}
           className="absolute inset-0 flex flex-col justify-center px-6 md:px-10 py-4 pointer-events-none z-[2]"
         >
-          {/* Badge */}
-          <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest w-fit mb-2 ${badge.bg} ${badge.text}`}>
-            {badge.icon}
-            {badge.label}
-          </div>
-
-          {/* Discount */}
-          <div className="flex items-baseline gap-3 flex-wrap mb-1">
-            <span
-              className="text-white text-2xl md:text-4xl font-black tracking-tight leading-none"
-              style={{
-                textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 3px 10px rgba(0,0,0,0.8)',
-                WebkitTextStroke: '1px rgba(0,0,0,0.6)',
-              }}
-            >
-              {formatDiscount(c)}
-            </span>
-            <span
-              className="text-white text-sm md:text-base font-semibold"
-              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)' }}
-            >
-              OFF
-            </span>
-          </div>
-
-          {/* Nama campaign */}
-          <h3
-            className="text-white font-bold text-sm md:text-lg leading-snug line-clamp-1 mb-0.5"
-            style={{
-              textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 8px rgba(0,0,0,0.9)',
-              WebkitTextStroke: '0.5px rgba(0,0,0,0.5)',
-            }}
-          >
-            {c.name}
-          </h3>
-
-          {/* Deskripsi */}
-          {c.description && (
-            <p
-              className="hidden md:block text-white text-xs leading-relaxed line-clamp-1"
-              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.8)' }}
-            >
-              {c.description}
-            </p>
-          )}
-
-          {/* Min transaksi */}
-          {c.min_transaction > 0 && (
-            <p
-              className="text-white/80 text-[10px] mt-1 font-medium hidden md:block"
-              style={{ textShadow: '0 1px 3px rgba(0,0,0,0.95)' }}
-            >
-              Min. Rp {Number(c.min_transaction).toLocaleString('id-ID')}
-              {c.min_tier_name ? ` · Member ${c.min_tier_name}` : ''}
-            </p>
-          )}
         </motion.div>
       </AnimatePresence>
 
-      {/* ══ LAYER 4: CTA button — kiri bawah ════════════════════════════ */}
+      {/* ══ LAYER 3: CTA button — kiri bawah ════════════════════════════ */}
       <div className="absolute bottom-3 left-6 md:bottom-4 md:left-10 pointer-events-auto z-[3]">
         <Link
           to={`/promo/campaign/${c.id}`}
@@ -307,7 +243,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </Link>
       </div>
 
-      {/* ══ LAYER 5: Navigasi — sisi KIRI & KANAN banner ═════════════════ */}
+      {/* ══ LAYER 4: Navigasi — sisi KIRI & KANAN banner ═════════════════ */}
       {active.length > 1 && (
         <>
           {/* Tombol KIRI */}
@@ -346,7 +282,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
         </>
       )}
 
-      {/* ══ LAYER 6: Progress bar ════════════════════════════════════════ */}
+      {/* ══ LAYER 5: Progress bar ════════════════════════════════════════ */}
       {autoplay && !paused && active.length > 1 && (
         <motion.div
           key={`${c.id}-progress`}

@@ -1,9 +1,9 @@
 // pages/PromoCampaignPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Tag, Calendar, Percent, ShoppingBag, MapPin } from 'lucide-react';
-import { promoService, resolveBannerUrl, type PromoCampaign } from '../services/promoService';
+import { getCampaignById, getCampaignJoinedProducts, resolveBannerUrl, type PromoCampaign } from '../services/promoService';
 import { encodeId } from '../utils/hashids';
 import { generateSlug } from '../utils/slugify';
 import SEO from '../components/SEO';
@@ -57,6 +57,43 @@ function formatDiscount(c: PromoCampaign) {
   return `Rp ${Number(c.discount_value).toLocaleString('id-ID')} OFF`;
 }
 
+// ── Inject shimmer keyframes ──────────────────────────────────────────────────
+
+function injectStyles() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('promo-page-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'promo-page-styles';
+  style.textContent = `
+    @keyframes shimmerSweep {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.6; }
+      50%       { opacity: 1; }
+    }
+    .discount-shimmer {
+      background: linear-gradient(
+        90deg,
+        #FFE066 0%,
+        #FFF5B0 40%,
+        #FFE066 60%,
+        #FFB800 100%
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmerSweep 3s linear infinite;
+    }
+    .badge-pulse {
+      animation: pulseGlow 2.5s ease-in-out infinite;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 // ── Product Card ──────────────────────────────────────────────────────────────
 
 const ProductCard: React.FC<{ p: CampaignProduct; idx: number }> = ({ p, idx }) => {
@@ -64,12 +101,15 @@ const ProductCard: React.FC<{ p: CampaignProduct; idx: number }> = ({ p, idx }) 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: idx * 0.06, duration: 0.35 }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      transition={{ delay: idx * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
     >
-      <Link to={to} className="block bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
+      <Link
+        to={to}
+        className="block bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group"
+      >
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
           {p.product_image ? (
@@ -84,7 +124,6 @@ const ProductCard: React.FC<{ p: CampaignProduct; idx: number }> = ({ p, idx }) 
             </div>
           )}
 
-          {/* Discount badge */}
           {p.discount_pct != null && (
             <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-extrabold px-2.5 py-1 rounded-full shadow-sm">
               -{p.discount_pct}%
@@ -103,8 +142,6 @@ const ProductCard: React.FC<{ p: CampaignProduct; idx: number }> = ({ p, idx }) 
               {p.product_location}
             </p>
           )}
-
-          {/* Price */}
           <div className="mt-auto">
             {p.sale_price != null ? (
               <>
@@ -130,23 +167,27 @@ const ProductCard: React.FC<{ p: CampaignProduct; idx: number }> = ({ p, idx }) 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const PromoCampaignPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id }   = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [campaign, setCampaign]     = useState<PromoCampaign | null>(null);
-  const [products, setProducts]     = useState<CampaignProduct[]>([]);
+  const [campaign, setCampaign]                   = useState<PromoCampaign | null>(null);
+  const [products, setProducts]                   = useState<CampaignProduct[]>([]);
   const [isLoadingCampaign, setIsLoadingCampaign] = useState(true);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [page, setPage]             = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal]           = useState(0);
+  const [bannerLoaded, setBannerLoaded]           = useState(false);
+  const [page, setPage]                           = useState(1);
+  const [totalPages, setTotalPages]               = useState(1);
+  const [total, setTotal]                         = useState(0);
   const LIMIT = 12;
+
+  useEffect(() => { injectStyles(); }, []);
 
   // Fetch campaign detail
   useEffect(() => {
     if (!id) return;
     setIsLoadingCampaign(true);
-    promoService.getCampaignById(Number(id))
+    setBannerLoaded(false);
+    getCampaignById(Number(id))
       .then((c) => setCampaign(c))
       .catch(() => navigate('/explore', { replace: true }))
       .finally(() => setIsLoadingCampaign(false));
@@ -156,7 +197,7 @@ const PromoCampaignPage: React.FC = () => {
   useEffect(() => {
     if (!id) return;
     setIsLoadingProducts(true);
-    promoService.getCampaignJoinedProducts(Number(id), page, LIMIT)
+    getCampaignJoinedProducts(Number(id), page, LIMIT)
       .then(({ products, meta }) => {
         setProducts(products);
         setTotalPages(meta.total_pages);
@@ -176,106 +217,241 @@ const PromoCampaignPage: React.FC = () => {
         description={campaign?.description || 'Temukan produk-produk pilihan dalam promo campaign eksklusif ini.'}
       />
 
-      {/* ── Hero banner ── */}
-      <div className="relative w-full" style={{ aspectRatio: '1010 / 298', maxHeight: 340 }}>
-        {isLoadingCampaign ? (
-          <div className="w-full h-full bg-gray-200 animate-pulse" />
-        ) : hasBanner ? (
-          <img
+      {/* ══ Hero banner ══════════════════════════════════════════════════════ */}
+      {/*
+        Strategi: wrapper div pakai background hitam.
+        Gambar pakai width:100%, height:auto → TIDAK PERNAH terpotong di sisi manapun.
+        Overlay info di-absolute di atas gambar, pointer-events:none.
+        Karena height mengikuti gambar secara alami, tidak ada maxHeight yg memotong.
+      */}
+      <div
+        className="relative w-full"
+        style={{ background: '#0d0d0d' }}
+      >
+        {/* ── Skeleton saat loading ── */}
+        {isLoadingCampaign && (
+          <div
+            className="w-full animate-pulse"
+            style={{ height: 320, background: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)' }}
+          />
+        )}
+
+        {/* ── Gambar banner — width:100% height:auto = tidak pernah terpotong ── */}
+        {!isLoadingCampaign && hasBanner && (
+          <motion.img
             src={resolveBannerUrl(campaign!.banner_image!)}
             alt={campaign!.name}
-            className="w-full h-full object-cover"
+            onLoad={() => setBannerLoaded(true)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: bannerLoaded ? 1 : 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            style={{
+              display:   'block',
+              width:     '100%',
+              height:    'auto',       // ← kunci: tinggi ikut proporsi gambar asli
+              objectFit: 'unset',      // tidak diperlukan karena height:auto
+            }}
           />
-        ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${fallback}`} />
         )}
 
-        {/* Dark overlay left-to-right */}
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.50) 35%, rgba(0,0,0,0.10) 65%, transparent 85%)' }}
-        />
+        {/* ── Fallback gradient jika tidak ada banner ── */}
+        {!isLoadingCampaign && !hasBanner && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className={`w-full bg-gradient-to-br ${fallback}`}
+            style={{ height: 320 }}
+          />
+        )}
 
-        {/* Back button */}
-        <button
+        {/* ── Back button ── */}
+        <motion.button
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, duration: 0.35 }}
           onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 md:top-6 md:left-6 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm text-white px-3 py-2 rounded-full text-xs font-bold hover:bg-black/60 transition-colors z-10"
+          className="absolute top-4 left-4 md:top-6 md:left-6 flex items-center gap-1.5 text-white px-3 py-2 rounded-full text-xs font-bold z-10 transition-colors"
+          style={{
+            background:    'rgba(0,0,0,0.45)',
+            backdropFilter:'blur(6px)',
+            border:        '1px solid rgba(255,255,255,0.15)',
+          }}
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Kembali
-        </button>
+        </motion.button>
 
-        {/* Campaign info on banner */}
-        {campaign && (
-          <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-12 z-[2] pointer-events-none">
-            {/* Type badge */}
-            <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-3">
-              <Tag className="w-3 h-3" />
-              {campaign.type?.replace('_', ' ') ?? 'Promo'}
-            </div>
-
-            {/* Discount */}
-            <div
-              className="text-white text-3xl md:text-5xl font-black tracking-tight mb-1"
-              style={{ textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}
+        {/* ── Campaign info overlay — pinned to bottom of banner ── */}
+        <AnimatePresence>
+          {campaign && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0 flex flex-col justify-end pb-6 px-6 md:px-10 pointer-events-none"
+              style={{
+                background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.05) 80%, transparent 100%)',
+                zIndex: 2,
+              }}
             >
-              {formatDiscount(campaign)}
-            </div>
+              {/* Type badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.35 }}
+                className="badge-pulse inline-flex items-center gap-1.5 w-fit mb-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest"
+                style={{
+                  background:    'rgba(255,200,0,0.15)',
+                  border:        '1px solid rgba(255,200,0,0.6)',
+                  color:         '#FFE066',
+                  backdropFilter:'blur(4px)',
+                }}
+              >
+                <Tag className="w-3 h-3" />
+                {campaign.type?.replace('_', ' ') ?? 'Promo'}
+              </motion.div>
 
-            {/* Name */}
-            <h1
-              className="text-white text-lg md:text-2xl font-bold line-clamp-1 mb-1"
-              style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}
-            >
-              {campaign.name}
-            </h1>
+              {/* Discount — shimmer hero number */}
+              <motion.div
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.35, duration: 0.45, ease: 'easeOut' }}
+                className="flex items-baseline gap-3 mb-1 flex-wrap"
+              >
+                <span
+                  className="discount-shimmer font-black tracking-tight leading-none"
+                  style={{ fontSize: 'clamp(2rem, 7vw, 3.8rem)' }}
+                >
+                  {formatDiscount(campaign)}
+                </span>
+                <span
+                  className="text-white/60 text-sm font-semibold tracking-widest uppercase"
+                  style={{ letterSpacing: '0.12em' }}
+                >
+                </span>
+              </motion.div>
 
-            {/* Period */}
-            <p
-              className="text-white/80 text-xs flex items-center gap-1.5"
-              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              {formatDate(campaign.starts_at)} – {formatDate(campaign.ends_at)}
-            </p>
-          </div>
-        )}
+              {/* Campaign name */}
+              <motion.h1
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.42, duration: 0.4 }}
+                className="text-white font-bold line-clamp-1 mb-2.5"
+                style={{
+                  fontSize:   'clamp(1rem, 3vw, 1.5rem)',
+                  textShadow: '0 1px 10px rgba(0,0,0,0.95)',
+                }}
+              >
+                {campaign.name}
+              </motion.h1>
+
+              
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+      {/* ══ /Hero banner ══════════════════════════════════════════════════════ */}
 
-      {/* ── Content ── */}
+      {/* ══ Content ══════════════════════════════════════════════════════════ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Campaign description + meta */}
-        {campaign && (
-          <div className="mb-8">
-            {campaign.description && (
-              <p className="text-gray-600 text-sm leading-relaxed mb-3 max-w-2xl">
-                {campaign.description}
-              </p>
-            )}
-            <div className="flex items-center gap-3 flex-wrap">
-              {campaign.min_transaction > 0 && (
-                <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">
-                  Min. transaksi: Rp {Number(campaign.min_transaction).toLocaleString('id-ID')}
-                </span>
-              )}
-              {campaign.min_tier_name && (
-                <span className="text-xs bg-purple-50 text-purple-700 px-3 py-1 rounded-full font-bold">
-                  Member {campaign.min_tier_name}
-                </span>
-              )}
-              <span className="text-xs bg-orange-50 text-orange-600 px-3 py-1 rounded-full font-bold flex items-center gap-1">
-                <Percent className="w-3 h-3" />
-                {formatDiscount(campaign)}
-              </span>
-            </div>
-          </div>
+        {/* ── Campaign Info Section ── */}
+{campaign && (
+  <motion.div
+    initial={{ opacity: 0, y: 14 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+    className="mb-10 rounded-2xl border border-gray-100 bg-white overflow-hidden"
+    style={{ boxShadow: '0 1px 12px rgba(0,0,0,0.06)' }}
+  >
+    {/* Top accent bar */}
+    <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #FFB800, #FF6B00, #e55)' }} />
+
+    <div className="p-6 md:p-8">
+
+      {/* Description */}
+      {campaign.description && (
+        <p className="text-gray-600 text-sm leading-relaxed mb-5 max-w-2xl">
+          {campaign.description}
+        </p>
+      )}
+
+      {/* Stat chips + pills — semua horizontal dalam satu baris wrap */}
+      <div className="flex items-center gap-2 flex-wrap">
+
+        {/* Diskon */}
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
+          style={{ background: '#FAEEDA', color: '#633806', border: '0.5px solid #EF9F27' }}
+        >
+          <Percent className="w-3 h-3" />
+          {formatDiscount(campaign)}
+        </span>
+
+        {/* Min. transaksi */}
+        {campaign.min_transaction > 0 && (
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
+            style={{ background: '#F1EFE8', color: '#444441', border: '0.5px solid #B4B2A9' }}
+          >
+            Min. Rp {Number(campaign.min_transaction).toLocaleString('id-ID')}
+          </span>
         )}
+
+        {/* Member tier */}
+        {campaign.min_tier_name && (
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
+            style={{ background: '#EEEDFE', color: '#3C3489', border: '0.5px solid #AFA9EC' }}
+          >
+            Member {campaign.min_tier_name}
+          </span>
+        )}
+
+        {/* Separator dot */}
+        <span className="text-gray-200 text-lg select-none hidden sm:inline">·</span>
+
+        {/* Periode */}
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
+          style={{ background: '#F8F8F6', color: '#5F5E5A', border: '0.5px solid #D3D1C7' }}
+        >
+          <Calendar className="w-3 h-3 shrink-0" />
+          {formatDate(campaign.starts_at)} – {formatDate(campaign.ends_at)}
+        </span>
+
+        {/* Tipe */}
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold capitalize"
+          style={{ background: '#F8F8F6', color: '#5F5E5A', border: '0.5px solid #D3D1C7' }}
+        >
+          <Tag className="w-3 h-3 shrink-0" />
+          {campaign.type?.replace('_', ' ') ?? '-'}
+        </span>
+
+        {/* Maks. diskon */}
+        {campaign.max_discount != null && campaign.max_discount > 0 && (
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
+            style={{ background: '#FFF8EC', color: '#633806', border: '0.5px solid #FAC775' }}
+          >
+            Maks. Rp {Number(campaign.max_discount).toLocaleString('id-ID')}
+          </span>
+        )}
+
+      </div>
+    </div>
+  </motion.div>
+)}
+
 
         {/* Products heading */}
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-gray-900">
             Produk dalam Campaign
-            {total > 0 && <span className="ml-2 text-sm text-gray-400 font-normal">({total} produk)</span>}
+            {total > 0 && (
+              <span className="ml-2 text-sm text-gray-400 font-normal">({total} produk)</span>
+            )}
           </h2>
         </div>
 
@@ -285,10 +461,14 @@ const PromoCampaignPage: React.FC = () => {
             {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : products.length === 0 ? (
-          <div className="py-20 text-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="py-20 text-center"
+          >
             <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-3" />
             <p className="text-gray-400 font-medium">Belum ada produk dalam campaign ini.</p>
-          </div>
+          </motion.div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
             {products.map((p, i) => (
@@ -320,6 +500,8 @@ const PromoCampaignPage: React.FC = () => {
           </div>
         )}
       </div>
+      {/* ══ /Content ══════════════════════════════════════════════════════════ */}
+
     </div>
   );
 };
