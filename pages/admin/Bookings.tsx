@@ -12,19 +12,20 @@ import {
   Search,
   X,
   XCircle,
+  Eye,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Booking, BookingStatus } from '../../types';
 import http from '../../services/http';
 
-const MobileBookingCard = ({ booking, getStatusConfig, requestStatusUpdate }: any) => {
+const MobileBookingCard = ({ booking, getStatusConfig, requestStatusUpdate, setSelectedBooking }: any) => {
   const statusConfig = getStatusConfig(booking.status);
   return (
     <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
       <div className="flex justify-between items-start">
         <div className="flex gap-3">
-          <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-            #{booking.id}
+          <div className="h-min px-2 py-1 min-w-10 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">
+            #{booking.externalId || booking.id}
           </div>
           <div>
             <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{booking.productName}</h4>
@@ -36,8 +37,13 @@ const MobileBookingCard = ({ booking, getStatusConfig, requestStatusUpdate }: an
         </span>
       </div>
       <div className="flex justify-between items-center text-xs text-gray-500 border-t border-gray-50 pt-3">
-        <div className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {booking.date}</div>
-        <div className="font-bold text-gray-900 text-sm">${booking.totalPrice}</div>
+        <div className="flex items-center">
+          <Calendar className="w-3 h-3 mr-1" /> 
+          {booking.startTime && booking.endTime 
+            ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}-${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` 
+            : booking.date}
+        </div>
+        <div className="font-bold text-gray-900 text-sm">Rp {booking.totalPrice?.toLocaleString('id-ID') || 0}</div>
       </div>
       <div className="flex gap-2 mt-1">
         {booking.status === BookingStatus.PENDING && (
@@ -48,10 +54,14 @@ const MobileBookingCard = ({ booking, getStatusConfig, requestStatusUpdate }: an
         )}
         {booking.status !== BookingStatus.CANCELLED && (
           <button onClick={() => requestStatusUpdate(booking.id, BookingStatus.CANCELLED)}
-            className="flex-1 py-2 bg-red-50 text-red-700 rounded-lg text-xs font-bold text-center active:scale-95 transition-transform">
+            className="flex-1 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-bold text-center active:scale-95 transition-transform">
             Cancel
           </button>
         )}
+        <button onClick={() => setSelectedBooking(booking)}
+          className="flex-1 py-1.5 bg-gray-50 text-gray-700 rounded-lg text-xs font-bold text-center border border-gray-200 active:scale-95 transition-transform">
+          Detail
+        </button>
       </div>
     </div>
   );
@@ -67,6 +77,7 @@ const AdminBookings: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [pendingAction, setPendingAction] = useState<{ id: number; status: BookingStatus } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const fetchBookings = async () => {
     setIsLoading(true);
@@ -74,15 +85,16 @@ const AdminBookings: React.FC = () => {
     try {
       const response = await http.get('/admin/bookings', {
         params: {
-          status: statusFilter === 'all' ? undefined : statusFilter,
+          status: statusFilter === 'all' ? undefined : statusFilter.toUpperCase(),
           search: searchQuery || undefined,
         },
       });
 
       const data = response.data?.data;
       if (response.data?.error === false && Array.isArray(data)) {
-        setBookings(data);
-        setFilteredBookings(data);
+        const mappedData = data.map((b: any) => ({ ...b, status: (b.status || '').toLowerCase() as BookingStatus }));
+        setBookings(mappedData);
+        setFilteredBookings(mappedData);
         setCurrentPage(1);
       } else {
         setBookings([]);
@@ -152,7 +164,7 @@ const AdminBookings: React.FC = () => {
     if (!pendingAction) return;
     const { id, status } = pendingAction;
     try {
-      const response = await http.patch(`/admin/bookings/${id}/status`, { status });
+      const response = await http.patch(`/admin/bookings/${id}/status`, { status: status.toUpperCase() });
       if (response.data?.error === false) {
         setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
       } else {
@@ -231,7 +243,7 @@ const AdminBookings: React.FC = () => {
                 <p className="text-lg font-medium">No bookings found</p>
               </div>
             ) : currentItems.map((booking) => (
-              <MobileBookingCard key={booking.id} booking={booking} getStatusConfig={getStatusConfig} requestStatusUpdate={requestStatusUpdate} />
+              <MobileBookingCard key={booking.id} booking={booking} getStatusConfig={getStatusConfig} requestStatusUpdate={requestStatusUpdate} setSelectedBooking={setSelectedBooking} />
             ))}
           </div>
 
@@ -241,7 +253,7 @@ const AdminBookings: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {['Booking ID', 'User', 'Product', 'Date', 'Status', 'Total', 'Actions'].map((h) => (
+                    {['Transaction ID', 'User', 'Product', 'Date', 'Status', 'Total', 'Actions'].map((h) => (
                       <th key={h} scope="col" className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${h === 'Actions' ? 'text-right' : 'text-left'}`}>{h}</th>
                     ))}
                   </tr>
@@ -260,7 +272,7 @@ const AdminBookings: React.FC = () => {
                     const statusConfig = getStatusConfig(booking.status);
                     return (
                       <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{booking.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{booking.externalId || booking.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                           <div className="flex items-center">
                             <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold mr-3 text-xs">
@@ -273,13 +285,17 @@ const AdminBookings: React.FC = () => {
                           {booking.productName || 'N/A'}
                           <div className="text-xs text-gray-400 mt-0.5">Qty: {booking.quantity || 0}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{booking.date || 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {booking.startTime && booking.endTime 
+                            ? <>{booking.date}<br/><span className="text-xs text-gray-500">{new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - {new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span></>
+                            : booking.date}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2.5 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full ${statusConfig.color}`}>
                             {statusConfig.icon}{booking.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${booking.totalPrice?.toFixed(2) || '0.00'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">Rp {booking.totalPrice?.toLocaleString('id-ID') || '0'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="relative group inline-block text-left">
                             <button className="text-gray-400 hover:text-primary-600 p-1 transition-colors"><MoreHorizontal className="w-5 h-5" /></button>
@@ -303,6 +319,11 @@ const AdminBookings: React.FC = () => {
                                     <XCircle className="w-4 h-4 mr-2" /> Cancel
                                   </button>
                                 )}
+                                <div className="border-t border-gray-100 my-1"></div>
+                                <button onClick={() => setSelectedBooking(booking)}
+                                  className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                  <Eye className="w-4 h-4 mr-2" /> View Details
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -379,6 +400,120 @@ const AdminBookings: React.FC = () => {
                 <button onClick={() => setPendingAction(null)}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedBooking && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+          <div className="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setSelectedBooking(null)}></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-6 pt-5 pb-6">
+                <div className="flex justify-between items-center mb-5 pb-4 border-b border-gray-100">
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <PackageCheck className="w-5 h-5 text-primary-600" />
+                    Booking Details
+                  </h3>
+                  <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-gray-500 rounded-full p-1 hover:bg-gray-100 transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Transaction Information</h4>
+                      <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 text-sm">
+                        <div className="flex justify-between border-b border-gray-200 pb-1.5 break-all">
+                          <span className="text-gray-600 min-w-[50px]">ID</span>
+                          <span className="font-medium text-gray-900 text-right">{selectedBooking.externalId || selectedBooking.id}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
+                          <span className="text-gray-600">Date/Time</span>
+                          <span className="font-medium text-gray-900 text-right">
+                            {selectedBooking.startTime && selectedBooking.endTime 
+                              ? `${selectedBooking.date}, ${new Date(selectedBooking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(selectedBooking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}`
+                              : selectedBooking.date}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
+                          <span className="text-gray-600">Created At</span>
+                          <span className="font-medium text-gray-900 text-right">
+                            {((selectedBooking as any).createdAt) ? new Date((selectedBooking as any).createdAt).toLocaleString('id-ID') : '-'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Status</span>
+                          <span className={`font-bold uppercase ${(selectedBooking.status||'').toLowerCase() === 'confirmed' ? 'text-green-600' : (selectedBooking.status||'').toLowerCase() === 'pending' ? 'text-yellow-600' : 'text-primary-600'}`}>{selectedBooking.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">User details</h4>
+                      <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 text-sm">
+                        <div className="flex justify-between pb-1.5 border-b border-gray-200">
+                          <span className="text-gray-600">Name</span>
+                          <span className="font-medium text-gray-900 text-right max-w-[200px] truncate" title={selectedBooking.userName}>{selectedBooking.userName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Product</span>
+                          <span className="font-medium text-gray-900 text-right max-w-[200px] truncate" title={selectedBooking.productName}>{selectedBooking.productName}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pricing & Quantities</h4>
+                      <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 text-sm">
+                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
+                          <span className="text-gray-600">Quantity</span>
+                          <span className="font-medium text-gray-900">{selectedBooking.quantity}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Price</span>
+                          <span className="font-bold text-gray-900 text-base">Rp {selectedBooking.totalPrice?.toLocaleString('id-ID') || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Payment Info</h4>
+                      <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 text-sm">
+                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
+                          <span className="text-gray-600">Method</span>
+                          <span className="font-medium text-gray-900 text-right line-clamp-2">
+                            {((selectedBooking as any).paymentGateway ? `${(selectedBooking as any).paymentGateway} - ` : '') + ((selectedBooking as any).paymentMethod || '-')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
+                          <span className="text-gray-600">Paid At</span>
+                          <span className="font-medium text-gray-900 text-right">
+                            {((selectedBooking as any).paidAt) ? new Date((selectedBooking as any).paidAt).toLocaleString('id-ID') : '-'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Pay Status</span>
+                          <span className={`font-bold uppercase ${selectedBooking.paymentStatus === 'PAID' ? 'text-green-600' : 'text-yellow-600'}`}>
+                            {selectedBooking.paymentStatus || 'PENDING'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-6 py-4 flex justify-end border-t border-gray-100">
+                <button onClick={() => setSelectedBooking(null)} className="inline-flex justify-center rounded-lg border border-gray-200 shadow-sm px-6 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors font-bold">
+                  Tutup
                 </button>
               </div>
             </div>

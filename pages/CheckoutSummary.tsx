@@ -71,6 +71,8 @@ const CheckoutSummary: React.FC = () => {
     addOns,
     pickupTime,
     returnTime,
+    startTime,
+    endTime,
     availableVouchers     = [],
   } = bookingData;
 
@@ -116,6 +118,8 @@ const CheckoutSummary: React.FC = () => {
         product_id:   productId || null,
         admin_fee:    ADMIN_FEE,
         date:         startDateStr,
+        start_time:   startTime || null,
+        end_time:     endTime || null,
         ...(voucher.appliedVoucher ? {
           voucher_code:    voucher.appliedVoucher.code,
           voucher_id:      voucher.appliedVoucher.id,

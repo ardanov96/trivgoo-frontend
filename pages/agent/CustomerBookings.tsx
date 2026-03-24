@@ -231,7 +231,7 @@ const BookingDetailModal: React.FC<{
                   <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-[10px] text-amber-600/70 uppercase font-bold tracking-wider">Tanggal Layanan</p>
-                      <p className="text-sm font-bold text-amber-900 mt-1">{booking.date || '-'}</p>
+                      <p className="text-sm font-bold text-amber-900 mt-1">{booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date || '-'}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-amber-600/70 uppercase font-bold tracking-wider">Kuantitas</p>
@@ -411,7 +411,7 @@ const MobileBookingCard: React.FC<{
 
       <div className="flex items-center justify-between text-xs mb-3 pb-3 border-b border-gray-50">
         <div className="flex items-center text-gray-500">
-          <Calendar className="w-3 h-3 mr-1" /> {booking.date}
+          <Calendar className="w-3 h-3 mr-1" /> {booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date}
         </div>
         <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${pc.color}`}>
           💳 {pc.label}

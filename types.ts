@@ -311,11 +311,14 @@ export interface Booking {
   quantity: number;
   totalPrice: number;
   date: string;
+  startTime?: string | null;
+  endTime?: string | null;
   status: BookingStatus;
   productImage?: string;
   paymentUrl?: string;        // ← tambah
   paymentStatus?: string;     // ← tambah
   paymentExpiredAt?: string;  // ← tambah
+  externalId?: string;
   contactDetails?: {
     name?: string;
     email?: string;
@@ -477,7 +480,7 @@ export interface AgentProduct {
   // when transport products are linked to a specific vehicle
   car_id?: number;
 
-  vouchers?: VoucherItem[]; 
+  vouchers?: VoucherItem[];
 }
 
 export type ListAgentProductsResponse = ApiResponse<Paginated<AgentProduct>>;

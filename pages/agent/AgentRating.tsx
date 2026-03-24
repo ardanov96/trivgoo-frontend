@@ -57,60 +57,7 @@ const SENTIMENT_CONFIG = {
   negative: { label: 'Negatif', color: 'bg-red-100 text-red-600' },
 };
 
-const MOCK_REVIEWS: Review[] = [
-  {
-    id: 1,
-    customer_name: 'Rina Dewi',
-    customer_avatar: null,
-    rating: 5,
-    comment: 'Pelayanan sangat memuaskan! Agen sangat responsif dan membantu dari awal hingga akhir trip. Recommended banget!',
-    product_name: 'Paket Bali 3D2N All-Inclusive',
-    booking_date: '2025-03-01',
-    created_at: '2025-03-05T10:00:00Z',
-    agent_reply: 'Terima kasih atas review positifnya, Kak Rina! Senang bisa melayani. Sampai jumpa di trip berikutnya! 😊',
-    is_flagged: false,
-    sentiment: 'positive',
-  },
-  {
-    id: 2,
-    customer_name: 'Budi Santoso',
-    customer_avatar: null,
-    rating: 4,
-    comment: 'Overall bagus, tapi jadwal check-in sempat terlambat. Respon agent cepat kok waktu ada masalah.',
-    product_name: 'Tour Lombok Gili Islands',
-    booking_date: '2025-02-20',
-    created_at: '2025-02-24T08:00:00Z',
-    agent_reply: null,
-    is_flagged: false,
-    sentiment: 'neutral',
-  },
-  {
-    id: 3,
-    customer_name: 'Sari Putri',
-    customer_avatar: null,
-    rating: 2,
-    comment: 'Hotel tidak sesuai foto. Kami kecewa karena kamarnya sangat jauh dari yang dijanjikan.',
-    product_name: 'Paket Yogyakarta 2D1N',
-    booking_date: '2025-02-10',
-    created_at: '2025-02-12T14:00:00Z',
-    agent_reply: null,
-    is_flagged: false,
-    sentiment: 'negative',
-  },
-  {
-    id: 4,
-    customer_name: 'Ahmad Fauzi',
-    customer_avatar: null,
-    rating: 5,
-    comment: 'Trip ke Raja Ampat luar biasa! Semua detail diurus dengan sangat profesional. Akan booking lagi!',
-    product_name: 'Raja Ampat Diving Package',
-    booking_date: '2025-01-28',
-    created_at: '2025-02-02T09:00:00Z',
-    agent_reply: 'Wah terima kasih banyak Pak Ahmad! Raja Ampat memang surga dunia 🌊 Ditunggu booking selanjutnya!',
-    is_flagged: false,
-    sentiment: 'positive',
-  },
-];
+
 
 // ── StarDisplay ───────────────────────────────────────────────────────────────
 
@@ -187,25 +134,10 @@ const AgentRating: React.FC = () => {
         http.get('/agent/rating/summary'),
         http.get('/agent/rating/reviews'),
       ]);
-      if (!sumRes.data?.error) setSummary(sumRes.data.data);
-      if (!revRes.data?.error) setReviews(revRes.data.data ?? []);
-    } catch {
-      setSummary({
-        overall_rating: 4.3,
-        total_reviews: 128,
-        response_rate: 82,
-        response_time_hours: 3.5,
-        rating_distribution: [
-          { stars: 5, count: 74 },
-          { stars: 4, count: 31 },
-          { stars: 3, count: 14 },
-          { stars: 2, count: 6 },
-          { stars: 1, count: 3 },
-        ],
-        trend: 'up',
-        trend_value: 0.2,
-      });
-      setReviews(MOCK_REVIEWS);
+      if (!sumRes.data?.error && sumRes.data?.data) setSummary(sumRes.data.data);
+      if (!revRes.data?.error && revRes.data?.data) setReviews(revRes.data.data);
+    } catch (err) {
+      console.error('Failed to load agent ratings API', err);
     } finally {
       setLoading(false);
     }
@@ -216,16 +148,21 @@ const AgentRating: React.FC = () => {
   const submitReply = async (reviewId: number, reply: string) => {
     try {
       await http.post(`/agent/rating/reviews/${reviewId}/reply`, { reply });
-    } catch {}
-    setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, agent_reply: reply } : r));
-    setReplyingTo(null);
+      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, agent_reply: reply } : r));
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal membalas ulasan');
+    } finally {
+      setReplyingTo(null);
+    }
   };
 
   const flagReview = async (reviewId: number) => {
     try {
       await http.post(`/agent/rating/reviews/${reviewId}/flag`);
-    } catch {}
-    setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, is_flagged: true } : r));
+      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, is_flagged: true } : r));
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal melaporkan ulasan');
+    }
   };
 
   const qualityMetrics: QualityMetric[] = [

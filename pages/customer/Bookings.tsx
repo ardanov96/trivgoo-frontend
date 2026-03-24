@@ -171,7 +171,7 @@ const CancelModal: React.FC<{
             onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900 text-sm line-clamp-2">{booking.productName}</p>
-            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> {booking.date}</p>
+            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> {booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date}</p>
             <p className="text-sm font-bold text-primary-600 mt-1">Rp {Number(booking.totalPrice).toLocaleString('id-ID')}</p>
           </div>
         </div>
@@ -226,7 +226,7 @@ const MobileBookingCard: React.FC<{
             <span className="text-[10px] text-gray-400 font-mono">{(booking as any).externalId || `#${booking.id}`}</span>
           </div>
           <h4 className="font-bold text-gray-900 truncate leading-tight mb-1">{booking.productName}</h4>
-          <div className="text-xs text-gray-500 flex items-center mb-1"><Calendar className="w-3 h-3 mr-1" /> {booking.date}</div>
+          <div className="text-xs text-gray-500 flex items-center mb-1"><Calendar className="w-3 h-3 mr-1" /> {booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date}</div>
 
           {/* Countdown — hanya jika PENDING dan BELUM expired dan BELUM dibayar */}
           {booking.status === BookingStatus.PENDING && !expired && (booking as any).paymentExpiredAt && booking.paymentStatus !== 'PAID' && (
@@ -259,8 +259,11 @@ const MobileBookingCard: React.FC<{
               {booking.paymentStatus === 'PAID' && (
                 <button onClick={() => onInvoice(booking)} className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100" title="Download Invoice"><FileText className="w-4 h-4" /></button>
               )}
-              {booking.status === BookingStatus.COMPLETED && (
+              {booking.status === BookingStatus.COMPLETED && !(booking as any).reviewId && (
                 <button onClick={() => onReview(booking)} className="p-1.5 bg-yellow-50 rounded-lg text-yellow-600 hover:text-yellow-700" title="Review"><MessageSquare className="w-4 h-4" /></button>
+              )}
+              {booking.status === BookingStatus.COMPLETED && (booking as any).reviewId && (
+                <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-amber-50 rounded-lg text-amber-600 hover:bg-amber-100" title="Ulasan Saya"><Star className="w-4 h-4 fill-amber-600" /></Link>
               )}
               <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
                 <ChevronRight className="w-4 h-4" />
@@ -387,7 +390,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     <div className="flex items-center font-medium">
-                      <Calendar className="w-4 h-4 mr-2 text-gray-300 flex-shrink-0" />{booking.date}
+                      <Calendar className="w-4 h-4 mr-2 text-gray-300 flex-shrink-0" />{booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -455,11 +458,17 @@ const BookingTable: React.FC<BookingTableProps> = ({
                           <FileText className="w-3.5 h-3.5 mr-1" /> Invoice
                         </button>
                       )}
-                      {booking.status === BookingStatus.COMPLETED && (
+                      {booking.status === BookingStatus.COMPLETED && !(booking as any).reviewId && (
                         <button onClick={() => onReview(booking)}
                           className="flex items-center text-yellow-600 bg-yellow-50 hover:bg-yellow-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
                           <Star className="w-3.5 h-3.5 mr-1" /> Review
                         </button>
+                      )}
+                      {booking.status === BookingStatus.COMPLETED && (booking as any).reviewId && (
+                        <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`}
+                          className="flex items-center text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-lg transition-colors text-xs font-bold">
+                          <Star className="w-3.5 h-3.5 mr-1 fill-amber-600" /> Ulasan Saya
+                        </Link>
                       )}
                       <Link to={`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
                         <span className="sr-only">Details</span> <ChevronRight className="w-4 h-4" />
@@ -688,9 +697,22 @@ const CustomerBookings: React.FC = () => {
   const submitReview = async () => {
     if (!selectedBooking || !user) return;
     setIsSubmittingReview(true);
-    try { await new Promise(r => setTimeout(r, 500)); alert('Thank you for your review!'); }
-    catch { alert('Failed to submit review'); }
-    setIsSubmittingReview(false); setShowReviewModal(false);
+    try {
+      await http.post('/bookings/reviews', {
+        booking_id: selectedBooking.id,
+        product_id: selectedBooking.productId,
+        rating: reviewRating,
+        comment: reviewComment
+      });
+      alert('Terima kasih atas ulasan Anda!');
+      setShowReviewModal(false);
+      setReviewComment('');
+      setReviewRating(5);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal mengirim ulasan');
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   const handleContactAgent = (b: Booking) => {
@@ -964,7 +986,7 @@ const CustomerBookings: React.FC = () => {
                 <div className="grid grid-cols-2 gap-y-5 gap-x-4">
                   <div>
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Date</p>
-                    <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gray-400" />{selectedBooking.date}</p>
+                    <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gray-400" />{selectedBooking.startTime && selectedBooking.endTime ? `${selectedBooking.date}, ${new Date(selectedBooking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(selectedBooking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : selectedBooking.date}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Guests</p>
