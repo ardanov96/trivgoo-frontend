@@ -8,6 +8,8 @@ import {
   TrendingUp,
   Users,
   Package,
+  Info,
+  TrendingDown,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -22,16 +24,20 @@ type StatCardProps = {
   value: React.ReactNode;
   icon: React.ElementType;
   color: string;
+  subtitle?: string;
 };
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color }) => (
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, subtitle }) => (
   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
     <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-gray-500 mb-1">{title}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-gray-500 mb-1 truncate">{title}</p>
         <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+        {subtitle && (
+          <p className="text-xs text-gray-400 mt-1 truncate">{subtitle}</p>
+        )}
       </div>
-      <div className={`p-3 rounded-full ${color}`}>
+      <div className={`p-3 rounded-full ${color} ml-3 shrink-0`}>
         <Icon className="w-6 h-6 text-white" />
       </div>
     </div>
@@ -39,15 +45,27 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color }) 
 );
 
 interface DashboardStats {
-  total_commission: number;
+  // Stat cards utama
+  total_commission:    number;  // net earnings agent setelah fee
   bookings_this_month: number;
-  active_customers: number;
-  total_products: number;
+  active_customers:    number;
+  total_products:      number;
+
+  // Detail breakdown
+  gross_revenue:       number;
+  total_platform_fee:  number;
+  earnings_this_month: number;
+  total_bookings:      number;
+  pending_bookings:    number;
+  confirmed_bookings:  number;
+  cancelled_bookings:  number;
+  commission_rate:     number;  // fee % yang dipotong platform
 }
 
 interface WeeklySales {
-  name: string;
-  sales: number;
+  name:         string;
+  sales:        number;
+  total_orders?: number;
 }
 
 const AgentDashboard: React.FC = () => {
@@ -55,9 +73,9 @@ const AgentDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats]           = useState<DashboardStats | null>(null);
   const [weeklySales, setWeeklySales] = useState<WeeklySales[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading]   = useState(true);
 
   const lastFetchedLocationKeyRef = useRef<string | null>(null);
 
@@ -72,12 +90,12 @@ const AgentDashboard: React.FC = () => {
         const me = await authService.me();
         if (cancelled) return;
         updateUser({
-          id: me.id,
-          name: me.name,
-          email: me.email,
-          role: me.role,
-          avatar: me.avatar,
-          specialization: me.specialization ?? null,
+          id:                  me.id,
+          name:                me.name,
+          email:               me.email,
+          role:                me.role,
+          avatar:              me.avatar,
+          specialization:      me.specialization ?? null,
           verification_status: me.verification_status,
         });
       } catch (err: any) {
@@ -122,41 +140,42 @@ const AgentDashboard: React.FC = () => {
     }
   }, [user?.verification_status]);
 
-  const formatIDR = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+  const formatIDR = (amount: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style:                 'currency',
+      currency:              'IDR',
       minimumFractionDigits: 0,
     }).format(amount);
-  };
 
   const isVerified = user?.verification_status === VerificationStatus.VERIFIED;
-  const isPending = user?.verification_status === VerificationStatus.PENDING;
+  const isPending  = user?.verification_status === VerificationStatus.PENDING;
 
   const steps = [
     {
-      title: 'Create Account',
+      title:       'Create Account',
       description: 'Sign up as an agent',
-      status: 'completed' as const,
-      icon: CheckCircle,
+      status:      'completed' as const,
+      icon:        CheckCircle,
     },
     {
-      title: 'Verify Business',
+      title:       'Verify Business',
       description: 'Submit ID & Bank details',
-      status: '',
+      status:      '',
       actionLabel: isPending ? 'Under Review' : 'Verify Now',
-      actionLink: '/agent/verification',
-      icon: (isVerified ? CheckCircle : isPending ? Clock : Circle) as React.ElementType,
+      actionLink:  '/agent/verification',
+      icon:        (isVerified ? CheckCircle : isPending ? Clock : Circle) as React.ElementType,
     },
     {
-      title: 'Add First Product',
+      title:       'Add First Product',
       description: 'List your first service',
-      status: '',
+      status:      '',
       actionLabel: 'Add Product',
-      actionLink: '/agent/products/new',
-      icon: (isVerified ? Circle : Lock) as React.ElementType,
+      actionLink:  '/agent/products/new',
+      icon:        (isVerified ? Circle : Lock) as React.ElementType,
     },
   ];
+
+  const commissionRate = stats?.commission_rate ?? 0;
 
   return (
     <div className="space-y-8">
@@ -165,6 +184,7 @@ const AgentDashboard: React.FC = () => {
         <p className="text-gray-500">Here is your sales performance overview.</p>
       </div>
 
+      {/* Onboarding steps — hanya tampil jika belum verified */}
       {!isVerified && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="bg-primary-600 px-6 py-4">
@@ -208,6 +228,21 @@ const AgentDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Info banner platform fee — hanya tampil saat verified & data sudah load */}
+      {isVerified && !isLoading && stats && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
+          <Info className="w-4 h-4 text-amber-500 shrink-0" />
+          <span className="text-amber-700">
+            Platform fee sebesar{' '}
+            <span className="font-bold">{commissionRate}%</span>
+            {' '}dipotong dari setiap transaksi berhasil.
+            Semua angka di bawah sudah menampilkan{' '}
+            <span className="font-bold">net earnings</span> setelah pemotongan.
+          </span>
+        </div>
+      )}
+
+      {/* Stat Cards */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
@@ -219,15 +254,77 @@ const AgentDashboard: React.FC = () => {
         </div>
       ) : (
         <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 ${!isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''}`}>
-          <StatCard title="Total Commission" value={formatIDR(stats?.total_commission || 0)} icon={DollarSign} color="bg-green-500" />
-          <StatCard title="Bookings This Month" value={stats?.bookings_this_month || 0} icon={TrendingUp} color="bg-blue-500" />
-          <StatCard title="Active Customers" value={stats?.active_customers || 0} icon={Users} color="bg-indigo-500" />
-          <StatCard title="Total Products" value={stats?.total_products || 0} icon={Package} color="bg-purple-500" />
+          <StatCard
+            title="Net Earnings (Total)"
+            value={formatIDR(stats?.total_commission || 0)}
+            icon={DollarSign}
+            color="bg-green-500"
+            subtitle={commissionRate > 0 ? `Setelah fee ${commissionRate}%` : undefined}
+          />
+          <StatCard
+            title="Bookings This Month"
+            value={stats?.bookings_this_month || 0}
+            icon={TrendingUp}
+            color="bg-blue-500"
+            subtitle={stats?.earnings_this_month
+              ? `${formatIDR(stats.earnings_this_month)} bulan ini`
+              : undefined}
+          />
+          <StatCard
+            title="Active Customers"
+            value={stats?.active_customers || 0}
+            icon={Users}
+            color="bg-indigo-500"
+          />
+          <StatCard
+            title="Total Products"
+            value={stats?.total_products || 0}
+            icon={Package}
+            color="bg-purple-500"
+          />
         </div>
       )}
 
+      {/* Earnings breakdown — hanya tampil saat verified & ada data */}
+      {isVerified && !isLoading && stats && (
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${!isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''}`}>
+          {/* Gross Revenue */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Gross Revenue</p>
+            <p className="text-xl font-bold text-gray-800">{formatIDR(stats.gross_revenue)}</p>
+            <p className="text-xs text-gray-400 mt-1">Total sebelum dipotong fee</p>
+          </div>
+
+          {/* Platform Fee */}
+          <div className="bg-red-50 rounded-xl border border-red-100 shadow-sm p-5">
+            <p className="text-xs font-bold text-red-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+              <TrendingDown className="w-3.5 h-3.5" /> Platform Fee ({commissionRate}%)
+            </p>
+            <p className="text-xl font-bold text-red-600">- {formatIDR(stats.total_platform_fee)}</p>
+            <p className="text-xs text-red-400 mt-1">Dipotong oleh platform</p>
+          </div>
+
+          {/* Net Earnings */}
+          <div className="bg-green-50 rounded-xl border border-green-100 shadow-sm p-5">
+            <p className="text-xs font-bold text-green-600 uppercase tracking-wide mb-1 flex items-center gap-1">
+              <DollarSign className="w-3.5 h-3.5" /> Net Earnings
+            </p>
+            <p className="text-xl font-bold text-green-700">{formatIDR(stats.total_commission)}</p>
+            <p className="text-xs text-green-500 mt-1">Yang masuk ke kantong kamu</p>
+          </div>
+        </div>
+      )}
+
+      {/* Weekly Sales Chart */}
       <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 ${!isVerified ? 'filter blur-[2px] opacity-70 pointer-events-none select-none' : ''}`}>
-        <h3 className="text-lg font-bold text-gray-900 mb-6">Weekly Sales Performance</h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-gray-900">Weekly Net Earnings</h3>
+          {isVerified && !isLoading && commissionRate > 0 && (
+            <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+              Setelah fee {commissionRate}%
+            </span>
+          )}
+        </div>
         {isLoading ? (
           <div className="h-80 flex items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -240,10 +337,13 @@ const AgentDashboard: React.FC = () => {
                 <XAxis dataKey="name" />
                 <YAxis tickFormatter={(val) => formatIDR(val)} />
                 <Tooltip
-                  formatter={(value: any) => [formatIDR(value), 'Sales']}
+                  formatter={(value: any, name: string) => [
+                    formatIDR(value),
+                    name === 'sales' ? 'Net Earnings' : name,
+                  ]}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                 />
-                <Bar dataKey="sales" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="sales" fill="#22c55e" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
