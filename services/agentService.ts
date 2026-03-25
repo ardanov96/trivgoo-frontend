@@ -1,6 +1,5 @@
-import { AgentSpecialization, AgentType } from '../types';
+import { AgentSpecialization, AgentType, MyAgentVerification } from '../types';
 import http, { unwrap } from './http';
-import { mediaService } from './mediaService';
 
 export interface VerifyAgentPayload {
   agent_type: AgentType;
@@ -12,12 +11,14 @@ export interface VerifyAgentPayload {
   accountHolder: string;
   specialization: AgentSpecialization;
   idDocument?: File | null;
+  skDocument?: File | null;
 }
 
 export const agentService = {
   async submitVerification(payload: VerifyAgentPayload): Promise<void> {
     const {
       idDocument,
+      skDocument,
       agent_type,
       idCardNumber,
       taxId,
@@ -28,19 +29,34 @@ export const agentService = {
       specialization,
     } = payload;
 
+    if (!(idDocument instanceof File)) {
+      throw new Error(
+        agent_type === AgentType.CORPORATE
+          ? 'NIB document is required for Corporate type'
+          : 'ID document is required for Individual type',
+      );
+    }
+
     // ── 1. Client-side file type guard ──────────────────────────────────────
     if (idDocument instanceof File) {
       const fileType = idDocument.type;
 
       if (agent_type === AgentType.INDIVIDUAL) {
-        if (!fileType.startsWith('image/')) {
-          throw new Error('Only images allowed for Individual type');
+        const isAllowedIndividualFile =
+          fileType.startsWith('image/') || fileType === 'application/pdf';
+
+        if (!isAllowedIndividualFile) {
+          throw new Error('Only images or PDF allowed for Individual type');
         }
       } else if (agent_type === AgentType.CORPORATE) {
         if (fileType !== 'application/pdf') {
           throw new Error('Only PDF allowed for Corporate type');
         }
       }
+    }
+
+    if (agent_type === AgentType.CORPORATE && !(skDocument instanceof File)) {
+      throw new Error('SK document is required for Corporate type');
     }
 
     // ── 2. Build FormData so multer can route to the correct folder ─────────
@@ -62,8 +78,12 @@ export const agentService = {
     }
 
     if (idDocument instanceof File) {
-      // Field name must match upload.single('idDocument') in agent.js route
+      // Field name must match upload.fields(...) in agent.js route
       formData.append('idDocument', idDocument);
+    }
+
+    if (agent_type === AgentType.CORPORATE && skDocument instanceof File) {
+      formData.append('skDocument', skDocument);
     }
 
     // ── 3. POST as multipart — backend saves file & returns path via req.file ─
@@ -72,9 +92,9 @@ export const agentService = {
     });
   },
 
-  async getMyVerification() {
+  async getMyVerification(): Promise<MyAgentVerification | null> {
     const res = await http.get('/agent/verification');
-    return res.data;
+    return unwrap(res.data);
   },
 
   async getProfileSettings() {

@@ -148,6 +148,9 @@ const AgentDashboard: React.FC = () => {
     }).format(amount);
 
   const isVerified = user?.verification_status === VerificationStatus.VERIFIED;
+  const isPending = user?.verification_status === VerificationStatus.PENDING;
+  const isWaitingDoc = user?.verification_status === VerificationStatus.WAITING_DOCUMENT;
+  
   const isPending  = user?.verification_status === VerificationStatus.PENDING;
 
   const steps = [
@@ -158,9 +161,14 @@ const AgentDashboard: React.FC = () => {
       icon:        CheckCircle,
     },
     {
+      title: 'Verify Business',
+      description: isWaitingDoc ? 'Submit ID & Bank details' : 'Documents under review',
+      status: isWaitingDoc ? 'current' : (isPending ? 'pending' : (isVerified ? 'completed' : 'locked')),
+
       title:       'Verify Business',
       description: 'Submit ID & Bank details',
       status:      '',
+
       actionLabel: isPending ? 'Under Review' : 'Verify Now',
       actionLink:  '/agent/verification',
       icon:        (isVerified ? CheckCircle : isPending ? Clock : Circle) as React.ElementType,
@@ -168,7 +176,11 @@ const AgentDashboard: React.FC = () => {
     {
       title:       'Add First Product',
       description: 'List your first service',
+      
+      status: isVerified ? '' : 'locked',
+
       status:      '',
+
       actionLabel: 'Add Product',
       actionLink:  '/agent/products/new',
       icon:        (isVerified ? Circle : Lock) as React.ElementType,

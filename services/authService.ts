@@ -2,7 +2,6 @@ import { ApiEnvelope, LoginPayload, RegisterPayload, User } from '../types';
 import http, { unwrap } from './http';
 
 type LoginData = { user: User };
-type RegisterData = { user: User };
 type MeData = { user: User };
 type UpdateProfileData = { user: User };
 
@@ -13,10 +12,9 @@ export const authService = {
     return data.user;
   },
 
-  async register(payload: RegisterPayload): Promise<User> {
-    const res = await http.post<ApiEnvelope<RegisterData>>('/auth/register', payload);
-    const data = unwrap(res.data);
-    return data.user;
+  async register(payload: RegisterPayload): Promise<void> {
+    const res = await http.post<ApiEnvelope<null>>('/auth/register', payload);
+    unwrap(res.data);
   },
 
   async me(): Promise<User> {
