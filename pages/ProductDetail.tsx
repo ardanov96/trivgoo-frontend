@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import {
@@ -7,7 +7,7 @@ import {
   CheckCircle2, Shield, Clock, Phone, MapPinned, Navigation,
   Info, ChevronDown, ChevronUp, Plus, Minus, Check,
   Fuel, CalendarDays, BadgeCheck, Headphones, Package, AlertCircle,
-  Tag, Percent, DollarSign, Sparkles,
+  Tag, Percent, DollarSign, Sparkles, Loader2, AlertTriangle,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { agentProductService } from '../services/agentProductService';
@@ -40,6 +40,164 @@ const formatLocation = (location: string): string => {
 const formatRp = (n: number) => `Rp ${Number(n).toLocaleString('id-ID')}`;
 const DRIVER_PRICE_PER_12H = 150_000;
 
+// ─── Delivery Fee Config Types (mirror dari AgentAddProduct) ──────────────
+interface DeliveryZone { maxKm: number; fee: number; label: string; }
+interface DeliveryConfig {
+  enabled: boolean;
+  freeRadiusKm: number;
+  minCharge: number;
+  zones: DeliveryZone[];
+}
+
+// Fallback default jika product belum punya delivery_config
+const FALLBACK_DELIVERY_CONFIG: DeliveryConfig = {
+  enabled: true,
+  freeRadiusKm: 0,
+  minCharge: 15_000,
+  zones: [
+    { maxKm: 2,        fee: 15_000,  label: '0–2 km' },
+    { maxKm: 5,        fee: 25_000,  label: '2–5 km' },
+    { maxKm: 15,       fee: 50_000,  label: '5–15 km' },
+    { maxKm: 30,       fee: 85_000,  label: '15–30 km' },
+    { maxKm: 60,       fee: 150_000, label: '30–60 km' },
+    { maxKm: Infinity, fee: -1,      label: '>60 km (konfirmasi)' },
+  ],
+};
+
+/**
+ * Hitung fee berdasarkan delivery_config milik agent (bukan hardcoded).
+ * - freeRadiusKm: jika km <= freeRadiusKm → gratis (fee = 0)
+ * - minCharge: biaya minimum untuk jarak apapun di luar zona gratis
+ * - zones: tabel zona tiered; zone pertama yang maxKm >= km dipakai
+ */
+function calcFeeFromConfig(km: number, config: DeliveryConfig): number {
+  // Cek zona gratis dulu
+  if (config.freeRadiusKm > 0 && km <= config.freeRadiusKm) return 0;
+
+  // Cari zone yang cocok
+  const zone = config.zones.find(z => km <= z.maxKm);
+  if (!zone) return -1; // di luar semua zona → konfirmasi manual
+
+  if (zone.fee === -1) return -1; // zona konfirmasi
+
+  // Terapkan minimum charge
+  return Math.max(zone.fee, config.minCharge);
+}
+
+type DeliveryInfo = {
+  km: number | null;
+  fee: number; // -1 = needs manual confirmation
+  label: string;
+  loading: boolean;
+  error: string | null;
+};
+
+const INITIAL_DELIVERY: DeliveryInfo = { km: null, fee: 0, label: '', loading: false, error: null };
+
+/** Hitung jarak & biaya antar/jemput berdasarkan delivery_config agent.
+ *  Pakai Google Maps Distance Matrix jika tersedia, fallback ke Nominatim+Haversine. */
+async function calcDeliveryFee(
+  originAddress: string,
+  destinationAddress: string,
+  config: DeliveryConfig,
+): Promise<{ km: number; fee: number; label: string }> {
+  let km: number;
+
+  // ── Coba Google Maps Distance Matrix ────────────────────────────────────
+  if (typeof window !== 'undefined' && (window as any).google?.maps) {
+    km = await new Promise<number>((resolve, reject) => {
+      const service = new (window as any).google.maps.DistanceMatrixService();
+      service.getDistanceMatrix(
+        { origins: [originAddress], destinations: [destinationAddress], travelMode: 'DRIVING', unitSystem: 0 },
+        (response: any, status: string) => {
+          if (status !== 'OK') { reject(new Error('Distance API error: ' + status)); return; }
+          const element = response.rows?.[0]?.elements?.[0];
+          if (element?.status !== 'OK') { reject(new Error('Route not found')); return; }
+          resolve(element.distance.value / 1000);
+        },
+      );
+    });
+  } else {
+    // ── Fallback: Nominatim geocode + Haversine ────────────────────────────
+    const geocode = async (q: string): Promise<[number, number]> => {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
+      const data = await r.json();
+      if (!data.length) throw new Error('Alamat tidak ditemukan: ' + q);
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    };
+
+    const [lat1, lon1] = await geocode(originAddress);
+    const [lat2, lon2] = await geocode(destinationAddress);
+
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+    km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  const kmRounded = Math.round(km * 10) / 10;
+  const fee = calcFeeFromConfig(kmRounded, config);
+
+  // Label zona yang cocok
+  const zone = config.zones.find(z => kmRounded <= z.maxKm);
+  const label = fee === 0 ? `Gratis (< ${config.freeRadiusKm} km)` : zone?.label ?? 'Konfirmasi';
+
+  return { km: kmRounded, fee, label };
+}
+
+// ─── Delivery Fee Badge UI ─────────────────────────────────────────────────
+interface DeliveryFeeBadgeProps {
+  info: DeliveryInfo;
+  type: 'pickup' | 'dropoff';
+}
+const DeliveryFeeBadge: React.FC<DeliveryFeeBadgeProps> = ({ info, type }) => {
+  if (info.loading) return (
+    <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
+      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      <span>Menghitung biaya {type === 'pickup' ? 'penjemputan' : 'pengantaran'}…</span>
+    </div>
+  );
+  if (info.error) return (
+    <div className="flex items-center gap-1.5 mt-2 text-xs text-red-500">
+      <AlertCircle className="w-3.5 h-3.5" />
+      <span>{info.error}</span>
+    </div>
+  );
+  if (info.km === null) return null;
+
+  const isManual = info.fee === -1;
+  const isFree   = info.fee === 0;
+
+  return (
+    <div className={`mt-2 rounded-xl px-3 py-2.5 flex items-start gap-2.5 border text-xs
+      ${isManual ? 'bg-amber-50 border-amber-200' : isFree ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+      <div className="shrink-0 mt-0.5">
+        {isManual
+          ? <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+          : isFree
+          ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+          : <Navigation className="w-3.5 h-3.5 text-blue-500" />
+        }
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className={`font-bold ${isManual ? 'text-amber-700' : isFree ? 'text-green-700' : 'text-blue-700'}`}>
+            Biaya {type === 'pickup' ? 'Penjemputan' : 'Pengantaran'}
+          </span>
+          <span className={`font-extrabold ${isManual ? 'text-amber-600' : isFree ? 'text-green-600' : 'text-blue-700'}`}>
+            {isManual ? 'Hubungi Agen' : isFree ? 'GRATIS' : formatRp(info.fee)}
+          </span>
+        </div>
+        <p className={`mt-0.5 ${isManual ? 'text-amber-600' : isFree ? 'text-green-600' : 'text-blue-600'}`}>
+          {info.km} km dari kantor
+          {isManual && ' — Lokasi di luar jangkauan standar. Agen akan konfirmasi biaya setelah booking.'}
+          {isFree && ' — Dalam radius layanan gratis kami.'}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 
 interface ProductVoucherBannerProps { vouchers: any[]; }
@@ -107,6 +265,11 @@ const ProductDetail: React.FC = () => {
   const [dropoffType, setDropoffType] = useState<'kantor' | 'lokasi_lain'>('kantor');
   const [pickupAddress, setPickupAddress] = useState('');
   const [dropoffAddress, setDropoffAddress] = useState('');
+
+  // Delivery fee states — per leg
+  const [pickupDelivery, setPickupDelivery] = useState<DeliveryInfo>(INITIAL_DELIVERY);
+  const [dropoffDelivery, setDropoffDelivery] = useState<DeliveryInfo>(INITIAL_DELIVERY);
+
   const [addOns, setAddOns] = useState<{ withDriver: boolean; premiumInsurance: boolean; childSeat: boolean }>({
     withDriver: false, premiumInsurance: false, childSeat: false,
   });
@@ -131,6 +294,54 @@ const ProductDetail: React.FC = () => {
   const { user } = useAuth();
   const isLoggedIn = !!user;
 
+  // ─── Debounced delivery fee calculator ─────────────────────────────────
+  const calcDelivery = useCallback(
+    async (
+      address: string,
+      productLocation: string,
+      config: DeliveryConfig,
+      setter: React.Dispatch<React.SetStateAction<DeliveryInfo>>,
+    ) => {
+      if (!address.trim() || address.trim().length < 8) {
+        setter(INITIAL_DELIVERY);
+        return;
+      }
+      // Cek apakah layanan antar-jemput diaktifkan oleh agent
+      if (!config.enabled) {
+        setter({ km: null, fee: 0, label: '', loading: false, error: 'Layanan antar-jemput tidak tersedia untuk produk ini.' });
+        return;
+      }
+      setter(prev => ({ ...prev, loading: true, error: null }));
+      try {
+        const result = await calcDeliveryFee(productLocation, address, config);
+        setter({ ...result, loading: false, error: null });
+      } catch (e: any) {
+        setter({ km: null, fee: 0, label: '', loading: false, error: 'Alamat tidak ditemukan. Periksa kembali.' });
+      }
+    },
+    [],
+  );
+
+  // Debounce pickup address input
+  useEffect(() => {
+    if (pickupType !== 'lokasi_lain' || !product) { setPickupDelivery(INITIAL_DELIVERY); return; }
+    const config: DeliveryConfig = (product as any).delivery_config || FALLBACK_DELIVERY_CONFIG;
+    const timer = setTimeout(() => calcDelivery(pickupAddress, product.location || 'Bali, Indonesia', config, setPickupDelivery), 900);
+    return () => clearTimeout(timer);
+  }, [pickupAddress, pickupType, product, calcDelivery]);
+
+  // Debounce dropoff address input
+  useEffect(() => {
+    if (dropoffType !== 'lokasi_lain' || !product) { setDropoffDelivery(INITIAL_DELIVERY); return; }
+    const config: DeliveryConfig = (product as any).delivery_config || FALLBACK_DELIVERY_CONFIG;
+    const timer = setTimeout(() => calcDelivery(dropoffAddress, product.location || 'Bali, Indonesia', config, setDropoffDelivery), 900);
+    return () => clearTimeout(timer);
+  }, [dropoffAddress, dropoffType, product, calcDelivery]);
+
+  // Reset delivery info when switching back to 'kantor'
+  useEffect(() => { if (pickupType === 'kantor') setPickupDelivery(INITIAL_DELIVERY); }, [pickupType]);
+  useEffect(() => { if (dropoffType === 'kantor') setDropoffDelivery(INITIAL_DELIVERY); }, [dropoffType]);
+
   useEffect(() => {
     const load = async () => {
       if (!id) { setError('Product ID is missing.'); setIsLoading(false); return; }
@@ -152,6 +363,12 @@ const ProductDetail: React.FC = () => {
     };
     load();
   }, [id]);
+
+  // ─── Effective delivery fees (0 if kantor, calculated otherwise) ───────
+  const effectivePickupFee  = pickupType  === 'lokasi_lain' && pickupDelivery.fee  >= 0 ? pickupDelivery.fee  : 0;
+  const effectiveDropoffFee = dropoffType === 'lokasi_lain' && dropoffDelivery.fee >= 0 ? dropoffDelivery.fee : 0;
+  const needsManualPickup   = pickupType  === 'lokasi_lain' && pickupDelivery.fee  === -1;
+  const needsManualDropoff  = dropoffType === 'lokasi_lain' && dropoffDelivery.fee === -1;
 
   const generateCheckoutPayload = (type: 'tour_stay' | 'car') => {
     if (!product) return null;
@@ -175,6 +392,14 @@ const ProductDetail: React.FC = () => {
         const end = new Date(`${carDropoffDate}T${carDropoffTime}`);
         if (start >= end) errors.carDropoffDate = 'Waktu pengembalian tidak valid';
       }
+      // Validasi alamat custom wajib diisi
+      if (pickupType === 'lokasi_lain' && !pickupAddress.trim())
+        errors.pickupAddress = 'Masukkan alamat penjemputan';
+      if (dropoffType === 'lokasi_lain' && !dropoffAddress.trim())
+        errors.dropoffAddress = 'Masukkan alamat pengantaran';
+      // Blokir jika masih loading
+      if (pickupDelivery.loading || dropoffDelivery.loading)
+        errors.deliveryCalc = 'Tunggu perhitungan biaya selesai';
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -210,11 +435,18 @@ const ProductDetail: React.FC = () => {
       const insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
       const childSeatPrice = addOns.childSeat ? 50_000 : 0;
       const totalPerDay    = Number(product.price) + driverPrice + insurancePrice + childSeatPrice;
+
+      // Biaya antar-jemput (satu kali, bukan per hari)
+      const pickupFeeTotal  = effectivePickupFee;
+      const dropoffFeeTotal = effectiveDropoffFee;
+      const deliveryTotal   = pickupFeeTotal + dropoffFeeTotal;
+
       return {
         productId: product.id, productName: product.name, location: product.location,
         image: product.image_url || product.image, currency: product.currency || 'IDR',
         pricePerPax: totalPerDay, basePricePerPax: Number(product.price), pax: 1, guestCount: 1, duration: calculatedDays,
-        totalPrice: totalPerDay * calculatedDays, date: `${carPickupDate} - ${carDropoffDate}`,
+        totalPrice: totalPerDay * calculatedDays + deliveryTotal,
+        date: `${carPickupDate} - ${carDropoffDate}`,
         startTime: `${carPickupDate} ${carPickupTime}:00`, endTime: `${carDropoffDate} ${carDropoffTime}:00`,
         unitLabel: 'Hari', priceUnitLabel: 'hari', vehicleType: 'car',
         transmission: (product.details as CarDetails)?.transmission,
@@ -224,6 +456,16 @@ const ProductDetail: React.FC = () => {
         fuelPolicy: (product.details as CarDetails)?.fuelPolicy,
         withDriver: addOns.withDriver,
         addOns,
+        // Delivery fields
+        pickupType, dropoffType,
+        pickupAddress: pickupType === 'lokasi_lain' ? pickupAddress : null,
+        dropoffAddress: dropoffType === 'lokasi_lain' ? dropoffAddress : null,
+        pickupFee: pickupFeeTotal,
+        dropoffFee: dropoffFeeTotal,
+        pickupDeliveryKm: pickupDelivery.km,
+        dropoffDeliveryKm: dropoffDelivery.km,
+        needsManualPickupConfirmation: needsManualPickup,
+        needsManualDropoffConfirmation: needsManualDropoff,
         availableVouchers: productVouchers,
       };
     }
@@ -233,9 +475,7 @@ const ProductDetail: React.FC = () => {
     if (!product || isInCart(product.id)) return;
     const type = isTour(product.details) || isStay(product.details) ? 'tour_stay' : 'car';
     const payload = generateCheckoutPayload(type);
-    if (!payload) return; // Validasi gagal
-
-    // Gunakan duration (rentalDays) sebagai quantity untuk compatibilitas UI keranjang lama namun menyuntikkan payload kustom.
+    if (!payload) return;
     const cartQty = payload.duration;
     addToCart(product, cartQty, payload);
     showToast(`${product.name} ditambahkan ke keranjang!`, 'success');
@@ -301,8 +541,20 @@ const ProductDetail: React.FC = () => {
       { icon: Award,        label: 'Tipe',          value: (stayDetails as any)?.stayCategory || 'Hotel' },
       { icon: BadgeCheck,   label: 'Check-in',      value: (stayDetails as any)?.checkIn || '14:00' },
     ];
-    const inclusions: string[] = (product as any).inclusions || (isTourProduct ? ['Transportasi AC','Pemandu wisata','Tiket masuk','Makan siang'] : ['Sarapan','Kolam renang','WiFi gratis','Parkir gratis']);
-    const exclusions: string[] = (product as any).exclusions || (isTourProduct ? ['Pengeluaran pribadi','Tips pemandu','Foto/video profesional'] : ['Airport transfer','Laundry','Minibar']);
+    const inclusions: string[] = (isTourProduct
+      ? (tourDetails as any)?.inclusions
+      : (stayDetails as any)?.inclusions
+    )?.filter(Boolean) || (isTourProduct
+      ? ['Transportasi AC', 'Pemandu wisata', 'Tiket masuk', 'Makan siang']
+      : ['Sarapan', 'Kolam renang', 'WiFi gratis', 'Parkir gratis']
+    );
+    const exclusions: string[] = (isTourProduct
+      ? (tourDetails as any)?.exclusions
+      : (stayDetails as any)?.exclusions
+    )?.filter(Boolean) || (isTourProduct
+      ? ['Pengeluaran pribadi', 'Tips pemandu', 'Foto/video profesional']
+      : ['Airport transfer', 'Laundry', 'Minibar']
+    );
     
     const reviewCount = reviews.length;
     const avgRatingStr = reviewCount > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / reviewCount).toFixed(1) : (product.rating || '0.0');
@@ -410,7 +662,7 @@ const ProductDetail: React.FC = () => {
   const insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
   const childSeatPrice = addOns.childSeat ? 50_000 : 0;
   const totalPerDay    = basePrice + driverPrice + insurancePrice + childSeatPrice;
-  const totalCarPrice  = totalPerDay * rentalDays;
+  const totalCarPrice  = totalPerDay * rentalDays + effectivePickupFee + effectiveDropoffFee;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-16">
@@ -447,8 +699,67 @@ const ProductDetail: React.FC = () => {
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Car className="w-5 h-5 text-primary-600"/> Detail Mobil</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{[{icon:Users,label:'Penumpang',value:`${carDetails?.seats||4} Orang`},{icon:Gauge,label:'Transmisi',value:carDetails?.transmission==='Automatic'?'Matic':'Manual'},{icon:Fuel,label:'Bahan Bakar',value:carDetails?.fuelPolicy||'Gas'},{icon:Briefcase,label:'Bagasi',value:`${carDetails?.luggage||2} Koper`}].map((item,i)=>(<div key={i} className="bg-gray-50 rounded-2xl p-4 text-center"><item.icon className="w-6 h-6 text-primary-600 mx-auto mb-2"/><p className="text-xs text-gray-500 mb-1">{item.label}</p><p className="font-bold text-gray-900 text-sm">{item.value}</p></div>))}</div></div>
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Package className="w-5 h-5 text-primary-600"/> Facility &amp; Include</h2><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{[{icon:Navigation,label:'Free Pick Up'},{icon:Shield,label:'Basic Insurance'},{icon:Headphones,label:'24hr Support'}].map((item,i)=>(<div key={i} className="flex items-center gap-3 bg-green-50 rounded-2xl px-4 py-3"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0"/><div className="flex items-center gap-2"><item.icon className="w-4 h-4 text-green-600 shrink-0"/><span className="text-sm font-semibold text-gray-800">{item.label}</span></div></div>))}</div></div>
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"><button onClick={()=>setTermsOpen(!termsOpen)} className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"><h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Info className="w-5 h-5 text-primary-600"/> Terma &amp; Kondisi</h2>{termsOpen?<ChevronUp className="w-5 h-5 text-gray-400"/>:<ChevronDown className="w-5 h-5 text-gray-400"/>}</button>{termsOpen&&(<div className="px-6 pb-6 space-y-2 border-t border-gray-100">{['Self-Drive Policy','Cancellation Policy','Checklist dan Sisa Arka'].map((term,i)=>(<div key={i} className="flex items-start gap-2 py-2"><div className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 shrink-0"/><span className="text-sm text-gray-700 font-medium">{term}</span></div>))}</div>)}</div>
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><MapPinned className="w-5 h-5 text-primary-600"/> Lokasi Pengambilan</h2><div className="flex gap-3 mb-4">{[{value:'kantor',label:'Kantor Rental'},{value:'lokasi_lain',label:'Lokasi Lainnya'}].map(opt=>(<button key={opt.value} onClick={()=>setPickupType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${pickupType===opt.value?'border-primary-500 bg-primary-50 text-primary-700':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>{pickupType===opt.value&&<Check className="w-3.5 h-3.5 inline mr-1"/>}{opt.label}</button>))}</div>{pickupType==='lokasi_lain'?<input type="text" placeholder="Masukkan alamat pickup lengkap..." value={pickupAddress} onChange={(e)=>setPickupAddress(e.target.value)} className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50"/>:<div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3"><MapPin className="w-4 h-4 text-gray-400"/><span className="text-sm text-gray-500">{formatLocation(product.location||'Lokasi Kantor Rental')}</span></div>}</div>
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Navigation className="w-5 h-5 text-primary-600"/> Lokasi Pengembalian</h2><div className="flex gap-3 mb-4">{[{value:'kantor',label:'Kantor Rental'},{value:'lokasi_lain',label:'Lokasi Lainnya'}].map(opt=>(<button key={opt.value} onClick={()=>setDropoffType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${dropoffType===opt.value?'border-primary-500 bg-primary-50 text-primary-700':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>{dropoffType===opt.value&&<Check className="w-3.5 h-3.5 inline mr-1"/>}{opt.label}</button>))}</div>{dropoffType==='lokasi_lain'?<input type="text" placeholder="Masukkan alamat pengembalian..." value={dropoffAddress} onChange={(e)=>setDropoffAddress(e.target.value)} className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50"/>:<div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3"><MapPin className="w-4 h-4 text-gray-400"/><span className="text-sm text-gray-500">{formatLocation(product.location||'Lokasi Kantor Rental')}</span></div>}</div>
+
+            {/* ── Lokasi Pengambilan ── */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><MapPinned className="w-5 h-5 text-primary-600"/> Lokasi Pengambilan</h2>
+              <div className="flex gap-3 mb-4">
+                {[{value:'kantor',label:'Kantor Rental'},{value:'lokasi_lain',label:'Lokasi Lainnya'}].map(opt=>(
+                  <button key={opt.value} onClick={()=>setPickupType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${pickupType===opt.value?'border-primary-500 bg-primary-50 text-primary-700':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    {pickupType===opt.value&&<Check className="w-3.5 h-3.5 inline mr-1"/>}{opt.label}
+                  </button>
+                ))}
+              </div>
+              {pickupType==='lokasi_lain' ? (
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Masukkan alamat pickup lengkap… (min. 8 karakter)"
+                    value={pickupAddress}
+                    onChange={(e)=>{setPickupAddress(e.target.value);setFieldErrors(p=>({...p,pickupAddress:''}));}}
+                    className={`w-full px-4 py-3 rounded-2xl border text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 ${fieldErrors.pickupAddress?'border-red-400':'border-gray-200'}`}
+                  />
+                  <FieldError name="pickupAddress"/>
+                  <DeliveryFeeBadge info={pickupDelivery} type="pickup" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3">
+                  <MapPin className="w-4 h-4 text-gray-400"/>
+                  <span className="text-sm text-gray-500">{formatLocation(product.location||'Lokasi Kantor Rental')}</span>
+                </div>
+              )}
+            </div>
+
+            {/* ── Lokasi Pengembalian ── */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Navigation className="w-5 h-5 text-primary-600"/> Lokasi Pengembalian</h2>
+              <div className="flex gap-3 mb-4">
+                {[{value:'kantor',label:'Kantor Rental'},{value:'lokasi_lain',label:'Lokasi Lainnya'}].map(opt=>(
+                  <button key={opt.value} onClick={()=>setDropoffType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${dropoffType===opt.value?'border-primary-500 bg-primary-50 text-primary-700':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    {dropoffType===opt.value&&<Check className="w-3.5 h-3.5 inline mr-1"/>}{opt.label}
+                  </button>
+                ))}
+              </div>
+              {dropoffType==='lokasi_lain' ? (
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Masukkan alamat pengembalian… (min. 8 karakter)"
+                    value={dropoffAddress}
+                    onChange={(e)=>{setDropoffAddress(e.target.value);setFieldErrors(p=>({...p,dropoffAddress:''}));}}
+                    className={`w-full px-4 py-3 rounded-2xl border text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 ${fieldErrors.dropoffAddress?'border-red-400':'border-gray-200'}`}
+                  />
+                  <FieldError name="dropoffAddress"/>
+                  <DeliveryFeeBadge info={dropoffDelivery} type="dropoff" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3">
+                  <MapPin className="w-4 h-4 text-gray-400"/>
+                  <span className="text-sm text-gray-500">{formatLocation(product.location||'Lokasi Kantor Rental')}</span>
+                </div>
+              )}
+            </div>
+
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2"><Info className="w-5 h-5 text-primary-600"/> Notes</h2><textarea rows={3} placeholder="Tambahkan catatan atau permintaan khusus..." className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 resize-none"/></div>
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400 fill-amber-400"/> Reviews</h2><div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{reviews.length > 0 ? reviews.map(review=>(<div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100"><div className="flex items-center gap-3 mb-3"><UserAvatar user={{ name: review.customer_name, avatar: review.customer_avatar }} className="w-10 h-10 border-2 border-primary-100" /><div><p className="font-bold text-gray-900 text-sm">{review.customer_name || 'Customer'}</p><p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString('id-ID')}</p></div></div><div className="flex gap-0.5 mb-2">{[...Array(5)].map((_,i)=><Star key={i} className={`w-3.5 h-3.5 ${i<review.rating?'text-amber-400 fill-amber-400':'text-gray-200 fill-gray-200'}`}/>)}</div><p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{review.comment || 'No comment provided.'}</p>{review.agent_reply && (<div className="mt-3 border-t border-gray-100 pt-3"><button onClick={() => toggleReply(review.id)} className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">{expandedReplies[review.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}{expandedReplies[review.id] ? 'Tutup Balasan' : 'Lihat Balasan'}</button>{expandedReplies[review.id] && (<div className="mt-2 bg-primary-50 rounded-xl p-3 border border-primary-100 relative"><div className="absolute -top-1.5 left-4 w-3 h-3 bg-primary-50 border-t border-l border-primary-100 transform rotate-45" /><div className="flex items-center gap-2 mb-1.5 relative z-10"><div className="w-4 h-4 bg-primary-100 rounded-full flex items-center justify-center shrink-0"><BadgeCheck className="w-2.5 h-2.5 text-primary-600" /></div><span className="text-xs font-bold text-primary-900">Respon Agen</span></div><p className="text-xs text-primary-800 leading-relaxed relative z-10">{review.agent_reply}</p></div>)}</div>)}</div>)) : <p className="text-sm text-gray-500 col-span-full">Belum ada ulasan untuk mobil ini.</p>}</div></div>
           </div>
@@ -493,7 +804,7 @@ const ProductDetail: React.FC = () => {
                   <FieldError name="carDropoffDate"/>
                 </div>
 
-                {/* ── Add-Ons: sopir + insurance + child seat ── */}
+                {/* ── Add-Ons ── */}
                 <div className="mb-5">
                   <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><BadgeCheck className="w-4 h-4 text-primary-500"/> Add-Ons</p>
                   <div className="space-y-2">
@@ -523,13 +834,57 @@ const ProductDetail: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Price Summary */}
+                {/* ── Price Summary ── */}
                 <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-2">
-                  <div className="flex justify-between text-sm text-gray-600"><span>Sewa {rentalDays} hari × {product.currency} {basePrice.toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(basePrice*rentalDays).toLocaleString('id-ID')}</span></div>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Sewa {rentalDays} hari × {product.currency} {basePrice.toLocaleString('id-ID')}</span>
+                    <span className="font-semibold">{product.currency} {(basePrice*rentalDays).toLocaleString('id-ID')}</span>
+                  </div>
                   {addOns.withDriver&&(<div className="flex justify-between text-sm text-gray-600"><span>Sopir × {rentalDays} hari</span><span className="font-semibold">+{product.currency} {(DRIVER_PRICE_PER_12H*rentalDays).toLocaleString('id-ID')}</span></div>)}
                   {addOns.premiumInsurance&&(<div className="flex justify-between text-sm text-gray-600"><span>Premium Insurance × {rentalDays} hari</span><span className="font-semibold">+{product.currency} {(75_000*rentalDays).toLocaleString('id-ID')}</span></div>)}
                   {addOns.childSeat&&(<div className="flex justify-between text-sm text-gray-600"><span>Child Seat × {rentalDays} hari</span><span className="font-semibold">+{product.currency} {(50_000*rentalDays).toLocaleString('id-ID')}</span></div>)}
-                  <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900"><span>Total</span><span className="text-primary-600">{product.currency} {totalCarPrice.toLocaleString('id-ID')}</span></div>
+
+                  {/* Delivery fee rows — hanya muncul jika custom location */}
+                  {pickupType === 'lokasi_lain' && (
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <Navigation className="w-3 h-3 text-primary-400 shrink-0"/>
+                        Biaya Penjemputan
+                        {pickupDelivery.loading && <Loader2 className="w-3 h-3 animate-spin ml-1"/>}
+                      </span>
+                      <span className={`font-semibold ${needsManualPickup ? 'text-amber-500' : effectivePickupFee === 0 ? 'text-green-600' : ''}`}>
+                        {pickupDelivery.loading ? '…' : needsManualPickup ? 'Konfirmasi agen' : effectivePickupFee === 0 ? 'GRATIS' : `+${product.currency} ${effectivePickupFee.toLocaleString('id-ID')}`}
+                      </span>
+                    </div>
+                  )}
+                  {dropoffType === 'lokasi_lain' && (
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <MapPinned className="w-3 h-3 text-primary-400 shrink-0"/>
+                        Biaya Pengantaran
+                        {dropoffDelivery.loading && <Loader2 className="w-3 h-3 animate-spin ml-1"/>}
+                      </span>
+                      <span className={`font-semibold ${needsManualDropoff ? 'text-amber-500' : effectiveDropoffFee === 0 ? 'text-green-600' : ''}`}>
+                        {dropoffDelivery.loading ? '…' : needsManualDropoff ? 'Konfirmasi agen' : effectiveDropoffFee === 0 ? 'GRATIS' : `+${product.currency} ${effectiveDropoffFee.toLocaleString('id-ID')}`}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900">
+                    <span>Total</span>
+                    <span className="text-primary-600">
+                      {(needsManualPickup || needsManualDropoff)
+                        ? <span className="text-amber-500 text-sm">+ biaya antar/jemput (konfirmasi)</span>
+                        : `${product.currency} ${totalCarPrice.toLocaleString('id-ID')}`
+                      }
+                    </span>
+                  </div>
+                  {(needsManualPickup || needsManualDropoff) && (
+                    <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 flex items-start gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5"/>
+                      Biaya antar/jemput untuk lokasi &gt;60 km akan dikonfirmasi agen dalam 1×24 jam setelah booking.
+                    </p>
+                  )}
                 </div>
 
                 <button onClick={handleAddToCart} disabled={isInCart(product.id)} className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${isInCart(product.id)?'bg-green-50 border-2 border-green-400 text-green-700 cursor-default':'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30 hover:shadow-primary-700/40'}`}>{isInCart(product.id)?<span className="flex items-center justify-center gap-2"><Check className="w-4 h-4"/> Added to Cart</span>:<span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4"/> Proceed to Booking</span>}</button>
