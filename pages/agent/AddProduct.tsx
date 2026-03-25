@@ -7,6 +7,7 @@ import {
   Coffee,
   List,
   MapPin,
+  Navigation,
   Plus,
   ShieldAlert,
   Tag,
@@ -14,6 +15,10 @@ import {
   Upload,
   User,
   X,
+  Truck,
+  Info,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -26,7 +31,7 @@ import http from "../../services/http";
 import VoucherSelector from "../../components/VoucherSelector";
 import SearchableSelect from './components/SearchableSelect';
 
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -74,8 +79,334 @@ const formatRupiah = (value: string) => {
   return numberString.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 };
 
+const formatRp = (n: number) => `Rp ${Number(n).toLocaleString('id-ID')}`;
+
 type LatLng = { lat: number; lng: number };
 const DEFAULT_CENTER: LatLng = { lat: -8.409518, lng: 115.188919 };
+
+// ─── Delivery Fee Config Types ───────────────────────────────────────────────
+export interface DeliveryZone {
+  maxKm: number;    // batas atas jarak (km). Infinity = zone terakhir (perlu konfirmasi)
+  fee: number;      // biaya (IDR). -1 = perlu konfirmasi manual agen
+  label: string;
+}
+
+export interface DeliveryConfig {
+  enabled: boolean;           // apakah layanan antar-jemput tersedia
+  freeRadiusKm: number;       // radius gratis (km), 0 = tidak ada zona gratis
+  minCharge: number;          // biaya minimum jika tidak masuk zona gratis (override zone pertama)
+  zones: DeliveryZone[];      // daftar zona biaya
+}
+
+const DEFAULT_DELIVERY_CONFIG: DeliveryConfig = {
+  enabled: true,
+  freeRadiusKm: 0,            // tidak ada gratis by default
+  minCharge: 15_000,          // minimum charge Rp 15.000
+  zones: [
+    { maxKm: 2,        fee: 15_000,  label: '0–2 km' },
+    { maxKm: 5,        fee: 25_000,  label: '2–5 km' },
+    { maxKm: 15,       fee: 50_000,  label: '5–15 km' },
+    { maxKm: 30,       fee: 85_000,  label: '15–30 km' },
+    { maxKm: 60,       fee: 150_000, label: '30–60 km' },
+    { maxKm: Infinity, fee: -1,      label: '>60 km (konfirmasi)' },
+  ],
+};
+
+// ─── Delivery Config Section Component ───────────────────────────────────────
+interface DeliveryConfigSectionProps {
+  config: DeliveryConfig;
+  onChange: (config: DeliveryConfig) => void;
+  agentLocation: LatLng | null;
+}
+
+const DeliveryConfigSection: React.FC<DeliveryConfigSectionProps> = ({ config, onChange, agentLocation }) => {
+  const [open, setOpen] = useState(false);
+  const [previewMap, setPreviewMap] = useState(false);
+
+  const updateZone = (index: number, field: keyof DeliveryZone, value: any) => {
+    const zones = [...config.zones];
+    zones[index] = { ...zones[index], [field]: value };
+    onChange({ ...config, zones });
+  };
+
+  const addZone = () => {
+    const lastFinite = config.zones.filter(z => z.maxKm !== Infinity);
+    const lastKm = lastFinite.length > 0 ? lastFinite[lastFinite.length - 1].maxKm : 5;
+    const newZones = config.zones.filter(z => z.maxKm !== Infinity);
+    newZones.push({ maxKm: lastKm + 10, fee: 50_000, label: `${lastKm}–${lastKm + 10} km` });
+    newZones.push({ maxKm: Infinity, fee: -1, label: '>konfirmasi' });
+    onChange({ ...config, zones: newZones });
+  };
+
+  const removeZone = (index: number) => {
+    if (config.zones[index].maxKm === Infinity) return; // jangan hapus zona terakhir
+    const zones = config.zones.filter((_, i) => i !== index);
+    onChange({ ...config, zones });
+  };
+
+  const resetToDefault = () => {
+    onChange(DEFAULT_DELIVERY_CONFIG);
+  };
+
+  return (
+    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center">
+          <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mr-3 text-sm">5</span>
+          Konfigurasi Biaya Antar-Jemput
+        </h3>
+        <div className="flex items-center gap-3">
+          {/* Toggle enabled */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div
+              onClick={() => onChange({ ...config, enabled: !config.enabled })}
+              className={`relative w-11 h-6 rounded-full transition-colors ${config.enabled ? 'bg-primary-600' : 'bg-gray-300'}`}
+            >
+              <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${config.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+            </div>
+            <span className={`text-xs font-bold ${config.enabled ? 'text-primary-700' : 'text-gray-400'}`}>
+              {config.enabled ? 'Aktif' : 'Nonaktif'}
+            </span>
+          </label>
+          <button
+            type="button"
+            onClick={() => setOpen(p => !p)}
+            className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-primary-600 transition-colors"
+          >
+            {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {open ? 'Tutup' : 'Atur Zona'}
+          </button>
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-400 mb-4">
+        Atur biaya pengantaran / penjemputan kendaraan ke lokasi customer. Biaya dihitung per leg (pickup & dropoff terpisah).
+        <span className="ml-1 text-amber-600 font-semibold">Tidak ada zona gratis — minimum charge selalu berlaku.</span>
+      </p>
+
+      {/* Summary badges (selalu tampil) */}
+      {config.enabled && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-100">
+            <Navigation className="w-3 h-3" />
+            Min. charge {formatRp(config.minCharge)}
+          </span>
+          <span className="inline-flex items-center gap-1.5 bg-gray-50 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full border border-gray-200">
+            {config.zones.filter(z => z.maxKm !== Infinity).length} zona berbayar
+          </span>
+          {config.freeRadiusKm > 0 && (
+            <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full border border-green-100">
+              Gratis &lt;{config.freeRadiusKm} km
+            </span>
+          )}
+        </div>
+      )}
+
+      {!config.enabled && (
+        <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500 border border-gray-200">
+          <Info className="w-4 h-4 text-gray-400 shrink-0" />
+          Layanan antar-jemput dinonaktifkan. Customer hanya dapat mengambil / mengembalikan mobil ke kantor rental.
+        </div>
+      )}
+
+      {/* Expanded config panel */}
+      {open && config.enabled && (
+        <div className="mt-4 space-y-5 border-t border-gray-100 pt-5">
+          {/* Min charge & Free radius */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                Minimum Charge (IDR)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">Rp</span>
+                <input
+                  type="text"
+                  value={formatRupiah(String(config.minCharge))}
+                  onChange={e => onChange({ ...config, minCharge: Number(e.target.value.replace(/\D/g, '')) || 0 })}
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Biaya minimum sekali antar/jemput</p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                Radius Gratis (km)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={config.freeRadiusKm}
+                  onChange={e => onChange({ ...config, freeRadiusKm: parseFloat(e.target.value) || 0 })}
+                  className="w-full pl-3 pr-8 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">km</span>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Isi 0 jika tidak ada zona gratis</p>
+            </div>
+          </div>
+
+          {/* Zone table */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Tabel Zona Biaya</p>
+              <button
+                type="button"
+                onClick={resetToDefault}
+                className="text-xs text-gray-400 hover:text-primary-600 font-semibold underline"
+              >
+                Reset ke default
+              </button>
+            </div>
+
+            <div className="rounded-xl overflow-hidden border border-gray-200">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider">
+                  <tr>
+                    <th className="px-3 py-2.5 text-left">Zona</th>
+                    <th className="px-3 py-2.5 text-left">Maks Jarak</th>
+                    <th className="px-3 py-2.5 text-left">Biaya (IDR)</th>
+                    <th className="px-3 py-2.5 w-8"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {config.zones.map((zone, idx) => (
+                    <tr key={idx} className={zone.maxKm === Infinity ? 'bg-amber-50' : 'bg-white hover:bg-gray-50'}>
+                      <td className="px-3 py-2">
+                        <input
+                          type="text"
+                          value={zone.label}
+                          onChange={e => updateZone(idx, 'label', e.target.value)}
+                          className="w-full px-2 py-1 rounded-lg border border-gray-200 bg-transparent text-xs focus:outline-none focus:border-primary-400"
+                          disabled={zone.maxKm === Infinity}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        {zone.maxKm === Infinity ? (
+                          <span className="text-amber-600 font-bold">∞ (konfirmasi)</span>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={1}
+                              value={zone.maxKm}
+                              onChange={e => updateZone(idx, 'maxKm', parseFloat(e.target.value) || 0)}
+                              className="w-16 px-2 py-1 rounded-lg border border-gray-200 text-xs focus:outline-none focus:border-primary-400"
+                            />
+                            <span className="text-gray-400">km</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {zone.fee === -1 ? (
+                          <span className="text-amber-600 font-bold text-[10px]">Hubungi Agen</span>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-400 text-[10px]">Rp</span>
+                            <input
+                              type="text"
+                              value={formatRupiah(String(zone.fee))}
+                              onChange={e => updateZone(idx, 'fee', Number(e.target.value.replace(/\D/g, '')) || 0)}
+                              className="w-24 px-2 py-1 rounded-lg border border-gray-200 text-xs focus:outline-none focus:border-primary-400"
+                              disabled={zone.maxKm === Infinity}
+                            />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {zone.maxKm !== Infinity && (
+                          <button
+                            type="button"
+                            onClick={() => removeZone(idx)}
+                            className="text-gray-300 hover:text-red-500 transition-colors"
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              type="button"
+              onClick={addZone}
+              className="mt-2 flex items-center gap-1 text-xs font-bold text-primary-600 hover:underline"
+            >
+              <Plus className="w-3.5 h-3.5" /> Tambah Zona
+            </button>
+          </div>
+
+          {/* Map Preview — tampilkan radius pada peta lokasi agent */}
+          {agentLocation && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setPreviewMap(p => !p)}
+                className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline mb-2"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                {previewMap ? 'Sembunyikan peta preview' : 'Lihat preview radius di peta'}
+              </button>
+              {previewMap && (
+                <div className="rounded-2xl overflow-hidden border border-gray-200 h-64">
+                  <MapContainer
+                    center={[agentLocation.lat, agentLocation.lng]}
+                    zoom={11}
+                    style={{ width: '100%', height: '100%' }}
+                    scrollWheelZoom={false}
+                  >
+                    <TileLayer
+                      attribution='&copy; CartoDB'
+                      url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                    />
+                    <Marker position={[agentLocation.lat, agentLocation.lng]} />
+                    {/* Radius circles per zona */}
+                    {config.zones
+                      .filter(z => z.maxKm !== Infinity)
+                      .map((zone, idx) => (
+                        <Circle
+                          key={idx}
+                          center={[agentLocation.lat, agentLocation.lng]}
+                          radius={zone.maxKm * 1000}
+                          pathOptions={{
+                            color: zone.fee === 0 ? '#22c55e' : `hsl(${210 + idx * 20}, 80%, 55%)`,
+                            fillOpacity: 0.05,
+                            weight: 1.5,
+                            dashArray: '4 4',
+                          }}
+                        />
+                      ))
+                    }
+                  </MapContainer>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Info box */}
+          <div className="bg-blue-50 rounded-xl p-3.5 flex items-start gap-2.5 border border-blue-100">
+            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <div className="text-[11px] text-blue-700 space-y-1">
+              <p className="font-bold">Cara kerja biaya antar-jemput:</p>
+              <p>• Biaya dihitung <strong>per leg</strong> — pickup ke lokasi customer & dropoff ke lokasi customer dihitung terpisah.</p>
+              <p>• Jarak dihitung dari <strong>kantor rental Anda</strong> ke lokasi yang diinput customer.</p>
+              <p>• Zona <strong>konfirmasi</strong> berarti agen perlu menghubungi customer untuk menyepakati biaya sebelum booking dikonfirmasi.</p>
+              <p>• Setting ini bisa diubah kapan saja dan berlaku untuk semua produk rental Anda.</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const AgentAddProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -112,9 +443,10 @@ const AgentAddProduct: React.FC = () => {
     seoOgImage: "",
   });
 
-  // ── NEW: Voucher state ───────────────────────────────────────────────────
   const [selectedVoucherIds, setSelectedVoucherIds] = useState<number[]>([]);
-  // ────────────────────────────────────────────────────────────────────────
+
+  // ── Delivery Config state (hanya untuk transport) ──────────────────────────
+  const [deliveryConfig, setDeliveryConfig] = useState<DeliveryConfig>(DEFAULT_DELIVERY_CONFIG);
 
   const [mapCenter, setMapCenter] = useState<LatLng>(DEFAULT_CENTER);
   const [markerPos, setMarkerPos] = useState<LatLng | null>(null);
@@ -345,7 +677,6 @@ const AgentAddProduct: React.FC = () => {
               }))
             );
 
-            // ── NEW: Load voucher yang sudah terlampir ke product ini ────
             if (Array.isArray((product as any).vouchers)) {
               setSelectedVoucherIds(
                 (product as any).vouchers
@@ -353,7 +684,17 @@ const AgentAddProduct: React.FC = () => {
                   .filter(Boolean)
               );
             }
-            // ─────────────────────────────────────────────────────────────
+
+            // ── Load delivery config dari product (jika ada) ──────────────
+            if ((product as any).delivery_config) {
+              try {
+                const cfg = typeof (product as any).delivery_config === 'string'
+                  ? JSON.parse((product as any).delivery_config)
+                  : (product as any).delivery_config;
+                if (cfg && typeof cfg === 'object') setDeliveryConfig(cfg);
+              } catch { /* biarkan default */ }
+            }
+            // ────────────────────────────────────────────────────────────
 
             if (product.details) {
               if (product.details.type === "tour") {
@@ -726,6 +1067,11 @@ const AgentAddProduct: React.FC = () => {
         seo_og_image: formData.seoOgImage || null,
       } as any;
 
+      // ── Inject delivery_config untuk produk transport ──────────────────
+      if (isTransport) {
+        (payload as any).delivery_config = deliveryConfig;
+      }
+
       if (isTransport) {
         payload.image_url = carList.find((c) => c.id === selectedCarId)?.image || payload.image_url;
         payload.images = [];
@@ -741,16 +1087,13 @@ const AgentAddProduct: React.FC = () => {
         savedProductId = created.id;
       }
 
-      // ── NEW: Simpan relasi voucher ke endpoint khusus ──────────────
       if (savedProductId) {
         try {
           await agentProductService.setProductVouchers(savedProductId, selectedVoucherIds);
         } catch (voucherErr) {
           console.warn('[VOUCHER] Gagal menyimpan voucher relasi:', voucherErr);
-          // Tidak memblokir sukses utama — cukup warn
         }
       }
-      // ──────────────────────────────────────────────────────────────
 
       await Swal.fire({
         title: 'Success!',
@@ -762,19 +1105,11 @@ const AgentAddProduct: React.FC = () => {
       });
 
       navigate("/agent/products");
-    } catch (error) {
+    } catch (error: any) {
       console.error('[SUBMIT ERROR]', error);
-
-      // Tampilkan pesan error asli dari backend
-      const backendMessage =
-      error?.response?.data?.message ||
-      error?.response?.data?.error ||
-      error?.message ||
-      'Something went wrong while saving the product.';
-
       Swal.fire({
         title: 'Error!',
-        text: 'Something went wrong while saving the product.',
+        text: error?.response?.data?.message || error?.message || 'Something went wrong while saving the product.',
         icon: 'error',
         confirmButtonColor: '#0f172a',
         customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl' }
@@ -982,6 +1317,83 @@ const AgentAddProduct: React.FC = () => {
                     <button type="button" onClick={addItineraryDay} className="w-full py-2 bg-primary-600 text-white rounded-lg text-sm font-bold hover:bg-primary-700">Add to Itinerary</button>
                   </div>
                 </div>
+
+                {/* ── Inclusions & Exclusions ── */}
+                <div className="border-t border-gray-100 pt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Inclusions */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs font-extrabold">✓</span>
+                        Yang Termasuk
+                      </label>
+                      <div className="space-y-2">
+                        {tourDetails.inclusions.map((item, idx) => (
+                          <div key={idx} className="flex gap-2 items-center">
+                            <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+                            <input
+                              type="text"
+                              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400/20 bg-gray-50 focus:bg-white"
+                              placeholder="e.g. Transportasi AC"
+                              value={item}
+                              onChange={(e) => handleListChange(setTourDetails, tourDetails.inclusions, idx, e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeListItem(setTourDetails, tourDetails.inclusions, 'inclusions', idx)}
+                              className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => addListItem(setTourDetails, tourDetails.inclusions, 'inclusions')}
+                          className="flex items-center gap-1 text-xs font-bold text-green-600 hover:underline mt-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Tambah Item
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Exclusions */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-red-500 text-xs font-extrabold">✗</span>
+                        Tidak Termasuk
+                      </label>
+                      <div className="space-y-2">
+                        {tourDetails.exclusions.map((item, idx) => (
+                          <div key={idx} className="flex gap-2 items-center">
+                            <div className="w-2 h-2 rounded-full bg-red-300 shrink-0" />
+                            <input
+                              type="text"
+                              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-red-300 focus:ring-1 focus:ring-red-300/20 bg-gray-50 focus:bg-white"
+                              placeholder="e.g. Pengeluaran pribadi"
+                              value={item}
+                              onChange={(e) => handleListChange(setTourDetails, tourDetails.exclusions, idx, e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeListItem(setTourDetails, tourDetails.exclusions, 'exclusions', idx)}
+                              className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => addListItem(setTourDetails, tourDetails.exclusions, 'exclusions')}
+                          className="flex items-center gap-1 text-xs font-bold text-red-400 hover:underline mt-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Tambah Item
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1104,7 +1516,7 @@ const AgentAddProduct: React.FC = () => {
             </div>
           </div>
 
-          {/* ── 4. Voucher & Promo ── NEW SECTION ─────────────────────────────────── */}
+          {/* 4. Voucher & Promo */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center">
               <span className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center mr-3 text-sm">4</span>
@@ -1112,7 +1524,6 @@ const AgentAddProduct: React.FC = () => {
             </h3>
             <p className="text-xs text-gray-400 mb-5">
               Pilih voucher yang dapat digunakan customer saat memesan produk ini.
-              Voucher berlaku sesuai syarat &amp; ketentuan masing-masing.
             </p>
             <VoucherSelector
               selectedIds={selectedVoucherIds}
@@ -1125,10 +1536,18 @@ const AgentAddProduct: React.FC = () => {
               </p>
             )}
           </div>
-          {/* ──────────────────────────────────────────────────────────────────────── */}
+
+          {/* 5. Delivery Fee Config — HANYA untuk transport agent */}
+          {isTransport && (
+            <DeliveryConfigSection
+              config={deliveryConfig}
+              onChange={setDeliveryConfig}
+              agentLocation={markerPos}
+            />
+          )}
         </div>
 
-        {/* RIGHT COLUMN */}
+        {/* RIGHT COLUMN — tidak berubah dari versi asli */}
         <div className="lg:col-span-1 space-y-8">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-28">
             {!isTransport && (

@@ -59,6 +59,30 @@ interface CampaignWithProducts extends Campaign {
   pending_count?:       number;
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Sanitize image URL: jika URL mengandung localhost (terjadi saat data
+ * disimpan dari environment lokal), ambil pathname-nya saja agar gambar
+ * tetap bisa ditampilkan di production.
+ *
+ * Contoh:
+ *   "http://localhost:3001/car-rental/InnovaReborn.png"
+ *   → "/car-rental/InnovaReborn.png"
+ */
+const resolveImageUrl = (url: string | null | undefined): string => {
+  if (!url) return "";
+  if (url.includes("localhost")) {
+    try {
+      const parsed = new URL(url);
+      return parsed.pathname; // "/car-rental/InnovaReborn.png"
+    } catch {
+      return url;
+    }
+  }
+  return url;
+};
+
 // ── Confirm Dialog ────────────────────────────────────────────────────────────
 
 interface ConfirmDialogProps {
@@ -148,7 +172,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               >
                 {image ? (
                   <img
-                    src={image}
+                    src={resolveImageUrl(image)}
                     alt=""
                     className="w-11 h-11 rounded-lg object-cover shrink-0 bg-gray-100"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -214,7 +238,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
 const JOIN_LIMIT = 8;
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Fetch helpers ─────────────────────────────────────────────────────────────
 
 interface FetchJoinedResult {
   products:    JoinedProduct[];
@@ -729,7 +753,12 @@ const AdminProducts: React.FC = () => {
                                         <td className="px-4 py-3">
                                           <div className="flex items-center gap-2.5">
                                             {p.product_image ? (
-                                              <img src={p.product_image} alt="" className="w-9 h-9 rounded-lg object-cover bg-gray-100 shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                                              <img
+                                                src={resolveImageUrl(p.product_image)}
+                                                alt=""
+                                                className="w-9 h-9 rounded-lg object-cover bg-gray-100 shrink-0"
+                                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                              />
                                             ) : (
                                               <div className="w-9 h-9 rounded-lg bg-gray-100 shrink-0" />
                                             )}
@@ -852,7 +881,12 @@ const AdminProducts: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {req.product_image ? (
-                            <img src={req.product_image} className="w-12 h-12 rounded-xl object-cover bg-gray-100 shrink-0" alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                            <img
+                              src={resolveImageUrl(req.product_image)}
+                              className="w-12 h-12 rounded-xl object-cover bg-gray-100 shrink-0"
+                              alt=""
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
                           ) : (
                             <div className="w-12 h-12 rounded-xl bg-gray-100 shrink-0" />
                           )}
@@ -930,7 +964,12 @@ const AdminProducts: React.FC = () => {
                     <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <img src={(product as any).image_url || (product as any).image} className="w-10 h-10 rounded-lg object-cover mr-3 bg-gray-100" alt="" />
+                          <img
+                            src={resolveImageUrl((product as any).image_url || (product as any).image)}
+                            className="w-10 h-10 rounded-lg object-cover mr-3 bg-gray-100"
+                            alt=""
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                          />
                           <div>
                             <div className="text-sm font-bold text-gray-900 line-clamp-1">{product.name}</div>
                             <div className="text-xs text-gray-500">ID: #{product.id}</div>
