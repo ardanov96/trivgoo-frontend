@@ -1282,13 +1282,29 @@ const AgentAddProduct: React.FC = () => {
                   </label>
                   <div className="space-y-3 mb-4">
                     {itineraryItems.map((item, idx) => (
-                      <div key={idx} className="flex items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-bold mr-3 border border-gray-200">{item.day}</div>
-                        <div className="flex-1 text-sm font-medium">
-                          <span className="font-bold">{item.title}</span>
-                          {item.accommodation && <span className="text-xs text-gray-500 block">Stay: {item.accommodation}</span>}
+                      <div key={idx} className="flex items-start bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center text-xs font-bold mr-4 border border-gray-200 shrink-0 shadow-sm">{item.day}</div>
+                        <div className="flex-1 text-sm font-medium overflow-hidden">
+                          <span className="font-bold block text-gray-900 text-base">{item.title}</span>
+                          {item.description && (
+                            <span className="text-xs text-gray-500 mt-1 block line-clamp-2" title={item.description}>
+                              {item.description}
+                            </span>
+                          )}
+                          <div className="mt-2.5 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
+                            {item.accommodation && (
+                              <span className="text-primary-700 bg-primary-50 border border-primary-100 px-2 py-1 rounded-md">
+                                Stay: {item.accommodation}
+                              </span>
+                            )}
+                            {item.meals && item.meals.length > 0 && (
+                              <span className="text-orange-700 bg-orange-50 border border-orange-100 px-2 py-1 rounded-md">
+                                Meals: {item.meals.join(', ')}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <button onClick={() => removeItineraryDay(idx)} className="text-red-400 hover:text-red-600" type="button"><Trash className="w-4 h-4" /></button>
+                        <button onClick={() => removeItineraryDay(idx)} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors ml-2 shrink-0" type="button"><Trash className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </div>
