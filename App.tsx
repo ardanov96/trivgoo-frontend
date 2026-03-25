@@ -72,6 +72,11 @@ import CustomerProfileSettings  from './pages/customer/ProfileSettings';
 import LoyaltyPage              from './pages/customer/LoyaltyPage';
 import RedeemPointPage          from './pages/customer/RedeemPointPage';
 import MembershipPage           from './pages/customer/MembershipPage';
+import MyCards                  from './pages/customer/MyCards';
+import MyRefunds                from './pages/customer/MyRefunds';
+import MyPriceAlerts            from './pages/customer/MyPriceAlerts';
+import MyPassengers             from './pages/customer/MyPassengers';
+import MyNotifications          from './pages/customer/MyNotifications';
 
 // ── Misc Pages ────────────────────────────────────────────────────────────────
 import Register         from './pages/Register';
@@ -231,6 +236,12 @@ const AppRoutes = () => (
           <MembershipPage />
         </ProtectedRoute>
       } />
+
+      <Route path="/my-cards"         element={<MyCards />} />
+<Route path="/my-refunds"       element={<MyRefunds />} />
+<Route path="/my-price-alerts"  element={<MyPriceAlerts />} />
+<Route path="/my-passengers"    element={<MyPassengers />} />
+<Route path="/my-notifications" element={<MyNotifications />} />
 
       {/* ── 404 catch-all — must be last inside PublicLayout ── */}
       <Route path="*" element={<NotFound />} />

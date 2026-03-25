@@ -334,7 +334,7 @@ const PublicLayout: React.FC = () => {
                               <UserIcon className="w-4 h-4 mr-3 text-gray-400" /> Profil Saya
                             </Link>
                             <Link to="/my-bookings" onClick={() => setIsProfileDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors">
-                              <Package className="w-4 h-4 mr-3 text-gray-400" /> My Booking
+                              <Package className="w-4 h-4 mr-3 text-gray-400" /> Pesanan Saya
                             </Link>
                           </>
                         )}
