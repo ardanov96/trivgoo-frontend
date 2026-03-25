@@ -25,6 +25,7 @@ export enum PayoutStatus {
 
 export enum VerificationStatus {
   UNVERIFIED = "UNVERIFIED",
+  WAITING_DOCUMENT = "WAITING_DOCUMENT",
   PENDING = "PENDING",
   VERIFIED = "VERIFIED",
   REJECTED = "REJECTED",
@@ -344,6 +345,7 @@ export interface PayoutRequest {
 
 export type VerificationStatusUser =
   | "UNVERIFIED"
+  | "WAITING_DOCUMENT"
   | "PENDING"
   | "VERIFIED"
   | "REJECTED";
@@ -361,12 +363,17 @@ export interface AgentVerification {
   bank_account_holder: string;
   specialization: AgentSpecialization;
   id_document_url: string | null;
+  sk_document_url: string | null;
   status: AgentVerificationStatus;
   reviewed_by: number | null;
   reviewed_at: string | null;
   rejection_reason: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MyAgentVerification extends AgentVerification {
+  verification_status?: VerificationStatusUser;
 }
 
 export interface AgentListItem {

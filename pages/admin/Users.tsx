@@ -206,6 +206,12 @@ const handleDownloadPdf = async (url: string) => {
             <ShieldAlert className="w-3 h-3 mr-1" /> Pending
           </span>
         );
+      case VerificationStatus.WAITING_DOCUMENT:
+        return (
+          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full flex items-center w-fit font-bold">
+            <ShieldAlert className="w-3 h-3 mr-1" /> Waiting Document
+          </span>
+        );
       case VerificationStatus.REJECTED:
         return (
           <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full flex items-center w-fit font-bold">
@@ -225,6 +231,65 @@ const handleDownloadPdf = async (url: string) => {
     if (!val) return '-';
     const s = String(val).replaceAll('_', ' ');
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  };
+
+
+  const DocumentPreview = ({ title, url }: { title: string, url?: string | null }) => {
+    if (!url) return null;
+    const isPdf = url.toLowerCase().endsWith('.pdf');
+    return (
+      <div className="mb-6 h-full">
+        <p className="text-xs text-gray-400 font-bold uppercase mb-3">{title}</p>
+        
+        {isPdf ? (
+          <div className="flex flex-col items-center justify-center p-8 bg-red-50 border-2 border-dashed border-red-200 rounded-xl h-full">
+            <div className="bg-red-500 p-4 rounded-full mb-4 shadow-lg shadow-red-200 flex-shrink-0">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="text-red-700 font-bold mb-2 text-center">{title} (PDF)</p>
+            <p className="text-red-500/70 text-[10px] mb-4 uppercase tracking-widest text-center">Click below to view or download</p>
+            
+            <div className="flex flex-wrap justify-center gap-3">
+              <a
+                href={resolveDocUrl(url)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-red-300 text-red-600 rounded-lg font-bold hover:bg-red-50 transition-all"
+              >
+                <Eye className="w-4 h-4" /> Open
+              </a>
+              <button
+                type="button"
+                onClick={() => handleDownloadPdf(resolveDocUrl(url))}
+                className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-all shadow-md active:scale-95"
+              >
+                ↓ Download
+              </button>
+            </div>
+          </div>
+        ) : (
+          <a 
+            href={resolveDocUrl(url)}
+            target="_blank" 
+            rel="noreferrer"
+            className="group relative flex rounded-xl overflow-hidden border-2 border-gray-100 hover:border-primary-500 transition-all h-full min-h-[200px] items-center justify-center bg-gray-50"
+          >
+            <img 
+              src={resolveDocUrl(url)}
+              className="w-full h-auto max-h-64 object-contain"
+              alt={title} 
+            />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <span className="text-white font-bold flex items-center gap-2">
+                <Eye className="w-5 h-5" /> View Full Image
+              </span>
+            </div>
+          </a>
+        )}
+      </div>
+    );
   };
 
   const agentCount = agents.length;
@@ -485,8 +550,33 @@ const handleDownloadPdf = async (url: string) => {
                 </div>
               </div>
 
+              {(selectedAgent.verification?.id_document_url ||
+                selectedAgent.verification?.sk_document_url) && (
+                <div>
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-3">Attached Documents</p>
+                  <div
+                    className={`grid grid-cols-1 gap-6 ${
+                      selectedAgent.verification?.sk_document_url ? 'md:grid-cols-2' : ''
+                    }`}
+                  >
+                    <DocumentPreview
+                      title={
+                        selectedAgent.verification?.agent_type === 'CORPORATE'
+                          ? 'NIB Document'
+                          : 'ID Document'
+                      }
+                      url={selectedAgent.verification?.id_document_url}
+                    />
+                    <DocumentPreview
+                      title="Surat Keterangan (SK)"
+                      url={selectedAgent.verification?.sk_document_url}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Dokumen Lampiran */}
-              {selectedAgent.verification?.id_document_url && (
+              {false && selectedAgent.verification?.id_document_url && (
               <div>
                 {/* Keterangan Label Dinamis */}
                 <p className="text-xs text-gray-400 font-bold uppercase mb-3">

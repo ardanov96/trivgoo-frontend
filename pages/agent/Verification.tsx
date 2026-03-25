@@ -6,6 +6,7 @@
     LayoutDashboard,
     Upload,
     User,
+    XCircle,
   } from 'lucide-react';
   import React, { useEffect, useRef, useState } from 'react';
   import { useNavigate } from 'react-router-dom';
@@ -34,6 +35,8 @@
 
     const [idDocument, setIdDocument] = useState<File | null>(null);
     const [idDocumentName, setIdDocumentName] = useState<string>('');
+    const [skDocument, setSkDocument] = useState<File | null>(null);
+    const [skDocumentName, setSkDocumentName] = useState<string>('');
 
     const didFetchRef = useRef(false);
 
@@ -53,19 +56,21 @@
       (async () => {
         try {
           const verification = await agentService.getMyVerification();
-
-          const status = verification?.verification_status as VerificationStatus;
+          const status =
+            (verification?.verification_status as VerificationStatus | undefined) ??
+            user?.verification_status ??
+            VerificationStatus.WAITING_DOCUMENT;
 
           if (cancelled) return;
 
-          if (user?.verification_status !== status) {
-            updateUser({ ...user, verification_status: status });
+          if (status && user?.verification_status !== status) {
+            updateUser({ verification_status: status });
           }
         } catch {
           if (cancelled) return;
 
-          if (user?.verification_status !== VerificationStatus.PENDING) {
-            updateUser({ ...user, verification_status: VerificationStatus.PENDING });
+          if (!user?.verification_status) {
+            updateUser({ verification_status: VerificationStatus.WAITING_DOCUMENT });
           }
         }
       })();
@@ -81,7 +86,13 @@
       }
     }, [user?.verification_status, navigate]);
 
-    if (user?.verification_status === VerificationStatus.PENDING) {
+    const isPending = user?.verification_status === VerificationStatus.PENDING;
+    const isRejected = user?.verification_status === VerificationStatus.REJECTED;
+    const isWaitingDocument =
+      !user?.verification_status || user?.verification_status === VerificationStatus.WAITING_DOCUMENT;
+    const isCorporate = formData.type === AgentType.CORPORATE;
+
+    if (isPending) {
       return (
         <div className="max-w-2xl mx-auto py-20 px-4">
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden text-center p-12 animate-in fade-in">
@@ -143,17 +154,44 @@
       setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleAgentTypeChange = (type: AgentType) => {
+      setFormData((prev) => ({
+        ...prev,
+        type,
+        companyName: type === AgentType.CORPORATE ? prev.companyName : '',
+      }));
+
+      setIdDocument(null);
+      setIdDocumentName('');
+
+      if (type === AgentType.INDIVIDUAL) {
+        setSkDocument(null);
+        setSkDocumentName('');
+      }
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0] || null;
       setIdDocument(file);
       setIdDocumentName(file ? file.name : '');
     };
 
+    const handleSkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0] || null;
+      setSkDocument(file);
+      setSkDocumentName(file ? file.name : '');
+    };
+
     const isStep1Valid = () => {
-      const basicFields = formData.idCardNumber && formData.taxId && idDocument;
-      if (formData.type === AgentType.CORPORATE) {
-        return basicFields && formData.companyName;
+      const basicFields =
+        formData.idCardNumber.trim() !== '' &&
+        formData.taxId.trim() !== '' &&
+        Boolean(idDocument);
+
+      if (isCorporate) {
+        return basicFields && formData.companyName.trim() !== '' && Boolean(skDocument);
       }
+
       return basicFields;
     };
 
@@ -179,12 +217,13 @@
           agent_type: formData.type,
           idCardNumber: formData.idCardNumber,
           taxId: formData.taxId,
-          companyName: formData.type === AgentType.CORPORATE ? formData.companyName : null,
+          companyName: isCorporate ? formData.companyName : null,
           bankName: formData.bankName,
           accountNumber: formData.accountNumber,
           accountHolder: formData.accountHolder,
           specialization: specialization,
           idDocument: idDocument,
+          skDocument: isCorporate ? skDocument : null,
         });
 
         let freshUser: any = null;
@@ -194,17 +233,17 @@
 
         const verification = await agentService.getMyVerification();
         const vStatus =
-          (verification?.verification_status as VerificationStatus) ?? VerificationStatus.PENDING;
+          (verification?.verification_status as VerificationStatus | undefined) ??
+          (freshUser?.verification_status as VerificationStatus | undefined) ??
+          VerificationStatus.PENDING;
 
         if (freshUser) {
-          const mergedUser = freshUser.user ? freshUser.user : freshUser;
           updateUser({
-            ...mergedUser,
+            ...freshUser,
             verification_status: vStatus,
           });
         } else {
           updateUser({
-            ...user,
             verification_status: vStatus,
           });
         }
@@ -226,6 +265,29 @@
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Agent Verification</h1>
           <p className="text-gray-500">Complete your profile to start listing services on Trivgoo.</p>
         </div>
+
+        {isWaitingDocument && (
+          <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-6 py-4 text-blue-900">
+            <p className="font-bold">Email Anda sudah diverifikasi.</p>
+            <p className="mt-1 text-sm text-blue-800">
+              Lengkapi dokumen identitas dan rekening agar tim admin dapat meninjau akun agen Anda.
+            </p>
+          </div>
+        )}
+
+        {isRejected && (
+          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-6 py-4 text-red-900">
+            <div className="flex items-start gap-3">
+              <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+              <div>
+                <p className="font-bold">Verifikasi sebelumnya ditolak.</p>
+                <p className="mt-1 text-sm text-red-800">
+                  Periksa kembali data dan dokumen Anda, lalu kirim ulang untuk ditinjau admin.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="bg-primary-600 p-6 text-white flex justify-between items-center">
@@ -262,7 +324,7 @@
                   <label className="block text-sm font-bold text-gray-700 mb-3">Agent Type</label>
                   <div className="grid grid-cols-2 gap-4">
                     <div
-                      onClick={() => setFormData({ ...formData, type: AgentType.INDIVIDUAL })}
+                      onClick={() => handleAgentTypeChange(AgentType.INDIVIDUAL)}
                       className={`p-4 border-2 rounded-xl cursor-pointer flex items-center gap-3 transition-all ${
                         formData.type === AgentType.INDIVIDUAL
                           ? 'border-primary-500 bg-primary-50 text-primary-700'
@@ -273,7 +335,7 @@
                       <span className="font-bold">Individual</span>
                     </div>
                     <div
-                      onClick={() => setFormData({ ...formData, type: AgentType.CORPORATE })}
+                      onClick={() => handleAgentTypeChange(AgentType.CORPORATE)}
                       className={`p-4 border-2 rounded-xl cursor-pointer flex items-center gap-3 transition-all ${
                         formData.type === AgentType.CORPORATE
                           ? 'border-primary-500 bg-primary-50 text-primary-700'
@@ -284,6 +346,11 @@
                       <span className="font-bold">Corporate</span>
                     </div>
                   </div>
+                  <p className="mt-3 text-xs text-gray-500">
+                    {isCorporate
+                      ? 'Corporate agents must upload NIB and Surat Keterangan (SK).'
+                      : 'Individual agents only need an ID or passport document. SK is not required.'}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -363,10 +430,36 @@
                   </label>
                 </div>
 
+                {isCorporate && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Upload Surat Keterangan / SK (Image/PDF)
+                    </label>
+                    <label
+                      htmlFor="skDocument"
+                      className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <Upload className="w-8 h-8 mb-2" />
+                      <span className="text-sm">
+                        {skDocumentName || 'Click to upload SK (Image/PDF)'}
+                      </span>
+                      <input
+                        id="skDocument"
+                        name="skDocument"
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={handleSkFileChange}
+                      />
+                    </label>
+                  </div>
+                )}
 
                   {!isStep1Valid() && (
                     <p className="text-xs text-red-500 mt-2">
-                      Please fill all fields and upload ID document to continue.
+                      {isCorporate
+                        ? 'Please fill all fields and upload both NIB and SK documents to continue.'
+                        : 'Please fill all fields and upload your ID document to continue.'}
                     </p>
                   )}
                 <div className="flex justify-end">
@@ -466,7 +559,7 @@
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
                   >
-                    {submitting ? 'Submitting...' : 'Submit Verification'}
+                    {submitting ? 'Submitting...' : isRejected ? 'Resubmit Verification' : 'Submit Verification'}
                   </button>
                 </div>
               </div>

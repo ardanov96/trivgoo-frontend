@@ -196,6 +196,13 @@ const Register: React.FC = () => {
           <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account? <Link to="/login" className="font-bold text-primary-600 hover:text-primary-500">Sign in</Link>
           </p>
+
+          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-500 mb-2">Tertarik menjadi Mitra/Agen Trivgoo?</p>
+            <Link to="/register/agent" className="inline-flex items-center justify-center px-4 py-2 border border-primary-200 text-sm font-medium rounded-lg text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors">
+              Daftar sebagai Agen
+            </Link>
+          </div>
         </div>
       </div>
     </div>
