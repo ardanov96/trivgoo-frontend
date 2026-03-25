@@ -46,25 +46,25 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, su
 
 interface DashboardStats {
   // Stat cards utama
-  total_commission:    number;  // net earnings agent setelah fee
+  total_commission: number;  // net earnings agent setelah fee
   bookings_this_month: number;
-  active_customers:    number;
-  total_products:      number;
+  active_customers: number;
+  total_products: number;
 
   // Detail breakdown
-  gross_revenue:       number;
-  total_platform_fee:  number;
+  gross_revenue: number;
+  total_platform_fee: number;
   earnings_this_month: number;
-  total_bookings:      number;
-  pending_bookings:    number;
-  confirmed_bookings:  number;
-  cancelled_bookings:  number;
-  commission_rate:     number;  // fee % yang dipotong platform
+  total_bookings: number;
+  pending_bookings: number;
+  confirmed_bookings: number;
+  cancelled_bookings: number;
+  commission_rate: number;  // fee % yang dipotong platform
 }
 
 interface WeeklySales {
-  name:         string;
-  sales:        number;
+  name: string;
+  sales: number;
   total_orders?: number;
 }
 
@@ -73,9 +73,9 @@ const AgentDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [stats, setStats]           = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [weeklySales, setWeeklySales] = useState<WeeklySales[]>([]);
-  const [isLoading, setIsLoading]   = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const lastFetchedLocationKeyRef = useRef<string | null>(null);
 
@@ -90,12 +90,12 @@ const AgentDashboard: React.FC = () => {
         const me = await authService.me();
         if (cancelled) return;
         updateUser({
-          id:                  me.id,
-          name:                me.name,
-          email:               me.email,
-          role:                me.role,
-          avatar:              me.avatar,
-          specialization:      me.specialization ?? null,
+          id: me.id,
+          name: me.name,
+          email: me.email,
+          role: me.role,
+          avatar: me.avatar,
+          specialization: me.specialization ?? null,
           verification_status: me.verification_status,
         });
       } catch (err: any) {
@@ -142,48 +142,37 @@ const AgentDashboard: React.FC = () => {
 
   const formatIDR = (amount: number) =>
     new Intl.NumberFormat('id-ID', {
-      style:                 'currency',
-      currency:              'IDR',
+      style: 'currency',
+      currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(amount);
 
   const isVerified = user?.verification_status === VerificationStatus.VERIFIED;
   const isPending = user?.verification_status === VerificationStatus.PENDING;
   const isWaitingDoc = user?.verification_status === VerificationStatus.WAITING_DOCUMENT;
-  
-  const isPending  = user?.verification_status === VerificationStatus.PENDING;
 
   const steps = [
     {
-      title:       'Create Account',
+      title: 'Create Account',
       description: 'Sign up as an agent',
-      status:      'completed' as const,
-      icon:        CheckCircle,
+      status: 'completed' as const,
+      icon: CheckCircle,
     },
     {
       title: 'Verify Business',
       description: isWaitingDoc ? 'Submit ID & Bank details' : 'Documents under review',
       status: isWaitingDoc ? 'current' : (isPending ? 'pending' : (isVerified ? 'completed' : 'locked')),
-
-      title:       'Verify Business',
-      description: 'Submit ID & Bank details',
-      status:      '',
-
       actionLabel: isPending ? 'Under Review' : 'Verify Now',
-      actionLink:  '/agent/verification',
-      icon:        (isVerified ? CheckCircle : isPending ? Clock : Circle) as React.ElementType,
+      actionLink: '/agent/verification',
+      icon: (isVerified ? CheckCircle : isPending ? Clock : Circle) as React.ElementType,
     },
     {
-      title:       'Add First Product',
+      title: 'Add First Product',
       description: 'List your first service',
-      
-      status: isVerified ? '' : 'locked',
-
-      status:      '',
-
+      status: isVerified ? 'current' : 'locked',
       actionLabel: 'Add Product',
-      actionLink:  '/agent/products/new',
-      icon:        (isVerified ? Circle : Lock) as React.ElementType,
+      actionLink: '/agent/products/new',
+      icon: (isVerified ? Circle : Lock) as React.ElementType,
     },
   ];
 
