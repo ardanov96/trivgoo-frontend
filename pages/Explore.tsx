@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
 import { Product } from '../types';
@@ -30,6 +31,7 @@ import { SkeletonCard, SkeletonCarCard } from './explore/components/SharedUI';
 
 const Explore: React.FC = () => {
   const navigate = useNavigate();
+  const { langNavigate } = useLangNavigate();
 
   // ── Data ──────────────────────────────────────────────────────────────────
   const [products,  setProducts]  = useState<Product[]>([]);

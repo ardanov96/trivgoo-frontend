@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, MapPin, ShieldCheck, Star, Tag, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import { useTranslation } from 'react-i18next';
 import { CarDetails } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
@@ -16,7 +17,9 @@ interface Props {
   onClose: () => void;
 }
 
-export const AgentPickerModal = ({ group, onClose }: Props) => (
+export const AgentPickerModal = ({ group, onClose }: Props) => {
+  const { langPath } = useLangNavigate();
+  return (
   <motion.div
     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
     className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -125,7 +128,7 @@ export const AgentPickerModal = ({ group, onClose }: Props) => (
                         <p className="text-base font-extrabold text-primary-600 leading-tight">{formatRp(baseTotal)}<span className="text-[10px] font-bold text-primary-500 ml-0.5">est.</span></p>
                       )}
                     </div>
-                    <Link to={`/product/${encodeId(agent.id)}/${generateSlug(agent.name)}`} onClick={onClose} className="inline-flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-primary-600/25 transition-all active:scale-95 whitespace-nowrap">
+                    <Link to={langPath(`/product/${encodeId(agent.id)}/${generateSlug(agent.name)}`)} onClick={onClose} className="inline-flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-primary-600/25 transition-all active:scale-95 whitespace-nowrap">
                       Choose <ArrowRight className="w-3.5 h-3.5 group-hover/item:translate-x-0.5 transition-transform" />
                     </Link>
                   </div>
@@ -141,4 +144,5 @@ export const AgentPickerModal = ({ group, onClose }: Props) => (
       </div>
     </motion.div>
   </motion.div>
-);
+  );
+};

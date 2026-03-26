@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import SEO from '../components/SEO';
@@ -450,6 +451,7 @@ const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { langNavigate, langPath } = useLangNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);

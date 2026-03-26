@@ -1,5 +1,6 @@
 import { Heart, MapPin, ShoppingCart, Star, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import { useTranslation } from 'react-i18next';
 import { Product } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
@@ -20,9 +21,10 @@ interface Props {
 export const RegularCard = ({ product, isLoggedIn, isSaved, isInCart, onWishlist, onAddToCart }: Props) => {
   const activeVouchers = getActiveVouchers(product);
   const bestDiscount   = calcBestDiscount(activeVouchers, Number(product.price));
+  const { langPath } = useLangNavigate();
 
   return (
-    <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative">
+    <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative">
       <div className="aspect-[4/3] relative overflow-hidden">
         <img src={getImageUrl(product.image_url || product.image)} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
 
@@ -68,7 +70,7 @@ export const RegularCard = ({ product, isLoggedIn, isSaved, isInCart, onWishlist
           <VoucherPillList vouchers={activeVouchers} max={2} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-            <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} onClick={(e) => e.stopPropagation()} className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center">
+            <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} onClick={(e) => e.stopPropagation()} className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center">
               See Details
             </Link>
             <button onClick={onAddToCart} disabled={isInCart} className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98] ${isInCart ? 'border-green-500 text-green-600 bg-green-50 cursor-default' : 'border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md'}`}>

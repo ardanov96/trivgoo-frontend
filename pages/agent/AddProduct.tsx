@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useLangNavigate } from "../../src/hooks/useLangNavigate";
 import Swal from 'sweetalert2';
 
 import { useAuth } from "../../AuthContext";
@@ -412,6 +413,7 @@ const AgentAddProduct: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { langNavigate } = useLangNavigate();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);

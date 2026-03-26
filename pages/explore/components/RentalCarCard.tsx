@@ -1,5 +1,6 @@
 import { Award, Briefcase, Car, Droplet, Gauge, Heart, MapPin, ShoppingCart, Sparkles, Star, Users, UserCog } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import { useTranslation } from 'react-i18next';
 import { Product } from '../../../types';
 import { CarDetails } from '../../../types';
@@ -27,6 +28,7 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
   const baseTotal      = Number(product.price) * PREVIEW_DAYS;
   const bestDiscount   = calcBestDiscount(activeVouchers, baseTotal);
   const finalTotal     = baseTotal - bestDiscount;
+  const { langPath } = useLangNavigate();
 
   return (
     <div className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col md:flex-row relative w-full">
@@ -131,7 +133,7 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
               <Users className="w-4 h-4" />Pilih Agent ({agentCount})
             </button>
           ) : (
-            <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} onClick={(e) => e.stopPropagation()} className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center">
+            <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} onClick={(e) => e.stopPropagation()} className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center">
               See Details
             </Link>
           )}

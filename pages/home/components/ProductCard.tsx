@@ -3,6 +3,7 @@
 import { Heart, MapPin, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 // ✅ useTranslation dihapus karena belum dipakai
 import { Product } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
@@ -21,9 +22,11 @@ interface Props {
   onAddToCart:  (e: React.MouseEvent) => void;
 }
 
-export const ProductCard = ({ product, index, priceUnit, isLoggedIn, isSaved, isInCart, onWishlist, onAddToCart }: Props) => (
+export const ProductCard = ({ product, index, priceUnit, isLoggedIn, isSaved, isInCart, onWishlist, onAddToCart }: Props) => {
+  const { langPath } = useLangNavigate();
+  return (
   <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: index * 0.1 }}>
-    <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full">
+    <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full">
       <div className="aspect-[4/3] relative overflow-hidden">
         <img src={getImageUrl(product.image_url || product.image)} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
         {isLoggedIn && (
@@ -51,7 +54,7 @@ export const ProductCard = ({ product, index, priceUnit, isLoggedIn, isSaved, is
             <span className="text-sm font-medium text-gray-500"> {priceUnit}</span>
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-            <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} onClick={(e) => e.stopPropagation()} className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center">
+            <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} onClick={(e) => e.stopPropagation()} className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center">
               See Details
             </Link>
             <button onClick={onAddToCart} disabled={isInCart} className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98] ${isInCart ? 'border-green-500 text-green-600 bg-green-50 cursor-default' : 'border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md'}`}>
@@ -63,7 +66,8 @@ export const ProductCard = ({ product, index, priceUnit, isLoggedIn, isSaved, is
       </div>
     </Link>
   </motion.div>
-);
+  );
+};
 
 export const SkeletonCard = () => (
   <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col animate-pulse">
