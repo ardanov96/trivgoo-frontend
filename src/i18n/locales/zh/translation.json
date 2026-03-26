@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "home": "首页",
+    "explore": "探索",
+    "wishlist": "收藏",
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出",
+    "my_bookings": "我的预订",
+    "my_account": "我的账户"
+  },
+  "home": {
+    "hero_title": "发现您的冒险",
+    "hero_subtitle": "最佳目的地、租车和精彩酒店",
+    "search_placeholder": "搜索旅游目的地...",
+    "book_now": "立即预订",
+    "flash_sale": "限时特卖",
+    "view_all": "查看全部",
+    "why_choose_us": "为什么选择我们"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "出现错误",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "search": "搜索",
+    "back": "返回"
+  },
+  "footer": {
+    "about": "关于我们",
+    "contact": "联系我们",
+    "privacy": "隐私政策",
+    "terms": "条款与条件"
+  }
+}

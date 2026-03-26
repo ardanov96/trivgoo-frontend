@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "home": "Beranda",
+    "explore": "Jelajahi",
+    "wishlist": "Wishlist",
+    "login": "Masuk",
+    "register": "Daftar",
+    "logout": "Keluar",
+    "my_bookings": "Booking Saya",
+    "my_account": "Akun Saya"
+  },
+  "home": {
+    "hero_title": "Temukan Petualanganmu",
+    "hero_subtitle": "Destinasi terbaik, rental mobil, dan hotel menakjubkan",
+    "search_placeholder": "Cari destinasi wisata...",
+    "book_now": "Pesan Sekarang",
+    "flash_sale": "Flash Sale",
+    "view_all": "Lihat Semua",
+    "why_choose_us": "Mengapa Pilih Kami"
+  },
+  "common": {
+    "loading": "Memuat...",
+    "error": "Terjadi kesalahan",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "confirm": "Konfirmasi",
+    "search": "Cari",
+    "back": "Kembali"
+  },
+  "footer": {
+    "about": "Tentang Kami",
+    "contact": "Hubungi Kami",
+    "privacy": "Kebijakan Privasi",
+    "terms": "Syarat & Ketentuan"
+  }
+}

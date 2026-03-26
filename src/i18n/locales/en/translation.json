@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "home": "Home",
+    "explore": "Explore",
+    "wishlist": "Wishlist",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "my_bookings": "My Bookings",
+    "my_account": "My Account"
+  },
+  "home": {
+    "hero_title": "Find Your Adventure",
+    "hero_subtitle": "Best destinations, car rentals, and amazing hotels",
+    "search_placeholder": "Search travel destinations...",
+    "book_now": "Book Now",
+    "flash_sale": "Flash Sale",
+    "view_all": "View All",
+    "why_choose_us": "Why Choose Us"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "search": "Search",
+    "back": "Back"
+  },
+  "footer": {
+    "about": "About Us",
+    "contact": "Contact Us",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions"
+  }
+}
