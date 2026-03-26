@@ -74,7 +74,7 @@ const RegisterAgent: React.FC = () => {
           </p>
           <div className="mt-6">
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => langNavigate('/login')}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
             >
               Lanjut ke Halaman Login
@@ -119,7 +119,7 @@ const RegisterAgent: React.FC = () => {
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="mb-10">
-            <Link to="/login" className="text-gray-400 hover:text-gray-600 flex items-center mb-6 transition-colors">
+            <Link to={langPath('/login')} className="text-gray-400 hover:text-gray-600 flex items-center mb-6 transition-colors">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
             </Link>
             <h2 className="text-3xl font-serif font-bold text-gray-900">Become an Agent</h2>
@@ -218,7 +218,7 @@ const RegisterAgent: React.FC = () => {
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            Already have a partner account? <Link to="/login" className="font-bold text-primary-600 hover:text-primary-500">Sign in</Link>
+            Already have a partner account? <Link to={langPath('/login')} className="font-bold text-primary-600 hover:text-primary-500">Sign in</Link>
           </p>
         </div>
       </div>

@@ -189,7 +189,7 @@ const PromoCampaignPage: React.FC = () => {
     setBannerLoaded(false);
     getCampaignById(Number(id))
       .then((c) => setCampaign(c))
-      .catch(() => navigate('/explore', { replace: true }))
+      .catch(() => langNavigate('/explore', { replace: true }))
       .finally(() => setIsLoadingCampaign(false));
   }, [id, navigate]);
 

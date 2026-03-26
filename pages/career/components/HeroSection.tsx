@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   EASE, HERO_STYLES, CODE_SNIPPETS, FLOATING_ORBS,
   CIRCUIT_H_LINES, CIRCUIT_V_LINES, CIRCUIT_DOTS,

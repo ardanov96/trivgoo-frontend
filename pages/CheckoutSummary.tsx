@@ -1,11 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 import { useAuth }    from '../AuthContext';
 import { useCart }    from '../components/CartContext';
 import http           from '../services/http';
+import { useLangNavigate } from '../src/hooks/useLangNavigate'; // ✅ fix missing import
 
 import { ADMIN_FEE }          from './checkout/constants';
 import { useContactForm }     from './checkout/hooks/useContactForm';
@@ -17,11 +19,11 @@ import { VoucherPicker }      from './checkout/components/VoucherPicker';
 import { PriceSummary }       from './checkout/components/PriceSummary';
 import { PayButton, RentalInfoBanner } from './checkout/components/PayButton';
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 const CheckoutSummary: React.FC = () => {
   const navigate           = useNavigate();
   const location           = useLocation();
+  const { t }              = useTranslation();
+  const { langNavigate }   = useLangNavigate(); // ✅ fix
   const { user }           = useAuth();
   const { removeFromCart } = useCart();
   const [loading, setLoading] = useState(false);
@@ -31,22 +33,21 @@ const CheckoutSummary: React.FC = () => {
 
   // ── Guard 1: missing booking data ────────────────────────────────────────
   React.useEffect(() => {
-    if (!bookingData || !bookingData.productName) navigate('/explore', { replace: true });
-  }, [bookingData, navigate]);
+    if (!bookingData || !bookingData.productName) langNavigate('/explore', { replace: true }); // ✅
+  }, [bookingData]);
 
   // ── Guard 2: must be logged in ───────────────────────────────────────────
   React.useEffect(() => {
     if (!user) {
-      navigate('/login', {
+      langNavigate('/login', { // ✅
         replace: true,
         state: { from: location.pathname + location.search },
       });
     }
-  }, [user, navigate, location]);
+  }, [user, location]);
 
   if (!bookingData || !bookingData.productName || !user) return null;
 
-  // ── Destructure booking data ──────────────────────────────────────────────
   const {
     productId,
     productName           = 'Trivgoo Booking',
@@ -59,8 +60,8 @@ const CheckoutSummary: React.FC = () => {
     image                 = '',
     duration              = 1,
     guestCount,
-    unitLabel             = 'Tiket',
-    priceUnitLabel        = 'orang',
+    unitLabel             = t('checkout.ticket', 'Ticket'),
+    priceUnitLabel        = t('common.person', 'person'),
     vehicleType,
     transmission,
     seats,
@@ -78,23 +79,24 @@ const CheckoutSummary: React.FC = () => {
 
   const isCarBooking = vehicleType === 'car';
 
-  // ── Sub-hooks ─────────────────────────────────────────────────────────────
   const contact = useContactForm(user.email || '');
   const voucher = useVoucher();
 
-  // ── Price calculation ─────────────────────────────────────────────────────
   const baseTotal  = Number(totalPrice);
   const finalTotal = Math.max(0, baseTotal - voucher.appliedDiscount) + ADMIN_FEE;
 
-  // ── Handle payment ────────────────────────────────────────────────────────
   const handlePayment = async () => {
     if (!user) {
-      navigate('/login', { state: { from: location.pathname + location.search } });
+      langNavigate('/login', { state: { from: location.pathname + location.search } }); // ✅
       return;
     }
     if (isSubmitting.current) return;
     if (!contact.validate()) {
-      Swal.fire('Mohon Lengkapi Data', 'Pastikan semua data pemesan sudah diisi dengan benar.', 'warning');
+      Swal.fire(
+        t('checkout.incomplete_title', 'Please Complete Your Data'),
+        t('checkout.incomplete_desc', 'Make sure all contact details are filled in correctly.'),
+        'warning'
+      );
       return;
     }
 
@@ -129,9 +131,8 @@ const CheckoutSummary: React.FC = () => {
       });
 
       const { payment_url } = res.data?.data || {};
-      if (!payment_url) throw new Error('Payment URL tidak terdeteksi.');
+      if (!payment_url) throw new Error(t('checkout.no_payment_url', 'Payment URL not detected.'));
 
-      // Clear cart
       if (productId) {
         removeFromCart(productId);
         try {
@@ -148,22 +149,21 @@ const CheckoutSummary: React.FC = () => {
       setLoading(false);
       isSubmitting.current = false;
 
-      const msg             = error.response?.data?.message || error.message || 'Gagal memproses pembayaran';
+      const msg             = error.response?.data?.message || error.message || t('checkout.payment_failed', 'Failed to process payment');
       const isCapacityError = msg.includes('Kapasitas Penuh');
 
       Swal.fire({
-        title:              isCapacityError ? 'Sudah Penuh!' : 'Error',
+        title:              isCapacityError ? t('checkout.full_title', 'Fully Booked!') : t('common.error', 'Error'),
         text:               isCapacityError
-          ? 'Maaf, stok unit/tiket untuk tanggal ini baru saja habis. Silakan pilih tanggal lain.'
+          ? t('checkout.full_desc', 'Sorry, tickets/units for this date just ran out. Please choose another date.')
           : msg,
         icon:               isCapacityError ? 'warning' : 'error',
-        confirmButtonText:  'Mengerti',
+        confirmButtonText:  t('common.ok', 'OK'),
         confirmButtonColor: isCapacityError ? '#f97316' : '#ef4444',
       });
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
 
@@ -173,13 +173,14 @@ const CheckoutSummary: React.FC = () => {
           <button onClick={() => navigate(-1)} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6 text-gray-600" />
           </button>
-          <h1 className="text-lg font-bold text-gray-800">Review Pesanan</h1>
+          <h1 className="text-lg font-bold text-gray-800">
+            {t('checkout.title', 'Order Review')}
+          </h1>
           <div className="w-10" />
         </div>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 mt-6 space-y-4">
-
         <ProductCard
           productName={productName}
           productLocation={productLocation}
@@ -238,7 +239,6 @@ const CheckoutSummary: React.FC = () => {
           appliedDiscount={voucher.appliedDiscount}
           onClick={handlePayment}
         />
-
       </div>
     </div>
   );

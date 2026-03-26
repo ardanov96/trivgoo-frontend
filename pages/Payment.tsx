@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useToast } from '../components/ToastContext';
@@ -34,6 +35,7 @@ interface LocationState {
 const Payment: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { showToast } = useToast();
 
@@ -74,7 +76,7 @@ const Payment: React.FC = () => {
       }, 1000);
       return () => clearInterval(timer);
     } else if (isPaid && redirectSeconds === 0) {
-      navigate('/my-bookings');
+      langNavigate('/my-bookings');
     }
   }, [isPaid, redirectSeconds, navigate]);
 
@@ -127,7 +129,7 @@ const Payment: React.FC = () => {
   // Jika user mengakses secara langsung tanpa state, redirect ke home.
   useEffect(() => {
     if (!state) {
-      navigate('/', { replace: true });
+      langNavigate('/', { replace: true });
     }
   }, [state, navigate]);
 
@@ -158,7 +160,7 @@ const Payment: React.FC = () => {
             <div className="bg-green-500 h-full rounded-full animate-[progress_2s_ease-in-out_infinite] w-full origin-left"></div>
           </div>
           <button
-            onClick={() => navigate('/my-bookings')}
+            onClick={() => langNavigate('/my-bookings')}
             className="text-primary-600 font-bold hover:underline text-sm"
           >
             Go to Bookings Now

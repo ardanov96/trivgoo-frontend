@@ -1,5 +1,6 @@
 import { Award, Briefcase, Car, Droplet, Gauge, Heart, MapPin, ShoppingCart, Sparkles, Star, Users, UserCog } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Product } from '../../../types';
 import { CarDetails } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';

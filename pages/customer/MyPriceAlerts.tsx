@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 import {
   ChevronRight, Bell, BellOff, Plane, TrendingDown, TrendingUp,
   Minus, Plus, X, ArrowRight, Sparkles, Target,
@@ -32,6 +34,7 @@ const MOCK_ALERTS: PriceAlert[] = [
 const fmt = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
 const TrendBadge: React.FC<{ trend: PriceTrend; pct: number }> = ({ trend, pct }) => {
+  const { langPath } = useLangNavigate();
   if (trend === 'down') return (
     <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
       <TrendingDown className="w-3 h-3" /> Turun {pct}%
@@ -70,7 +73,7 @@ const MyPriceAlerts: React.FC = () => {
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-gray-400 mb-6">
-          <Link to="/my-account" className="hover:text-primary-600 transition-colors">Akun Saya</Link>
+          <Link to={langPath('/my-account')} className="hover:text-primary-600 transition-colors">Akun Saya</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-gray-600 font-medium">Notifikasi Harga Penerbangan</span>
         </div>

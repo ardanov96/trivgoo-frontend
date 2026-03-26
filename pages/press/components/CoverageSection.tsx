@@ -1,6 +1,7 @@
 import { ExternalLink, Quote } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { fadeUp, stagger, PRESS_COVERAGE } from '../constants';
 
 interface Props { inView: boolean; }

@@ -1,5 +1,6 @@
 import { ArrowLeft, ChevronRight, Shield } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 // ── Section data ──────────────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ const NavItem: React.FC<{ section: typeof SECTIONS[0]; active: boolean; onClick:
 );
 
 const PrivacyPolicy: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const [activeSection, setActiveSection] = useState('tentang');
 
   useEffect(() => {
@@ -114,7 +116,7 @@ const PrivacyPolicy: React.FC = () => {
 
         {/* Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="hero-back inline-flex items-center text-red-200 hover:text-white text-sm mb-8 group transition-colors">
+          <Link to={langPath('/')} className="hero-back inline-flex items-center text-red-200 hover:text-white text-sm mb-8 group transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             Kembali ke Beranda
           </Link>
@@ -305,8 +307,8 @@ const PrivacyPolicy: React.FC = () => {
             <div className="border-t border-gray-200 pt-10 mt-10">
               <p className="text-sm text-gray-500 mb-6">Jika Anda memiliki pertanyaan lebih lanjut tentang kebijakan privasi kami, silakan hubungi kami.</p>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link to="/contact-us" className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-colors">Hubungi Customer Support</Link>
-                <Link to="/terms-and-service" className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Lihat Terms of Service</Link>
+                <Link to={langPath('/contact-us')} className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-colors">Hubungi Customer Support</Link>
+                <Link to={langPath('/terms-and-service')} className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Lihat Terms of Service</Link>
               </div>
             </div>
 

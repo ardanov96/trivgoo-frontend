@@ -1,6 +1,7 @@
 import { ArrowRight, Download, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { fadeUp, fadeLeft, fadeRight, stagger, PRESS_RELEASES, getCategoryColor } from '../constants';
 
 interface Props { inView: boolean; }

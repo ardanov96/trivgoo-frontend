@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, XCircle, Clock, ArrowRight, Home, BookCheckIcon } from 'lucide-react';
 import http from '../services/http';
@@ -8,6 +9,7 @@ type PaymentStatus = 'SUCCESS' | 'FAILED' | 'PENDING' | 'EXPIRED' | 'loading';
 const PaymentResult: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [status, setStatus] = useState<PaymentStatus>('loading');
   const [invoice, setInvoice] = useState('');
@@ -131,7 +133,7 @@ const PaymentResult: React.FC = () => {
           <div className="px-6 pb-6 space-y-3">
             {status === 'SUCCESS' && (
               <button
-                onClick={() => navigate('/my-bookings')}
+                onClick={() => langNavigate('/my-bookings')}
                 className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary-700 transition-colors"
               >
                 Lihat Pesanan Saya <ArrowRight className="w-4 h-4" />
@@ -148,14 +150,14 @@ const PaymentResult: React.FC = () => {
             )}
             
             <button
-              onClick={() => navigate('/my-bookings')}
+              onClick={() => langNavigate('/my-bookings')}
               className="w-full py-3 border border-gray-200 text-gray-600 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
             >
               <BookCheckIcon className="w-4 h-4" /> Lihat Daftar Booking
             </button>
 
             <button
-              onClick={() => navigate('/')}
+              onClick={() => langNavigate('/')}
               className="w-full py-3 border border-gray-200 text-gray-600 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
             >
               <Home className="w-4 h-4" /> Kembali ke Beranda

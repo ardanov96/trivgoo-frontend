@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useReveal, useApplicationForm } from './career/hooks';
 import type { JobPosition } from './career/constants';
 

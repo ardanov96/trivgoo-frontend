@@ -3,6 +3,7 @@ import {
   Facebook, Instagram, Twitter, Linkedin, CheckCircle, User, Building2, Headphones, Zap,
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 interface FormData { name: string; email: string; phone: string; subject: string; message: string; }
@@ -26,6 +27,7 @@ const SOCIAL_MEDIA = [
 ];
 
 const ContactUs: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const [formData, setFormData] = useState<FormData>({ name: '', email: '', phone: '', subject: '', message: '' });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,7 +107,7 @@ const ContactUs: React.FC = () => {
         <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{ background:'linear-gradient(to bottom,transparent,rgba(80,15,5,0.3))' }} />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <Link to="/" className="cu-back inline-flex items-center text-red-200 hover:text-white transition-colors mb-8 group">
+          <Link to={langPath('/')} className="cu-back inline-flex items-center text-red-200 hover:text-white transition-colors mb-8 group">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             <span className="font-semibold">Kembali ke Beranda</span>
           </Link>
@@ -268,7 +270,7 @@ const ContactUs: React.FC = () => {
             <div className="rounded-3xl p-8 text-white" style={{ background:'linear-gradient(135deg,#6b1a12 0%,#c34134 100%)' }}>
               <h3 className="text-xl font-bold mb-4">Butuh Bantuan Cepat?</h3>
               <p className="text-red-100 mb-6">Kunjungi pusat bantuan kami untuk jawaban instan</p>
-              <Link to="/help-center" className="block w-full px-6 py-3 bg-white text-primary-700 rounded-xl font-bold text-center hover:bg-gray-50 transition-all">
+              <Link to={langPath('/help-center')} className="block w-full px-6 py-3 bg-white text-primary-700 rounded-xl font-bold text-center hover:bg-gray-50 transition-all">
                 Kunjungi Pusat Bantuan
               </Link>
             </div>

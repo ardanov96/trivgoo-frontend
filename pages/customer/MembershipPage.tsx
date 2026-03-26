@@ -24,6 +24,7 @@ function formatRp(n: number) {
 }
 
 const MembershipPage: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const { user } = useAuth();
   const [membership, setMembership] = useState<UserMembership | null>(null);
   const [allTiers, setAllTiers] = useState<MembershipTier[]>([]);
@@ -60,7 +61,7 @@ const MembershipPage: React.FC = () => {
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
-          <Link to="/loyalty" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm mb-5 transition-colors">
+          <Link to={langPath('/loyalty')} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm mb-5 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Kembali ke Loyalty
           </Link>
           <h1 className="text-3xl font-serif font-bold text-gray-900">Membership Tier</h1>

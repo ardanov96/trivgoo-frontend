@@ -1,6 +1,7 @@
 import { Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { fadeUp, scaleIn, stagger, CONTACT_INFO } from '../constants';
 
 interface Props { inView: boolean; }

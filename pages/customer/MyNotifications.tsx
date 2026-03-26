@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 import {
   ChevronRight, Bell, BellOff, Mail, MessageSquare,
   Smartphone, Tag, ShoppingBag, Star, Megaphone,
@@ -24,6 +26,7 @@ interface NotifCategory {
 }
 
 const MyNotifications: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const [masterEnabled, setMasterEnabled] = useState(true);
   const [quietHours, setQuietHours] = useState(false);
   const [quietStart, setQuietStart] = useState('22:00');
@@ -114,7 +117,7 @@ const MyNotifications: React.FC = () => {
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-gray-400 mb-6">
-          <Link to="/my-account" className="hover:text-primary-600 transition-colors">Akun Saya</Link>
+          <Link to={langPath('/my-account')} className="hover:text-primary-600 transition-colors">Akun Saya</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-gray-600 font-medium">Pengaturan Notifikasi</span>
         </div>

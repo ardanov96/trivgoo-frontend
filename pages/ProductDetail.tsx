@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import DatePicker from 'react-datepicker';
@@ -338,6 +339,7 @@ const AvailabilityCalendar: React.FC<{ blockedDates: string[] }> = ({ blockedDat
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -598,7 +600,7 @@ const ProductDetail: React.FC = () => {
   const handleReserveNow = (type: 'tour_stay' | 'car') => {
     const payload = generateCheckoutPayload(type);
     if (!payload) return;
-    navigate('/checkout-summary', { state: payload });
+    langNavigate('/checkout-summary', { state: payload });
   };
 
   const FieldError = ({ name }: { name: string }) =>
@@ -637,7 +639,7 @@ const ProductDetail: React.FC = () => {
           >
             Coba Lagi
           </button>
-          <Link to="/explore" className="text-primary-600 font-semibold hover:underline">
+          <Link to={langPath('/explore')} className="text-primary-600 font-semibold hover:underline">
             Kembali ke Explore
           </Link>
         </div>
@@ -649,7 +651,7 @@ const ProductDetail: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Produk tidak ditemukan</h2>
-        <Link to="/explore" className="text-primary-600 font-semibold hover:underline">← Kembali ke Explore</Link>
+        <Link to={langPath('/explore')} className="text-primary-600 font-semibold hover:underline">← Kembali ke Explore</Link>
       </div>
     </div>
   );
@@ -734,7 +736,7 @@ const ProductDetail: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
             <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
               <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 font-medium text-gray-500"><ChevronLeft className="w-3.5 h-3.5" /> Kembali</button>
-              <span>/</span><Link to="/" className="hover:text-primary-600">Beranda</Link>
+              <span>/</span><Link to={langPath('/')} className="hover:text-primary-600">Beranda</Link>
               <span>/</span><Link to={categoryLink} className="hover:text-primary-600">{categoryLabel}</Link>
               <span>/</span><span className="text-gray-600 truncate max-w-[200px]">{product.name}</span>
             </div>
@@ -875,7 +877,7 @@ const ProductDetail: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-6 pt-4">
           <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 transition-colors font-medium"><ChevronLeft className="w-4 h-4" /> Kembali</button>
-          <span>/</span><Link to="/explore?category_id=3" className="hover:text-primary-600 transition-colors">Car Rental</Link>
+          <span>/</span><Link to={langPath('/explore?category_id=3')} className="hover:text-primary-600 transition-colors">Car Rental</Link>
           <span>/</span><span className="text-gray-900 font-semibold truncate max-w-[200px]">{product.name}</span>
         </div>
         <div className="flex items-start justify-between mb-6 gap-4">

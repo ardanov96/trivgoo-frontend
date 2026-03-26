@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useReveal }             from './press/hooks/useReveal';
 import type { MediaAsset }       from './press/constants';
 

@@ -56,6 +56,7 @@ interface BannerUploaderProps {
 }
 
 const BannerUploader: React.FC<BannerUploaderProps> = ({ value, onChange }) => {
+  const { langPath } = useLangNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -337,7 +338,7 @@ const AdminPromoCampaigns: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <Link
-              to="/admin/promo/analytics"
+              to={langPath('/admin/promo/analytics')}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-all"
             >
               Analytics <ChevronRight className="w-4 h-4" />

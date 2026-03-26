@@ -1,5 +1,6 @@
 import { ArrowLeft, ChevronRight, FileText } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 const SECTIONS = [
@@ -30,6 +31,7 @@ const NavItem: React.FC<{ section: typeof SECTIONS[0]; active: boolean; onClick:
 );
 
 const TermAndService: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const [activeSection, setActiveSection] = useState('tentang');
 
   useEffect(() => {
@@ -115,7 +117,7 @@ const TermAndService: React.FC = () => {
 
         {/* Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="ts-back inline-flex items-center text-red-200 hover:text-white text-sm mb-8 group transition-colors">
+          <Link to={langPath('/')} className="ts-back inline-flex items-center text-red-200 hover:text-white text-sm mb-8 group transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             Kembali ke Beranda
           </Link>
@@ -270,7 +272,7 @@ const TermAndService: React.FC = () => {
                 <li>Kami tidak menjual data pribadi Anda kepada pihak ketiga untuk tujuan pemasaran</li>
               </ul>
               <p className="text-gray-700 leading-relaxed">Untuk informasi lebih lengkap, silakan baca{' '}
-                <Link to="/privacy-policy" className="text-primary-600 hover:underline font-medium">Kebijakan Privasi</Link>{' '}kami secara penuh.</p>
+                <Link to={langPath('/privacy-policy')} className="text-primary-600 hover:underline font-medium">Kebijakan Privasi</Link>{' '}kami secara penuh.</p>
             </section>
 
             <section id="changes" className="mb-12 scroll-mt-6">
@@ -293,8 +295,8 @@ const TermAndService: React.FC = () => {
             <div className="border-t border-gray-200 pt-10 mt-10">
               <p className="text-sm text-gray-500 mb-6">Dengan menggunakan layanan Trivgoo, Anda menyatakan telah membaca dan menyetujui Ketentuan Layanan ini.</p>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Link to="/contact-us" className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-colors">Hubungi Customer Support</Link>
-                <Link to="/privacy-policy" className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Lihat Privacy Policy</Link>
+                <Link to={langPath('/contact-us')} className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-colors">Hubungi Customer Support</Link>
+                <Link to={langPath('/privacy-policy')} className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Lihat Privacy Policy</Link>
               </div>
             </div>
 

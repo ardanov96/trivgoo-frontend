@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { fadeUp, scaleIn, stagger, JOB_FILTERS, JOB_POSITIONS } from '../constants';
 import type { JobPosition } from '../constants';
 import { JobCard } from './JobCard';

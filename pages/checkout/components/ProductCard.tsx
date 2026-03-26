@@ -1,5 +1,6 @@
 import { Award, Briefcase, Calendar, Clock, Fuel, MapPin, Users, UserCog } from 'lucide-react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '../../../utils/imageUtils';
 import { formatDateDisplay, formatDateString, getTransmissionLabel } from '../constants';
 
@@ -29,6 +30,8 @@ export const ProductCard: React.FC<Props> = ({
   isCarBooking, date, duration, pax, guestCount, priceUnitLabel,
   seats, luggage, year, fuelPolicy, withDriver, pickupTime, returnTime,
 }) => {
+  const { t } = useTranslation(); // ✅ dipindah ke sini
+
   const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/$/, '');
 
   const DateRangeWithTime = () => {
@@ -52,7 +55,6 @@ export const ProductCard: React.FC<Props> = ({
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-      {/* Product header */}
       <div className="flex p-4 gap-4">
         <img src={getImageUrl(image)} alt={productName} className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
           onError={(e) => {
@@ -76,7 +78,6 @@ export const ProductCard: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Booking details */}
       <div className="bg-gray-50 p-4 border-t border-gray-100">
         {isCarBooking ? (
           <div className="space-y-3">

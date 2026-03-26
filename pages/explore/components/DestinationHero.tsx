@@ -1,6 +1,7 @@
 import { ChevronLeft, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 // ── Destination hero banner ───────────────────────────────────────────────────
 
@@ -12,6 +13,7 @@ interface DestinationHeroProps {
 
 export const DestinationHero = ({ image, query, subtitle }: DestinationHeroProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}
       className="relative w-full h-[220px] md:h-[300px] overflow-hidden">

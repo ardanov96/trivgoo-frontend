@@ -16,6 +16,7 @@ const SUGGESTIONS = [
 ];
 
 const AITripPlanner: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const [userStory, setUserStory] = useState('');
   const [itinerary, setItinerary] = useState<string>('');
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
@@ -214,7 +215,7 @@ const AITripPlanner: React.FC = () => {
                       options.
                     </p>
                     <Link
-                      to="/explore"
+                      to={langPath('/explore')}
                       className="inline-block mt-4 text-primary-600 font-bold text-sm hover:underline"
                     >
                       Browse All

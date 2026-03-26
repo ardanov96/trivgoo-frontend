@@ -41,7 +41,7 @@
     const didFetchRef = useRef(false);
 
     useEffect(() => {
-      if (!user) navigate('/login');
+      if (!user) langNavigate('/login');
     }, [user, navigate]);
 
     useEffect(() => {
@@ -82,7 +82,7 @@
 
     useEffect(() => {
       if (user?.verification_status === VerificationStatus.VERIFIED) {
-        navigate('/agent');
+        langNavigate('/agent');
       }
     }, [user?.verification_status, navigate]);
 
@@ -132,14 +132,14 @@
 
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button
-                onClick={() => navigate('/agent')}
+                onClick={() => langNavigate('/agent')}
                 className="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20"
               >
                 <LayoutDashboard className="w-5 h-5 mr-2" />
                 Explore Dashboard
               </button>
               <button
-                onClick={() => navigate('/')}
+                onClick={() => langNavigate('/')}
                 className="inline-flex items-center justify-center px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
               >
                 Return Home

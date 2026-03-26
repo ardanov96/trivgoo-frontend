@@ -135,7 +135,7 @@ const Explore: React.FC = () => {
                     <motion.div key={group.groupKey} variants={carCardVariants}
                       onClick={() => group.agents.length > 1
                         ? setAgentPickerGroup(group)
-                        : navigate(`/product/${encodeURIComponent(group.representativeProduct.id)}/${group.representativeProduct.name}`)
+                        : langNavigate(`/product/${encodeURIComponent(group.representativeProduct.id)}/${group.representativeProduct.name}`)
                       }
                       whileHover={{ y: -4, transition: { duration: 0.2 } }} className="cursor-pointer">
                       <RentalCarCard {...makeCardProps(group.representativeProduct)} agentCount={group.agents.length} />

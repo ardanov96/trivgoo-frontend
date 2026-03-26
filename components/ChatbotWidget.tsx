@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { MessageSquare, X, Send, Bot } from 'lucide-react';
 import http from '../services/http';
 
@@ -22,14 +22,18 @@ const ChatbotWidget: React.FC = () => {
   const location = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Hide the chatbot on auth and specific pages
+  // ✅ Ambil lang dari URL param /:lang
+  const { lang } = useParams<{ lang?: string }>();
+  const l = lang ?? 'id';
+
+  // ✅ hiddenRoutes sekarang menyertakan /:lang prefix
   const hiddenRoutes = [
-    '/login',
-    '/register',
-    '/register/agent',
-    '/forgot-password',
-    '/reset-password',
-    '/verify-email',
+    `/${l}/login`,
+    `/${l}/register`,
+    `/${l}/register/agent`,
+    `/${l}/forgot-password`,
+    `/${l}/reset-password`,
+    `/${l}/verify-email`,
   ];
 
   const scrollToBottom = () => {
@@ -42,6 +46,7 @@ const ChatbotWidget: React.FC = () => {
     }
   }, [messages, isOpen, isLoading]);
 
+  // ✅ Cek apakah pathname cocok dengan hiddenRoutes
   if (hiddenRoutes.includes(location.pathname)) {
     return null;
   }
@@ -60,18 +65,23 @@ const ChatbotWidget: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // API call to the backend using axios instance
       const response = await http.post('/chat', { messages: newMessages });
 
       if (response.data && !response.data.error) {
         setMessages([...newMessages, { role: 'bot', content: response.data.reply }]);
       } else {
-        setMessages([...newMessages, { role: 'bot', content: 'Maaf, terjadi kesalahan pada asisten kami: ' + (response.data.message || 'Error API') }]);
+        setMessages([...newMessages, {
+          role: 'bot',
+          content: 'Maaf, terjadi kesalahan pada asisten kami: ' + (response.data.message || 'Error API')
+        }]);
       }
     } catch (error: any) {
       console.error(error);
       const errorMsg = error.response?.data?.message || 'Maaf, saya tidak dapat terhubung ke server saat ini.';
-      setMessages([...newMessages, { role: 'bot', content: 'Maaf, terjadi kesalahan pada asisten kami: ' + errorMsg }]);
+      setMessages([...newMessages, {
+        role: 'bot',
+        content: 'Maaf, terjadi kesalahan pada asisten kami: ' + errorMsg
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +119,6 @@ const ChatbotWidget: React.FC = () => {
 
           {/* Chat Area */}
           <div className="flex-1 p-4 overflow-y-auto overscroll-contain bg-gray-50/50 flex flex-col gap-4 no-scrollbar">
-
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex gap-2 items-end ${msg.role === 'user' ? 'justify-end' : ''}`}>
                 {msg.role === 'bot' && (
@@ -118,10 +127,11 @@ const ChatbotWidget: React.FC = () => {
                   </div>
                 )}
                 <div
-                  className={`p-3 rounded-2xl shadow-sm text-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                    ? 'bg-primary-600 text-white rounded-br-sm'
-                    : 'bg-white text-gray-700 border border-gray-100 rounded-bl-sm'
-                    }`}
+                  className={`p-3 rounded-2xl shadow-sm text-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
+                    msg.role === 'user'
+                      ? 'bg-primary-600 text-white rounded-br-sm'
+                      : 'bg-white text-gray-700 border border-gray-100 rounded-bl-sm'
+                  }`}
                 >
                   {msg.content}
                 </div>

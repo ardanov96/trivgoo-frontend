@@ -4,6 +4,8 @@ import { ArrowRight, Brain, ChevronLeft, ChevronRight, Clock, Map, MapPin, Quote
 // Clock is already imported above
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import { useNavigate } from 'react-router-dom';
 import {
   aiCardVariants, aiContainerVariants,
@@ -15,7 +17,9 @@ import { DESTINATION_STORIES, ITINERARY_CARDS, PROMO_CARDS, REVIEWS, WHY_CHOOSE_
 
 // ── AI Trip Planner ───────────────────────────────────────────────────────────
 
-export const AiPlannerSection = () => (
+export const AiPlannerSection = () => {
+  const { langPath } = useLangNavigate();
+  return (
   <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-100px' }} variants={aiContainerVariants} className="bg-white py-16 md:py-24 relative overflow-hidden">
     <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary-200 to-transparent" />
     <div className="absolute -left-20 top-40 w-64 h-64 bg-primary-50 rounded-full blur-3xl opacity-50" />
@@ -42,18 +46,21 @@ export const AiPlannerSection = () => (
         ))}
       </motion.div>
       <div className="text-center">
-        <Link to="/ai-planner" className="inline-flex items-center px-8 py-4 bg-primary-600 text-white rounded-full font-bold text-lg shadow-xl shadow-primary-600/30 hover:bg-primary-700 transition-all hover:-translate-y-1 hover:shadow-2xl group active:scale-95">
+        <Link to={langPath('/ai-planner')} className="inline-flex items-center px-8 py-4 bg-primary-600 text-white rounded-full font-bold text-lg shadow-xl shadow-primary-600/30 hover:bg-primary-700 transition-all hover:-translate-y-1 hover:shadow-2xl group active:scale-95">
           <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" /> Try AI Planner Free
         </Link>
       </div>
     </div>
   </motion.div>
-);
+  );
+};
 
 // ── Popular Destinations ──────────────────────────────────────────────────────
 
 export const DestinationsSection = () => {
   const navigate = useNavigate();
+  const { langNavigate, langPath } = useLangNavigate();
+  const { t } = useTranslation();
   return (
     <div className="relative py-8 md:py-12 border-b border-gray-100 overflow-hidden">
       <div className="absolute inset-0 bg-[#FFEEEB]" />
@@ -62,11 +69,11 @@ export const DestinationsSection = () => {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <h2 className="text-xl md:text-3xl font-serif font-bold text-gray-900 tracking-tight">Popular Destinations</h2>
-          <Link to="/explore" className="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
+          <Link to={langPath('/explore')} className="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
         </div>
         <motion.div variants={destContainerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="flex items-center justify-start md:justify-center gap-4 sm:gap-6 lg:gap-8 overflow-x-auto md:overflow-visible py-4 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar md:flex-nowrap">
           {DESTINATION_STORIES.map((dest, index) => (
-            <motion.div key={index} variants={destBubbleVariants} whileHover={{ scale: 1.12, y: -6, transition: { type: 'spring', stiffness: 300 } }} onClick={() => navigate(`/explore?search=${dest.name}`)} className="flex flex-col items-center flex-shrink-0 cursor-pointer group">
+            <motion.div key={index} variants={destBubbleVariants} whileHover={{ scale: 1.12, y: -6, transition: { type: 'spring', stiffness: 300 } }} onClick={() => langNavigate(`/explore?search=${dest.name}`)} className="flex flex-col items-center flex-shrink-0 cursor-pointer group">
               <motion.div className="w-[70px] h-[70px] md:w-[84px] md:h-[84px] lg:w-[100px] lg:h-[100px] rounded-full p-[2px] md:p-[3px] bg-gradient-to-tr from-amber-400 via-orange-500 to-primary-600 relative" whileHover={{ boxShadow: '0 0 20px rgba(224,88,69,0.6)' }}>
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} className="absolute -inset-[3px] rounded-full border-2 border-dashed border-primary-400/40 pointer-events-none" />
                 <div className="w-full h-full rounded-full border-[2px] md:border-[3px] border-white overflow-hidden bg-white relative z-10">

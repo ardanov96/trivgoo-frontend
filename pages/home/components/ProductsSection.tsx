@@ -3,7 +3,9 @@
 import { ArrowRight, Building2, Car } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Product } from '../../../types';
 import { useAuth }     from '../../../AuthContext';
 import { useCart }     from '../../../components/CartContext';
@@ -20,6 +22,7 @@ interface Props {
 }
 
 export const ProductsSection = ({ products, isLoading }: Props) => {
+  const { langPath } = useLangNavigate();
   const [activeFilter, setActiveFilter] = useState('All');
   const [visibleCars,   setVisibleCars]   = useState(4);
   const [visibleHotels, setVisibleHotels] = useState(4);
@@ -85,7 +88,7 @@ export const ProductsSection = ({ products, isLoading }: Props) => {
 
         {totalTours > 4 && (
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="flex justify-center mt-10">
-            <Link to="/explore" className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group">
+            <Link to={langPath('/explore')} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group">
               Explore More Tours <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </motion.div>
@@ -104,7 +107,7 @@ export const ProductsSection = ({ products, isLoading }: Props) => {
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex justify-center mt-10">
               {hotelProducts.length > visibleHotels
                 ? <button onClick={() => setVisibleHotels((p) => p + 4)} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">Load More <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></button>
-                : <Link to="/explore?category_id=2" className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">Explore More Hotels & Villa <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></Link>
+                : <Link to={langPath('/explore?category_id=2')} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">Explore More Hotels & Villa <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></Link>
               }
             </motion.div>
           </>
@@ -121,7 +124,7 @@ export const ProductsSection = ({ products, isLoading }: Props) => {
               {isLoading ? [...Array(4)].map((_, i) => <SkeletonCard key={i} />) : visibleCarProducts.map((p, i) => <ProductCard key={p.id} {...makeCardProps(p, i, '/day')} />)}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex justify-center mt-10">
-              <Link to="/explore?category_id=3" className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">
+              <Link to={langPath('/explore?category_id=3')} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">
                 Explore More Cars <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </motion.div>

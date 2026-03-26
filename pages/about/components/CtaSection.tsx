@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { fadeUp, scaleIn, staggerContainer } from '../constants';
 
 interface Props { inView: boolean; }
@@ -20,12 +22,12 @@ export const CtaSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, r
 
       <motion.div className="flex flex-col sm:flex-row justify-center gap-4" variants={staggerContainer} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
         <motion.div variants={scaleIn} custom={0} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-          <Link to="/explore" className="inline-block px-8 py-4 bg-white text-primary-900 rounded-full font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
+          <Link to={langPath('/explore')} className="inline-block px-8 py-4 bg-white text-primary-900 rounded-full font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
             Mulai Perjalanan Anda
           </Link>
         </motion.div>
         <motion.div variants={scaleIn} custom={1} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-          <Link to="/contact-us" className="inline-block px-8 py-4 bg-primary-800 text-white rounded-full font-bold text-lg border border-primary-500 hover:bg-primary-900 transition-all shadow-xl">
+          <Link to={langPath('/contact-us')} className="inline-block px-8 py-4 bg-primary-800 text-white rounded-full font-bold text-lg border border-primary-500 hover:bg-primary-900 transition-all shadow-xl">
             Hubungi Tim Kami
           </Link>
         </motion.div>

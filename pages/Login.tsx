@@ -1,6 +1,8 @@
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { useAuth } from '../AuthContext';
 import { useToast } from '../components/ToastContext';
 import { agentService } from '../services/agentService';
@@ -10,6 +12,8 @@ const inputClass =
   'appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all';
 
 const Login: React.FC = () => {
+  const { langNavigate, langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,31 +30,25 @@ const Login: React.FC = () => {
   const handleRedirectByRole = useCallback(
     (targetRole: UserRole | string | undefined) => {
       const r = (targetRole as UserRole) || UserRole.CUSTOMER;
-
       if (r === UserRole.ADMIN) {
-        navigate('/admin');
+        langNavigate('/admin');
       } else if (r === UserRole.AGENT) {
-        navigate('/agent');
+        langNavigate('/agent');
       } else {
         const from = (location.state as any)?.from;
         navigate(from || '/');
       }
     },
-    [navigate, location.state],
+    [langNavigate, navigate, location.state],
   );
 
   const syncVerificationStatusIfAny = useCallback(async () => {
     try {
       const verification = await agentService.getMyVerification();
       if (!verification) return;
-
       const status = verification?.verification_status;
-      if (status) {
-        updateUser({ verification_status: status as VerificationStatus });
-      }
-    } catch {
-      // silent
-    }
+      if (status) updateUser({ verification_status: status as VerificationStatus });
+    } catch { /* silent */ }
   }, [updateUser]);
 
   const handleSubmit = useCallback(
@@ -58,32 +56,26 @@ const Login: React.FC = () => {
       e.preventDefault();
       setError('');
       setLoading(true);
-
       try {
         const result = await login(email, password);
-        
         if (!result.success) {
-          const msg = result.message || 'Invalid credentials.';
+          const msg = result.message || t('auth.invalid_credentials', 'Invalid credentials.');
           setError(msg);
           showToast(msg, 'error');
           return;
         }
-
         await syncVerificationStatusIfAny();
-        showToast('Welcome back!', 'success');
-
-        const backendRole = result.user?.role as UserRole | undefined;
-        handleRedirectByRole(backendRole);
+        showToast(t('auth.welcome_back', 'Welcome back!'), 'success');
+        handleRedirectByRole(result.user?.role as UserRole | undefined);
       } catch (err: any) {
-        console.error(err);
-        const msg = err?.response?.data?.message || err?.message || 'Invalid credentials.';
+        const msg = err?.response?.data?.message || err?.message || t('auth.invalid_credentials', 'Invalid credentials.');
         setError(msg);
         showToast(msg, 'error');
       } finally {
         setLoading(false);
       }
     },
-    [email, password, login, showToast, syncVerificationStatusIfAny, handleRedirectByRole],
+    [email, password, login, showToast, syncVerificationStatusIfAny, handleRedirectByRole, t],
   );
 
   return (
@@ -95,52 +87,47 @@ const Login: React.FC = () => {
           alt="Travel"
           className="absolute inset-0 w-full h-full object-cover opacity-60"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary-900 to-transparent"></div>
-          <div className="relative z-10 w-full flex flex-col justify-between p-12 text-white">
-            <span className="text-3xl font-serif font-bold tracking-tighter mt-8">
-            </span>
-            <div>
-              <h2 className="text-4xl font-serif font-bold text-white mb-6">
-                Turn your travel dreams into reality.
-              </h2>
-              <p className="text-lg text-primary-100 max-w-md">
-                Join thousands of travelers who have found their perfect getaway with Trivgoo.
-              </p>
-            </div>
-            <div className="text-primary-200 text-sm"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-primary-900 to-transparent" />
+        <div className="relative z-10 w-full flex flex-col justify-between p-12 text-white">
+          <span className="text-3xl font-serif font-bold tracking-tighter mt-8" />
+          <div>
+            <h2 className="text-4xl font-serif font-bold text-white mb-6">
+              {t('auth.login_visual_title', 'Turn your travel dreams into reality.')}
+            </h2>
+            <p className="text-lg text-primary-100 max-w-md">
+              {t('auth.login_visual_desc', 'Join thousands of travelers who have found their perfect getaway with Trivgoo.')}
+            </p>
           </div>
+          <div className="text-primary-200 text-sm" />
         </div>
+      </div>
 
       {/* Right Side - Form */}
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="mb-10">
-            <Link
-              to="/"
-              className="text-gray-400 hover:text-gray-600 flex items-center mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
+            <Link to={langPath('/')} className="text-gray-400 hover:text-gray-600 flex items-center mb-6 transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back', 'Back to Home')}
             </Link>
-
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Welcome back</h2>
-            <p className="mt-2 text-sm text-gray-600">Please enter your details to sign in.</p>
+            <h2 className="text-3xl font-serif font-bold text-gray-900">
+              {t('auth.login_title', 'Welcome back')}
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              {t('auth.login_subtitle', 'Please enter your details to sign in.')}
+            </p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+                {t('auth.email', 'Email address')}
               </label>
               <div className="mt-1">
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="email" name="email" type="email" required
+                  value={email} onChange={(e) => setEmail(e.target.value)}
                   className={inputClass}
-                  placeholder="you@example.com"
+                  placeholder={t('auth.email_placeholder', 'you@example.com')}
                   autoComplete="email"
                 />
               </div>
@@ -149,29 +136,22 @@ const Login: React.FC = () => {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
+                  {t('auth.password', 'Password')}
                 </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-sm font-medium text-primary-600 hover:text-primary-500"
-                >
-                  Forgot password?
+                <Link to={langPath('/forgot-password')} className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                  {t('auth.forgot_password', 'Forgot password?')}
                 </Link>
               </div>
-
               <div className="mt-1 relative">
                 <input
-                  id="password"
-                  name="password"
+                  id="password" name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={password} onChange={(e) => setPassword(e.target.value)}
                   className={passwordInputClass}
-                  placeholder="Enter your password"
+                  placeholder={t('auth.password_placeholder', 'Enter your password')}
                   autoComplete="current-password"
                 />
-
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
@@ -187,7 +167,7 @@ const Login: React.FC = () => {
               <div className="rounded-lg bg-red-50 p-4">
                 <div className="flex">
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">Error</h3>
+                    <h3 className="text-sm font-medium text-red-800">{t('common.error', 'Error')}</h3>
                     <div className="mt-2 text-sm text-red-700">{error}</div>
                   </div>
                 </div>
@@ -196,31 +176,27 @@ const Login: React.FC = () => {
 
             <div>
               <button
-                type="submit"
-                disabled={loading}
+                type="submit" disabled={loading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-primary-500/30 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? t('auth.signing_in', 'Signing in...') : t('auth.login_button', 'Sign in')}
               </button>
             </div>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link
-                to="/register"
-                className="font-bold text-primary-600 hover:text-primary-500 transition-colors"
-              >
-                Sign up
+              {t('auth.no_account', "Don't have an account?")}{' '}
+              <Link to={langPath('/register')} className="font-bold text-primary-600 hover:text-primary-500 transition-colors">
+                {t('auth.sign_up', 'Sign up')}
               </Link>
             </p>
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-            <p className="text-sm text-gray-500 mb-2">Atau ingin mendaftar sebagai Mitra?</p>
-            <Link to="/register/agent" className="inline-flex items-center justify-center px-4 py-2 border border-primary-200 text-sm font-medium rounded-lg text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors">
-              Daftar sebagai Agen
+            <p className="text-sm text-gray-500 mb-2">{t('auth.become_agent_prompt', 'Want to register as a Partner?')}</p>
+            <Link to={langPath('/register/agent')} className="inline-flex items-center justify-center px-4 py-2 border border-primary-200 text-sm font-medium rounded-lg text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors">
+              {t('auth.become_agent', 'Register as Agent')}
             </Link>
           </div>
         </div>

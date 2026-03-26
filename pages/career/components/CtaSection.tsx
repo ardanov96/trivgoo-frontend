@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import { fadeUp, scaleIn, stagger } from '../constants';
 
 interface Props { inView: boolean; }
@@ -25,7 +27,7 @@ export const CtaSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, r
           </a>
         </motion.div>
         <motion.div variants={scaleIn} custom={1} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-          <Link to="/contact-us" className="inline-block px-8 py-4 bg-primary-800 text-white rounded-full font-bold text-lg border border-primary-500 hover:bg-primary-900 transition-all shadow-xl">
+          <Link to={langPath('/contact-us')} className="inline-block px-8 py-4 bg-primary-800 text-white rounded-full font-bold text-lg border border-primary-500 hover:bg-primary-900 transition-all shadow-xl">
             Hubungi Tim Kami
           </Link>
         </motion.div>
