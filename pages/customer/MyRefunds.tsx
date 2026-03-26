@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 import {
   ChevronRight, RefreshCcw, Clock, CheckCircle2, XCircle,
   AlertCircle, ChevronDown, Search, Calendar, Banknote, ArrowUpRight,
@@ -87,6 +89,7 @@ const STATUS_CONFIG: Record<RefundStatus, { label: string; icon: React.ReactNode
 const fmt = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
 const MyRefunds: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const [selectedId, setSelectedId] = useState<string | null>(MOCK_REFUNDS[0]?.id ?? null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | RefundStatus>('all');
@@ -105,7 +108,7 @@ const MyRefunds: React.FC = () => {
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-gray-400 mb-6">
-          <Link to="/my-account" className="hover:text-primary-600 transition-colors">Akun Saya</Link>
+          <Link to={langPath('/my-account')} className="hover:text-primary-600 transition-colors">Akun Saya</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-gray-600 font-medium">Refunds</span>
         </div>

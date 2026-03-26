@@ -1,7 +1,9 @@
 import { ArrowRight, ChevronLeft, ChevronRight, Search, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import type { BlogPost } from '../types';
 import { fadeUp, fadeLeft, fadeRight, stagger } from '../constants';
 import { FeaturedCard, TrendingCard, GridCard } from './BlogCard';
@@ -11,6 +13,8 @@ interface FeaturedProps { posts: BlogPost[]; inView: boolean; }
 
 export const FeaturedSection = React.forwardRef<HTMLDivElement, FeaturedProps>(({ posts, inView }, ref) => {
   const navigate = useNavigate();
+  const { langNavigate, langPath } = useLangNavigate();
+  const { t } = useTranslation();
   if (!posts.length) return null;
   return (
     <div className="bg-gray-50 py-16 md:py-20" ref={ref}>
@@ -27,7 +31,7 @@ export const FeaturedSection = React.forwardRef<HTMLDivElement, FeaturedProps>((
         </div>
         <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-8" variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
           {posts.map((post, idx) => (
-            <FeaturedCard key={post.id} post={post} index={idx} onClick={() => navigate(`/blog/${post.id}`)} />
+            <FeaturedCard key={post.id} post={post} index={idx} onClick={() => langNavigate(`/blog/${post.id}`)} />
           ))}
         </motion.div>
       </div>
@@ -41,6 +45,7 @@ interface TrendingProps { posts: BlogPost[]; inView: boolean; }
 
 export const TrendingSection = React.forwardRef<HTMLDivElement, TrendingProps>(({ posts, inView }, ref) => {
   const navigate = useNavigate();
+  const { langNavigate, langPath } = useLangNavigate();
   if (!posts.length) return null;
   return (
     <div className="bg-white py-16 md:py-20" ref={ref}>
@@ -56,7 +61,7 @@ export const TrendingSection = React.forwardRef<HTMLDivElement, TrendingProps>((
         </motion.div>
         <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
           {posts.map((post, idx) => (
-            <TrendingCard key={post.id} post={post} index={idx} onClick={() => navigate(`/blog/${post.id}`)} />
+            <TrendingCard key={post.id} post={post} index={idx} onClick={() => langNavigate(`/blog/${post.id}`)} />
           ))}
         </motion.div>
       </div>
@@ -77,6 +82,7 @@ interface GridProps {
 
 export const GridSection = React.forwardRef<HTMLDivElement, GridProps>(({ posts, inView, currentPage, totalPages, onPageChange, onClearFilters }, ref) => {
   const navigate = useNavigate();
+  const { langNavigate, langPath } = useLangNavigate();
   return (
     <div className="bg-gray-50 py-16 md:py-20" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -89,7 +95,7 @@ export const GridSection = React.forwardRef<HTMLDivElement, GridProps>(({ posts,
           <>
             <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
               {posts.map((post, idx) => (
-                <GridCard key={post.id} post={post} index={idx} onClick={() => navigate(`/blog/${post.id}`)} />
+                <GridCard key={post.id} post={post} index={idx} onClick={() => langNavigate(`/blog/${post.id}`)} />
               ))}
             </motion.div>
 

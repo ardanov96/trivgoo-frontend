@@ -1,5 +1,6 @@
 import { Mail, Phone, User } from 'lucide-react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ContactForm, useContactForm } from '../hooks/useContactForm';
 
 type FormHook = ReturnType<typeof useContactForm>;

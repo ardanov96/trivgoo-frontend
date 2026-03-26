@@ -1,6 +1,7 @@
 import { Download, FileText, Image, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { fadeUp, scaleIn, stagger, MEDIA_ASSETS, getAssetLabel } from '../constants';
 import type { MediaAsset } from '../constants';
 

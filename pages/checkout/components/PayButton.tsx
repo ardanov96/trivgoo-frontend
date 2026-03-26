@@ -1,5 +1,6 @@
 import { CreditCard, ChevronRight, ShieldCheck } from 'lucide-react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../constants';
 
 // ── Pay CTA button ────────────────────────────────────────────────────────────

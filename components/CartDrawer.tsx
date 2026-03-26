@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { X, ShoppingCart, MapPin, Trash2, ArrowRight, ShoppingBag, CreditCard } from 'lucide-react';
 import { useCart } from './CartContext';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useToast } from './ToastContext';
 import { encodeId } from '../utils/hashids';
+import { useLangNavigate } from '@/src/hooks/useLangNavigate'; 
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -13,16 +13,18 @@ interface CartDrawerProps {
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const { cartItems, removeFromCart, cartCount } = useCart();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
   const [processingId, setProcessingId] = useState<number | null>(null);
 
+  // ✅ Ganti useNavigate dengan useLangNavigate
+  const { langNavigate } = useLangNavigate();
+
   // Navigate to product page to fill in booking details
   const handleProductClick = (productId: string | number) => {
     onClose();
-    // Default fallback routing for cart drawer
-    navigate(`/product/${encodeId(productId)}`);
+    // ✅ langNavigate otomatis inject /:lang prefix
+    langNavigate(`/product/${encodeId(productId)}`);
   };
 
   // Reserve Now — goes directly to checkout-summary with product data
@@ -33,7 +35,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
     if (!user) {
       showToast('Please login to continue.', 'info');
       onClose();
-      navigate('/login');
+      langNavigate('/login'); // ✅
       return;
     }
 
@@ -45,11 +47,10 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
     const heroImage = (item.product as any).image_url || item.product.image;
 
     setProcessingId(productId);
-
     onClose();
 
     if (item.customization) {
-      navigate('/checkout-summary', {
+      langNavigate('/checkout-summary', { // ✅
         state: {
           ...item.customization,
           contactDetails: {
@@ -60,12 +61,12 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         },
       });
     } else {
-      navigate('/checkout-summary', {
+      langNavigate('/checkout-summary', { // ✅
         state: {
           productId: item.product.id,
           productName: item.product.name,
           location: item.product.location,
-          date: '',           // user belum pilih tanggal — akan diisi di ProductDetail
+          date: '',
           pax: item.quantity,
           pricePerPax: effectivePrice,
           totalPrice: effectivePrice * item.quantity,
@@ -134,7 +135,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                 Tambahkan paket wisata yang kamu minati ke keranjang
               </p>
               <button
-                onClick={() => { onClose(); navigate('/explore'); }}
+                onClick={() => { onClose(); langNavigate('/explore'); }} // ✅
                 className="mt-6 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 transition-colors flex items-center gap-2"
               >
                 Jelajahi Paket
@@ -242,14 +243,14 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 
             {/* Lanjut Pilih Paket → /explore */}
             <button
-              onClick={() => { onClose(); navigate('/explore'); }}
+              onClick={() => { onClose(); langNavigate('/explore'); }} // ✅
               className="w-full py-3 rounded-xl font-bold text-sm bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2"
             >
               <ShoppingCart className="w-4 h-4" />
               Lanjut Pilih Paket
             </button>
 
-            {/* Reserve Now — checkout item pertama di keranjang (atau bisa diloop) */}
+            {/* Reserve Now */}
             <button
               onClick={() => handleReserveNow(cartItems[0].product.id)}
               disabled={processingId !== null}

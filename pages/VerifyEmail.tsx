@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { authService } from '../services/authService';
 
 const VerifyEmail: React.FC = () => {
+  const { langPath } = useLangNavigate();
     const [searchParams] = useSearchParams();
     const token = searchParams.get('token');
 
@@ -55,7 +56,7 @@ const VerifyEmail: React.FC = () => {
                         <p className="mt-2 text-sm text-gray-600">{message}</p>
                         <div className="mt-6">
                             <Link
-                                to="/login"
+                                to={langPath('/login')}
                                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 transition"
                             >
                                 Go to Login
@@ -71,7 +72,7 @@ const VerifyEmail: React.FC = () => {
                         <p className="mt-2 text-sm text-red-600 font-medium">{message}</p>
                         <div className="mt-6 space-y-3 w-full">
                             <Link
-                                to="/login"
+                                to={langPath('/login')}
                                 className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
                             >
                                 Back to Login

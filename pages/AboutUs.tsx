@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useScrollReveal }   from './about/hooks/useScrollReveal';
 import { HeroSection }       from './about/components/HeroSection';
 import { AboutSection, StatsSection } from './about/components/AboutSection';

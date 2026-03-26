@@ -735,11 +735,11 @@ const AgentAddProduct: React.FC = () => {
               }
             }
           } else {
-            navigate("/agent/products");
+            langNavigate("/agent/products");
           }
         } catch (err) {
           console.error(err);
-          navigate("/agent/products");
+          langNavigate("/agent/products");
         }
       })();
     }
@@ -827,7 +827,7 @@ const AgentAddProduct: React.FC = () => {
             You must complete the agent verification process and be approved by an admin before you can add products.
           </p>
           <button
-            onClick={() => navigate("/agent/verification")}
+            onClick={() => langNavigate("/agent/verification")}
             className="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold shadow-lg hover:bg-amber-700 transition-colors"
           >
             Go to Verification
@@ -1149,7 +1149,7 @@ const AgentAddProduct: React.FC = () => {
         customClass: { popup: 'rounded-3xl' }
       });
 
-      navigate("/agent/products");
+      langNavigate("/agent/products");
     } catch (error: any) {
       console.error('[SUBMIT ERROR]', error);
       Swal.fire({
@@ -1169,7 +1169,7 @@ const AgentAddProduct: React.FC = () => {
       {/* Header */}
       <div className="flex items-center mb-8 sticky top-0 bg-gray-50 z-20 py-4">
         <button
-          onClick={() => navigate("/agent/products")}
+          onClick={() => langNavigate("/agent/products")}
           className="mr-4 p-2 hover:bg-gray-200 rounded-full transition-colors bg-white shadow-sm border border-gray-200"
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Sparkles, Zap, Tag, ArrowRight } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { type PromoCampaign, resolveBannerUrl } from '../services/promoService';
+import { useLangNavigate } from '@/src/hooks/useLangNavigate';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -139,7 +140,9 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
   const [current, setCurrent]     = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [paused, setPaused]       = useState(false);
-  const navigate                  = useNavigate();
+
+  // ✅ Gunakan useLangNavigate
+  const { langNavigate, langPath } = useLangNavigate();
 
   useEffect(() => { injectStyles(); }, []);
 
@@ -201,7 +204,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
           exit="exit"
           transition={slideTransition}
           className="absolute inset-0 cursor-pointer"
-          onClick={() => navigate(`/promo/campaign/${c.id}`)}
+          onClick={() => langNavigate(`/promo/campaign/${c.id}`)} // ✅
           title={`Lihat promo ${c.name}`}
         >
           {hasBanner ? (
@@ -234,7 +237,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
       {/* ══ LAYER 3: CTA button — kiri bawah ════════════════════════════ */}
       <div className="absolute bottom-3 left-6 md:bottom-4 md:left-10 pointer-events-auto z-[3]">
         <Link
-          to={`/promo/campaign/${c.id}`}
+          to={langPath(`/promo/campaign/${c.id}`)} // ✅
           onClick={e => e.stopPropagation()}
           className="inline-flex items-center gap-1.5 bg-white text-gray-900 font-bold text-xs px-4 py-2 rounded-lg hover:bg-primary-50 hover:text-primary-700 transition-all shadow-lg active:scale-95 group"
         >

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { fadeUp, scaleIn, staggerContainer, EASE, GALLERY_TABS } from '../constants';
 
 interface Props {

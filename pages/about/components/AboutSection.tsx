@@ -1,6 +1,7 @@
 import { CheckCircle, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { fadeLeft, fadeRight, fadeUp, scaleIn, staggerContainer, EASE, STATS, ABOUT_BADGES } from '../constants';
 
 // ── About Company ─────────────────────────────────────────────────────────────

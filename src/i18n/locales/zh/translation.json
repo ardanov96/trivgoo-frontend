@@ -1,0 +1,61 @@
+{
+  "nav": {
+    "home": "首页",
+    "explore": "探索",
+    "wishlist": "收藏",
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出",
+    "my_bookings": "我的预订",
+    "my_account": "我的账户"
+  },
+  "home": {
+    "hero_title": "发现您的冒险",
+    "hero_subtitle": "最佳目的地、租车和精彩酒店",
+    "search_placeholder": "搜索旅游目的地...",
+    "book_now": "立即预订",
+    "flash_sale": "限时特卖",
+    "view_all": "查看全部",
+    "why_choose_us": "为什么选择我们"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "出现错误",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "search": "搜索",
+    "back": "返回"
+  },
+  "footer": {
+    "about": "关于我们",
+    "contact": "联系我们",
+    "privacy": "隐私政策",
+    "terms": "条款与条件"
+  },
+    "hero": {
+    "hello": "\u4e16\u754c\u65c5\u8005\uff0c\u8ba9\u6211\u4eec",
+    "find_your": "\u53d1\u73b0\u60a8\u7684",
+    "destination": "\u76ee\u7684\u5730",
+    "pickup_location": "\u53d6\u8f66\u5730\u70b9",
+    "from_to": "\u51fa\u53d1/\u76ee\u7684",
+    "guests": "\u5ba2\u4eba",
+    "passengers": "\u4e58\u5ba2",
+    "add_guests": "\u6dfb\u52a0\u5ba2\u4eba",
+    "add_passengers": "\u6dfb\u52a0\u4e58\u5ba2",
+    "date": "\u65e5\u671f",
+    "add_dates": "\u6dfb\u52a0\u65e5\u671f",
+    "suggestions": "\u5efa\u8bae",
+    "popular_destinations": "\u70ed\u95e8\u76ee\u7684\u5730",
+    "today": "\u4eca\u5929",
+    "trusted_by": "\u5168\u74035\u4e077\u4f59\u65c5\u884c\u8005\u4fe1\u8d56"
+  },
+  "total_paid": "\u5df2\u652f\u4ed8\u603b\u989d",
+  "status_code": "\u72b6\u6001\u7801",
+  "try_again": "\u91cd\u8bd5",
+  "va_number": "\u865a\u62df\u8d26\u6237",
+  "pay_before": "\u652f\u4ed8\u622a\u6b62\u65f6\u95f4",
+  "pending_info": "\u8bf7\u5728\u622a\u6b62\u65f6\u95f4\u524d\u5b8c\u6210\u652f\u4ed8\u3002\u6536\u5230\u652f\u4ed8\u540e\u9884\u8ba2\u5c06\u81ea\u52a8\u786e\u8ba4\u3002",
+  "success_desc": "\u60a8\u7684\u7535\u5b50\u51ed\u8bc1\u6b63\u5728\u5904\u7406\u4e2d\uff0c\u5c06\u5c3d\u5feb\u901a\u8fc7\u7535\u5b50\u90ae\u4ef6\u53d1\u9001\u3002"
+
+}

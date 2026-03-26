@@ -350,7 +350,7 @@ const BookingTable: React.FC<BookingTableProps> = ({
                     <h3 className="text-gray-900 font-bold mb-1">Tidak ada booking</h3>
                     <p className="text-gray-500 text-sm mb-4">Belum ada booking yang sesuai filter.</p>
                     {activeTab === 'active' && (
-                      <Link to="/explore" className="px-6 py-2 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors">
+                      <Link to={langPath('/explore')} className="px-6 py-2 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors">
                         Temukan Aktivitas
                       </Link>
                     )}
@@ -538,7 +538,7 @@ const CustomerBookings: React.FC = () => {
   useEffect(() => {
     const p = new URLSearchParams(location.search);
     if (p.get('transaction_status') === 'settlement' || p.get('transaction_status') === 'capture') {
-      clearCart(); navigate('/my-bookings', { replace: true });
+      clearCart(); langNavigate('/my-bookings', { replace: true });
     }
   }, [location.search, clearCart, navigate]);
 
@@ -801,7 +801,7 @@ const CustomerBookings: React.FC = () => {
                   <History className={`w-5 h-5 mr-3 ${activeTab === 'history' ? 'text-primary-600' : 'text-gray-400'}`} />
                   Trip History
                 </button>
-                <Link to="/loyalty" className="w-full flex items-center px-4 py-3.5 rounded-2xl text-sm text-gray-500 hover:bg-gray-50 font-medium">
+                <Link to={langPath('/loyalty')} className="w-full flex items-center px-4 py-3.5 rounded-2xl text-sm text-gray-500 hover:bg-gray-50 font-medium">
                   <Gift className="w-5 h-5 mr-3 text-gray-400" />
                   Loyalty & Points
                   {pointBalance > 0 && <span className="ml-auto bg-yellow-50 text-yellow-700 py-0.5 px-2 rounded-md text-xs font-bold">{pointBalance.toLocaleString('id-ID')} pts</span>}

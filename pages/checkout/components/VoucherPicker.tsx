@@ -1,5 +1,6 @@
 import { CheckCircle2, ChevronDown, ChevronUp, DollarSign, Percent, Tag, X } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { calcDiscount, formatRp } from '../constants';
 
 interface Props {

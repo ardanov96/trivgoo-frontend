@@ -31,6 +31,7 @@ function formatDate(d: string) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const LoyaltyPage: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const { user } = useAuth();
   const [balance, setBalance] = useState<PointBalance | null>(null);
   const [membership, setMembership] = useState<UserMembership | null>(null);
@@ -132,14 +133,14 @@ const LoyaltyPage: React.FC = () => {
             {/* CTA */}
             <div className="flex gap-3 mt-5">
               <Link
-                to="/loyalty/redeem"
+                to={langPath('/loyalty/redeem')}
                 className="flex-1 flex items-center justify-center gap-2 bg-white text-gray-900 rounded-xl py-3 font-bold text-sm hover:bg-gray-100 transition-all active:scale-95"
               >
                 <Gift className="w-4 h-4" />
                 Tukar Point
               </Link>
               <Link
-                to="/loyalty/history"
+                to={langPath('/loyalty/history')}
                 className="flex-1 flex items-center justify-center gap-2 bg-white/10 border border-white/20 text-white rounded-xl py-3 font-bold text-sm hover:bg-white/20 transition-all active:scale-95"
               >
                 <History className="w-4 h-4" />
@@ -154,7 +155,7 @@ const LoyaltyPage: React.FC = () => {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-900">Membership Kamu</h2>
-              <Link to="/loyalty/membership" className="text-sm text-primary-600 font-semibold flex items-center gap-1 hover:underline">
+              <Link to={langPath('/loyalty/membership')} className="text-sm text-primary-600 font-semibold flex items-center gap-1 hover:underline">
                 Detail <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
@@ -186,7 +187,7 @@ const LoyaltyPage: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900">Riwayat Point</h2>
-            <Link to="/loyalty/history" className="text-sm text-primary-600 font-semibold flex items-center gap-1 hover:underline">
+            <Link to={langPath('/loyalty/history')} className="text-sm text-primary-600 font-semibold flex items-center gap-1 hover:underline">
               Lihat Semua <ChevronRight className="w-4 h-4" />
             </Link>
           </div>

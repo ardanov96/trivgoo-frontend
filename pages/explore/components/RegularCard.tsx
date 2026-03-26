@@ -1,5 +1,6 @@
 import { Heart, MapPin, ShoppingCart, Star, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Product } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
 import { encodeId } from '../../../utils/hashids';

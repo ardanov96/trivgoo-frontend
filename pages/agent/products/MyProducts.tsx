@@ -734,7 +734,7 @@ const MyProducts: React.FC = () => {
           <p className="text-gray-500 text-sm">Manage availability, pricing, and details.</p>
         </div>
         <Link
-          to="/agent/products/new"
+          to={langPath('/agent/products/new')}
           className="flex items-center px-5 py-3 bg-primary-600 text-white rounded-xl font-bold shadow-lg shadow-primary-600/20 hover:bg-primary-700 transition-all hover:-translate-y-0.5"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -769,7 +769,7 @@ const MyProducts: React.FC = () => {
           <p className="text-gray-500 mb-8 max-w-md mx-auto">
             You haven't listed any services yet. Start adding your first product to reach thousands of travelers.
           </p>
-          <Link to="/agent/products/new"
+          <Link to={langPath('/agent/products/new')}
             className="text-primary-600 font-bold hover:underline flex items-center justify-center">
             <Plus className="w-4 h-4 mr-1" /> {getAddLabel(user?.specialization)}
           </Link>
@@ -803,7 +803,7 @@ const MyProducts: React.FC = () => {
                       onToggleStatus={() => handleToggleStatus(product.id)}
                       onDelete={() => handleDelete(product.id)}
                       onJoinFlashSale={() => openFlashSaleModal(product)}
-                      onNavigateEdit={() => navigate(`/agent/products/edit/${product.id}`)}
+                      onNavigateEdit={() => langNavigate(`/agent/products/edit/${product.id}`)}
                     />
                     {(prodCampaignSubs.length > 0 || prodFlashSubs.length > 0) && (
                       <div className="mt-1.5 ml-2 flex items-center gap-2 flex-wrap">

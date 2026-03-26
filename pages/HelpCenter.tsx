@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, Clock, Globe, Headphones, FileText, Zap,
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 interface FAQ { id: number; category: string; question: string; answer: string; }
@@ -48,6 +49,7 @@ const CONTACT_OPTIONS = [
 ];
 
 const HelpCenter: React.FC = () => {
+  const { langPath } = useLangNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [openFaqId, setOpenFaqId] = useState<number | null>(null);
@@ -105,7 +107,7 @@ const HelpCenter: React.FC = () => {
         <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{ background:'linear-gradient(to bottom,transparent,rgba(80,15,5,0.3))' }} />
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <Link to="/" className="hc-back inline-flex items-center text-red-200 hover:text-white transition-colors mb-8 group">
+          <Link to={langPath('/')} className="hc-back inline-flex items-center text-red-200 hover:text-white transition-colors mb-8 group">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             <span className="font-semibold">Kembali ke Beranda</span>
           </Link>
@@ -224,7 +226,7 @@ const HelpCenter: React.FC = () => {
                   <p className="text-sm text-red-100">Untuk wisatawan dalam perjalanan aktif</p>
                 </div>
               </div>
-              <Link to="/contact-us" className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-xl">
+              <Link to={langPath('/contact-us')} className="w-full inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 rounded-xl font-bold hover:bg-gray-50 transition-all shadow-xl">
                 Hubungi Dukungan
                 <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
               </Link>

@@ -3,7 +3,9 @@
 import { ArrowRight, ChevronLeft, ChevronRight, Flame, MapPin, Timer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import { Product } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
 import { encodeId } from '../../../utils/hashids';
@@ -23,6 +25,8 @@ interface Props {
 
 export const FlashSaleSection = ({ flashSaleProducts, activeCampaigns, activeCampaign, timer, displayedCampaign, onSlideChange }: Props) => {
   const navigate    = useNavigate();
+  const { langNavigate, langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const sliderRef   = useRef<HTMLDivElement>(null);
 
   const scroll = (dir: 'left' | 'right') => {
@@ -58,7 +62,7 @@ export const FlashSaleSection = ({ flashSaleProducts, activeCampaigns, activeCam
             ? flashSaleProducts.map((product) => {
                 const isCampaignProduct = activeCampaign && product.flashSale?.campaignId === activeCampaign.id;
                 return (
-                  <div key={product.id} onClick={() => navigate(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} className="min-w-[300px] md:min-w-[350px] snap-center group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden flex flex-col h-full relative cursor-pointer border border-gray-100">
+                  <div key={product.id} onClick={() => langNavigate(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} className="min-w-[300px] md:min-w-[350px] snap-center group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden flex flex-col h-full relative cursor-pointer border border-gray-100">
                     {isCampaignProduct && <div className="absolute top-0 left-0 w-full bg-yellow-400 text-black text-[10px] font-bold text-center py-1 z-20 uppercase tracking-widest">Official Event Deal</div>}
                     <div className="h-64 md:h-72 relative overflow-hidden">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />

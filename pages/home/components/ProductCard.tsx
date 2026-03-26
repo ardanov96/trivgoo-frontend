@@ -3,6 +3,7 @@
 import { Heart, MapPin, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+// ✅ useTranslation dihapus karena belum dipakai
 import { Product } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
 import { encodeId } from '../../../utils/hashids';
@@ -10,9 +11,9 @@ import { getImageUrl, FALLBACK_IMAGE } from '../../../utils/imageUtils';
 import { formatLocation } from '../utils';
 
 interface Props {
-  product:   Product;
-  index:     number;
-  priceUnit: string;
+  product:      Product;
+  index:        number;
+  priceUnit:    string;
   isLoggedIn:   boolean;
   isSaved:      boolean;
   isInCart:     boolean;

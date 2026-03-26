@@ -103,7 +103,7 @@ const AgentDashboard: React.FC = () => {
         const status = err?.response?.status;
         if (status === 401) {
           logout();
-          navigate('/login', { replace: true });
+          langNavigate('/login', { replace: true });
         }
       }
     })();

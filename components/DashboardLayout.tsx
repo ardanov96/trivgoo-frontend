@@ -29,6 +29,7 @@ import { useAuth } from '../AuthContext';
 import { authService } from '../services/authService';
 import { UserRole, VerificationStatus } from '../types';
 import UserAvatar from './UserAvatar';
+import { useLangNavigate } from '@/src/hooks/useLangNavigate';
 
 interface DashboardLayoutProps {
   role: UserRole;
@@ -36,22 +37,26 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   const { user, logout, updateUser } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // ✅ Gunakan useLangNavigate — satu-satunya sumber kebenaran untuk path & navigate
+  const { langPath, langNavigate } = useLangNavigate();
+
   const didFetchMeRef = useRef(false);
 
+  // ✅ Redirect ke /:lang/login setelah logout
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    langNavigate('/login');
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  // ✅ isActive kini bandingkan dengan langPath
+  const isActive = (path: string) => location.pathname === langPath(path);
 
-  const NavItem = ({ to, icon: Icon, label }: any) => (
+  const NavItem = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => (
     <Link
-      to={to}
+      to={langPath(to)} // ✅ semua NavItem link pakai langPath
       onClick={() => setIsMobileMenuOpen(false)}
       className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
         isActive(to)
@@ -111,7 +116,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
       >
         {/* Logo */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100">
-          <Link to="/" className="flex items-center">
+          {/* ✅ Logo → /:lang */}
+          <Link to={langPath('/')} className="flex items-center">
             <img src="/inline_trp.png" alt="Trivgoo Logo" className="h-10 w-auto" />
           </Link>
           <button
@@ -129,26 +135,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
           {role === UserRole.ADMIN && (
             <>
               <NavSectionLabel label="Overview" />
-              <NavItem to="/admin" icon={LayoutDashboard} label="Dashboard" />
-              <NavItem to="/admin/bookings" icon={BarChart2} label="Bookings" />
+              <NavItem to={langPath('/admin')}           icon={LayoutDashboard} label="Dashboard" />
+              <NavItem to={langPath('/admin/bookings')}  icon={BarChart2}       label="Bookings" />
 
               <NavSectionLabel label="Catalog" />
-              <NavItem to="/admin/products" icon={Package} label="Products" />
-              <NavItem to="/admin/users" icon={Users} label="Users & Verification" />
-              <NavItem to="/admin/payouts" icon={CreditCard} label="Payout Requests" />
+              <NavItem to={langPath('/admin/products')}  icon={Package}         label="Products" />
+              <NavItem to={langPath('/admin/users')}     icon={Users}           label="Users & Verification" />
+              <NavItem to={langPath('/admin/payouts')}   icon={CreditCard}      label="Payout Requests" />
 
               <NavSectionLabel label="Promo & Voucher" />
-              <NavItem to="/admin/vouchers" icon={Gift} label="Vouchers" />
-              <NavItem to="/admin/promo/campaigns" icon={Megaphone} label="Promo Campaign" />
-              <NavItem to="/admin/promo/analytics" icon={LineChart} label="Promo Analytics" />
+              <NavItem to={langPath('/admin/vouchers')}          icon={Gift}      label="Vouchers" />
+              <NavItem to={langPath('/admin/promo/campaigns')}   icon={Megaphone} label="Promo Campaign" />
+              <NavItem to={langPath('/admin/promo/analytics')}   icon={LineChart} label="Promo Analytics" />
 
               <NavSectionLabel label="Loyalty" />
-              <NavItem to="/admin/membership/tiers" icon={Award} label="Membership Tiers" />
-              <NavItem to="/admin/referral/stats" icon={Share2} label="Referral Stats" />
+              <NavItem to={langPath('/admin/membership/tiers')}  icon={Award}  label="Membership Tiers" />
+              <NavItem to={langPath('/admin/referral/stats')}    icon={Share2} label="Referral Stats" />
 
               <NavSectionLabel label="Config" />
-              <NavItem to="/admin/settings" icon={Settings} label="Settings" />
-              <NavItem to="/admin/payment-settings" icon={Wallet2} label="Payment Settings" />
+              <NavItem to={langPath('/admin/settings')}          icon={Settings} label="Settings" />
+              <NavItem to={langPath('/admin/payment-settings')}  icon={Wallet2}  label="Payment Settings" />
             </>
           )}
 
@@ -156,29 +162,29 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
           {role === UserRole.AGENT && (
             <>
               <NavSectionLabel label="Overview" />
-              <NavItem to="/agent" icon={LayoutDashboard} label="Dashboard" />
-              <NavItem to="/agent/commissions" icon={DollarSign} label="Commissions" />
-              <NavItem to="/agent/bookings" icon={UserCheck} label="Customer Bookings" />
-              <NavItem to="/agent/customers" icon={Users} label="Customer Management" />
+              <NavItem to={langPath('/agent')}             icon={LayoutDashboard} label="Dashboard" />
+              <NavItem to={langPath('/agent/commissions')} icon={DollarSign}      label="Commissions" />
+              <NavItem to={langPath('/agent/bookings')}    icon={UserCheck}       label="Customer Bookings" />
+              <NavItem to={langPath('/agent/customers')}   icon={Users}           label="Customer Management" />
 
               <NavSectionLabel label="Management" />
               {user?.verification_status !== VerificationStatus.VERIFIED && (
-                <NavItem to="/agent/verification" icon={ShieldCheck} label="Verify Account" />
+                <NavItem to={langPath('/agent/verification')} icon={ShieldCheck} label="Verify Account" />
               )}
-              <NavItem to="/agent/products" icon={ShoppingBag} label="My Products" />
-              <NavItem to="/agent/products/new" icon={PlusCircle} label="Add Product" />
-              <NavItem to="/agent/profile/settings" icon={Settings} label="Profile Settings" />
+              <NavItem to={langPath('/agent/products')}          icon={ShoppingBag} label="My Products" />
+              <NavItem to={langPath('/agent/products/new')}      icon={PlusCircle}  label="Add Product" />
+              <NavItem to={langPath('/agent/profile/settings')}  icon={Settings}    label="Profile Settings" />
 
               <NavSectionLabel label="Grow & Quality" />
-              <NavItem to="/agent/marketing" icon={Megaphone} label="Marketing Tools" />
-              <NavItem to="/agent/loyalty"   icon={Award}     label="Loyalty & Member" />
-              <NavItem to="/agent/rating"    icon={Star}      label="Rating & Review" />
+              <NavItem to={langPath('/agent/marketing')} icon={Megaphone} label="Marketing Tools" />
+              <NavItem to={langPath('/agent/loyalty')}   icon={Award}     label="Loyalty & Member" />
+              <NavItem to={langPath('/agent/rating')}    icon={Star}      label="Rating & Review" />
 
               <NavSectionLabel label="Developer" />
-              <NavItem to="/agent/api" icon={Code2} label="API & Integrasi" />
+              <NavItem to={langPath('/agent/api')} icon={Code2} label="API & Integrasi" />
 
               <NavSectionLabel label="Bantuan" />
-              <NavItem to="/agent/support" icon={LifeBuoy} label="Support & Training" />
+              <NavItem to={langPath('/agent/support')} icon={LifeBuoy} label="Support & Training" />
             </>
           )}
         </nav>
@@ -189,8 +195,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
             <button className="flex items-center gap-2 hover:bg-gray-100 p-2 rounded-lg transition-colors">
               <UserAvatar user={user} className="w-8 h-8" />
               <span className="text-sm font-medium text-gray-700 hidden sm:block">
-                <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
-                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                <p className="text-sm font-bold text-gray-900 truncate">{user?.name}</p>
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </span>
             </button>
           </div>
@@ -220,7 +226,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
             </h1>
           </div>
           <div className="flex items-center space-x-4">
-            <Link to="/" className="text-xs lg:text-sm text-primary-600 hover:underline">
+            {/* ✅ View Live Site → /:lang */}
+            <Link to={langPath('/')} className="text-xs lg:text-sm text-primary-600 hover:underline">
               View Live Site
             </Link>
           </div>

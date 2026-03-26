@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { BLOG_POSTS } from './blog/constants';
 import { useReveal, useBlogFilter } from './blog/hooks';
 

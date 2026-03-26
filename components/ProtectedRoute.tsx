@@ -1,17 +1,21 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { UserRole } from '../types';
 import Forbidden403 from '../pages/Forbidden403';
 
 interface Props {
-  children:     React.ReactNode;
-  allowedRoles?: UserRole[];   // jika tidak diisi → hanya butuh login
+  children:      React.ReactNode;
+  allowedRoles?: UserRole[];   
 }
 
 const ProtectedRoute: React.FC<Props> = ({ children, allowedRoles }) => {
   const { user, isLoading } = useAuth();
-  const location = useLocation();
+  const location             = useLocation();
+
+  // ✅ Ambil lang dari URL param /:lang
+  const { lang }    = useParams<{ lang?: string }>();
+  const currentLang = lang ?? 'id';
 
   // Tunggu auth selesai load sebelum memutuskan redirect
   if (isLoading) {
@@ -22,9 +26,15 @@ const ProtectedRoute: React.FC<Props> = ({ children, allowedRoles }) => {
     );
   }
 
-  // Belum login → redirect ke /login dengan simpan tujuan asal
+  // ✅ Belum login → redirect ke /:lang/login (bukan /login)
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    return (
+      <Navigate
+        to={`/${currentLang}/login`}
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
+    );
   }
 
   // Sudah login tapi role tidak diizinkan → tampilkan 403

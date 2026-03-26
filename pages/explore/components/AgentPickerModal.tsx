@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, MapPin, ShieldCheck, Star, Tag, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CarDetails } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
 import { encodeId } from '../../../utils/hashids';
