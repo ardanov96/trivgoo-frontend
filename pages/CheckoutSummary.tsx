@@ -73,7 +73,11 @@ const CheckoutSummary: React.FC = () => {
     returnTime,
     startTime,
     endTime,
-    availableVouchers     = [],
+    pickupFee                     = 0,
+    dropoffFee                    = 0,
+    needsManualPickupConfirmation = false,
+    needsManualDropoffConfirmation= false,
+    availableVouchers             = [],
   } = bookingData;
 
   const isCarBooking = vehicleType === 'car';
@@ -229,6 +233,10 @@ const CheckoutSummary: React.FC = () => {
           appliedDiscount={voucher.appliedDiscount}
           finalTotal={finalTotal}
           addOns={addOns}
+          pickupFee={pickupFee}
+          dropoffFee={dropoffFee}
+          needsManualPickupConfirmation={needsManualPickupConfirmation}
+          needsManualDropoffConfirmation={needsManualDropoffConfirmation}
         />
 
         {isCarBooking && <RentalInfoBanner />}

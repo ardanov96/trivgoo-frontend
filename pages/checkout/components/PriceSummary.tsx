@@ -16,12 +16,17 @@ interface Props {
   appliedDiscount:  number;
   finalTotal:       number;
   addOns?:          { withDriver?: boolean; premiumInsurance?: boolean; childSeat?: boolean };
+  pickupFee?:       number;
+  dropoffFee?:      number;
+  needsManualPickupConfirmation?: boolean;
+  needsManualDropoffConfirmation?: boolean;
 }
 
 export const PriceSummary: React.FC<Props> = ({
   isCarBooking, basePricePerPax, pricePerPax, duration,
   guestCount, pax, unitLabel, priceUnitLabel, baseTotal,
   appliedVoucher, appliedDiscount, finalTotal, addOns,
+  pickupFee, dropoffFee, needsManualPickupConfirmation, needsManualDropoffConfirmation,
 }) => (
   <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
     <h3 className="font-bold text-gray-800 mb-4">Rincian Harga</h3>
@@ -37,6 +42,12 @@ export const PriceSummary: React.FC<Props> = ({
           {addOns?.withDriver       && <div className="flex justify-between text-gray-500 text-xs pl-2"><span>↳ Sopir × {duration} hari</span><span>+ {formatCurrency(150000 * duration)}</span></div>}
           {addOns?.premiumInsurance && <div className="flex justify-between text-gray-500 text-xs pl-2"><span>↳ Premium Insurance × {duration} hari</span><span>+ {formatCurrency(75000 * duration)}</span></div>}
           {addOns?.childSeat        && <div className="flex justify-between text-gray-500 text-xs pl-2"><span>↳ Child Seat × {duration} hari</span><span>+ {formatCurrency(50000 * duration)}</span></div>}
+          
+          {(pickupFee ?? 0) > 0 && <div className="flex justify-between text-gray-500 text-xs pl-2"><span>↳ Biaya Penjemputan</span><span>+ {formatCurrency(pickupFee!)}</span></div>}
+          {needsManualPickupConfirmation && <div className="flex justify-between text-amber-600 text-xs pl-2 font-semibold"><span>↳ Biaya Penjemputan (Luar Zona)</span><span>Menunggu Agen</span></div>}
+          
+          {(dropoffFee ?? 0) > 0 && <div className="flex justify-between text-gray-500 text-xs pl-2"><span>↳ Biaya Pengembalian</span><span>+ {formatCurrency(dropoffFee!)}</span></div>}
+          {needsManualDropoffConfirmation && <div className="flex justify-between text-amber-600 text-xs pl-2 font-semibold"><span>↳ Biaya Pengembalian (Luar Zona)</span><span>Menunggu Agen</span></div>}
         </div>
       ) : (
         <div className="flex justify-between text-gray-600 text-sm">
