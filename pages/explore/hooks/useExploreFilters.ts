@@ -9,10 +9,11 @@ export interface RentalFilters {
   maxPrice:          string;
   location:          string;
   passengerCapacity: string;
+  driverType:        string;
 }
 
 const INITIAL_RENTAL_FILTERS: RentalFilters = {
-  transmission: '', minPrice: '', maxPrice: '', location: '', passengerCapacity: '',
+  transmission: '', minPrice: '', maxPrice: '', location: '', passengerCapacity: '', driverType: '',
 };
 
 export const useExploreFilters = (products: Product[]) => {
@@ -71,6 +72,8 @@ export const useExploreFilters = (products: Product[]) => {
         if (selectedCategory === 3 && p.details.transportCategory !== 'Car Rental') return false;
         if (selectedCategory === 4 && p.details.transportCategory !== 'Airport Transfer') return false;
         if (rentalFilters.transmission && p.details.transmission?.toLowerCase() !== rentalFilters.transmission.toLowerCase()) return false;
+        if (rentalFilters.driverType === 'with_driver' && !p.details.driver) return false;
+        if (rentalFilters.driverType === 'without_driver' && p.details.driver) return false;
         const price = Number(p.price);
         if (rentalFilters.minPrice && price < Number(rentalFilters.minPrice)) return false;
         if (rentalFilters.maxPrice && price > Number(rentalFilters.maxPrice)) return false;

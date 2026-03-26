@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import DatePicker from 'react-datepicker';
@@ -10,7 +11,7 @@ import {
   CheckCircle2, Shield, Clock, Phone, MapPinned, Navigation,
   Info, ChevronDown, ChevronUp, Plus, Minus, Check,
   Fuel, CalendarDays, BadgeCheck, Headphones, Package, AlertCircle,
-  Tag, Percent, DollarSign, Sparkles, Loader2, AlertTriangle, X, ChevronRight,
+  Tag, Percent, DollarSign, Sparkles, Loader2, AlertTriangle, X, ChevronRight, Search,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { agentProductService } from '../services/agentProductService';
@@ -332,6 +333,115 @@ const AvailabilityCalendar: React.FC<{ blockedDates: string[] }> = ({ blockedDat
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white shadow-sm border border-gray-200"></div> Tersedia</div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-gray-100 border border-gray-200 line-through decoration-gray-400"></div> Tidak Tersedia</div>
       </div>
+    </div>
+  );
+};
+
+interface LocationResult {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+const LocationAutocomplete: React.FC<{
+  placeholder: string;
+  value: string;
+  onChange: (val: string) => void;
+  error?: boolean;
+}> = ({ placeholder, value, onChange, error }) => {
+  const [query, setQuery] = useState(value);
+  const [results, setResults] = useState<LocationResult[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!query || query === value || query.length < 3) {
+      setResults([]);
+      setIsOpen(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=id`);
+        const data = await res.json();
+        setResults(data);
+        setIsOpen(true);
+      } catch (e) {
+        console.error('Location search error:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [query, value]);
+
+  const handleSelect = (result: LocationResult) => {
+    setQuery(result.display_name);
+    onChange(result.display_name);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="w-4 h-4 text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (e.target.value === '') onChange('');
+          }}
+          onFocus={() => { if (results.length > 0) setIsOpen(true); }}
+          className={`w-full pl-11 pr-4 py-3 rounded-2xl border text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 ${error ? 'border-red-400' : 'border-gray-200'}`}
+        />
+        {isLoading && (
+          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+            <Loader2 className="w-4 h-4 text-primary-500 animate-spin" />
+          </div>
+        )}
+      </div>
+
+      {isOpen && results.length > 0 && (
+        <div className="absolute z-[100] w-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <ul className="max-h-60 overflow-y-auto">
+            {results.map((item, idx) => {
+              const parts = item.display_name.split(',');
+              const mainName = parts[0];
+              const addressDetail = parts.slice(1).join(',').trim();
+              return (
+                <li
+                  key={item.place_id || idx}
+                  onClick={() => handleSelect(item)}
+                  className="flex items-start gap-3 p-3.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
+                >
+                  <MapPin className="w-5 h-5 text-primary-500 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-800 truncate">{mainName}</p>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">{addressDetail || mainName}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
@@ -915,12 +1025,11 @@ const ProductDetail: React.FC = () => {
               </div>
               {pickupType === 'lokasi_lain' ? (
                 <div>
-                  <input
-                    type="text"
-                    placeholder="Masukkan alamat pickup lengkap… (min. 8 karakter)"
+                  <LocationAutocomplete
+                    placeholder="Ketik lokasi penjemputan (misal: bandara)..."
                     value={pickupAddress}
-                    onChange={(e) => { setPickupAddress(e.target.value); setFieldErrors(p => ({ ...p, pickupAddress: '' })); }}
-                    className={`w-full px-4 py-3 rounded-2xl border text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 ${fieldErrors.pickupAddress ? 'border-red-400' : 'border-gray-200'}`}
+                    onChange={(val) => { setPickupAddress(val); setFieldErrors(p => ({ ...p, pickupAddress: '' })); }}
+                    error={!!fieldErrors.pickupAddress}
                   />
                   <FieldError name="pickupAddress" />
                   <DeliveryFeeBadge info={pickupDelivery} type="pickup" />
@@ -945,12 +1054,11 @@ const ProductDetail: React.FC = () => {
               </div>
               {dropoffType === 'lokasi_lain' ? (
                 <div>
-                  <input
-                    type="text"
-                    placeholder="Masukkan alamat pengembalian… (min. 8 karakter)"
+                  <LocationAutocomplete
+                    placeholder="Ketik lokasi pengembalian (misal: hotel)..."
                     value={dropoffAddress}
-                    onChange={(e) => { setDropoffAddress(e.target.value); setFieldErrors(p => ({ ...p, dropoffAddress: '' })); }}
-                    className={`w-full px-4 py-3 rounded-2xl border text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all bg-gray-50 ${fieldErrors.dropoffAddress ? 'border-red-400' : 'border-gray-200'}`}
+                    onChange={(val) => { setDropoffAddress(val); setFieldErrors(p => ({ ...p, dropoffAddress: '' })); }}
+                    error={!!fieldErrors.dropoffAddress}
                   />
                   <FieldError name="dropoffAddress" />
                   <DeliveryFeeBadge info={dropoffDelivery} type="dropoff" />
@@ -1013,7 +1121,7 @@ const ProductDetail: React.FC = () => {
                   <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><BadgeCheck className="w-4 h-4 text-primary-500" /> Add-Ons</p>
                   <div className="space-y-2">
                     {[
-                      { key: 'withDriver', label: 'Dengan Sopir', desc: `${formatRp(DRIVER_PRICE_PER_12H)} / 12 jam`, price: DRIVER_PRICE_PER_12H, icon: UserCog },
+                      ...(carDetails?.driver ? [{ key: 'withDriver', label: 'Dengan Sopir', desc: `${formatRp(DRIVER_PRICE_PER_12H)} / 12 jam`, price: DRIVER_PRICE_PER_12H, icon: UserCog, warning: '*Belum termasuk BBM, tiket parkir, e-toll, dll.' }] : []),
                       { key: 'premiumInsurance', label: 'Premium Insurance', desc: 'Perlindungan penuh', price: 75_000, icon: Shield },
                       { key: 'childSeat', label: 'Child Seat', desc: 'Kursi aman untuk anak', price: 50_000, icon: Users },
                     ].map((addon) => {
@@ -1022,14 +1130,17 @@ const ProductDetail: React.FC = () => {
                       return (
                         <button key={addon.key}
                           onClick={() => setAddOns(prev => ({ ...prev, [addon.key]: !prev[addon.key as keyof typeof addOns] }))}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${isChecked ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-                          <div className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-all ${isChecked ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
+                          className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 transition-all text-left ${isChecked ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                          <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-all ${isChecked ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
                             {isChecked && <Check className="w-3 h-3 text-white" />}
                           </div>
-                          <AddonIcon className={`w-4 h-4 shrink-0 ${isChecked ? 'text-green-600' : 'text-gray-400'}`} />
+                          <AddonIcon className={`mt-0.5 w-4 h-4 shrink-0 ${isChecked ? 'text-green-600' : 'text-gray-400'}`} />
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-bold ${isChecked ? 'text-green-700' : 'text-gray-800'}`}>{addon.label}</p>
-                            <p className="text-[11px] text-gray-400">{addon.desc}</p>
+                            <p className="text-[11px] text-gray-400 leading-relaxed">{addon.desc}</p>
+                            {'warning' in addon && (addon as any).warning && (
+                              <p className="text-[10px] text-amber-500 font-semibold mt-1">{(addon as any).warning}</p>
+                            )}
                           </div>
                           <p className="text-xs font-bold text-gray-500 shrink-0">+{product.currency} {addon.price.toLocaleString('id-ID')}</p>
                         </button>

@@ -17,14 +17,35 @@ interface Props {
   appliedDiscount:  number;
   finalTotal:       number;
   addOns?:          { withDriver?: boolean; premiumInsurance?: boolean; childSeat?: boolean };
+  pickupFee?:       number;
+  dropoffFee?:      number;
+  needsManualPickupConfirmation?: boolean;
+  needsManualDropoffConfirmation?: boolean;
 }
 
 export const PriceSummary: React.FC<Props> = ({
   isCarBooking, basePricePerPax, pricePerPax, duration,
   guestCount, pax, unitLabel, priceUnitLabel, baseTotal,
   appliedVoucher, appliedDiscount, finalTotal, addOns,
+({
+  pickupFee,
+  dropoffFee,
+  needsManualPickupConfirmation,
+  needsManualDropoffConfirmation,
 }) => {
   const { t } = useTranslation();
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+      <h3 className="font-bold text-gray-800 mb-4">
+        {t('priceDetails')}
+      </h3>
+      <div className="space-y-3">
+        {/* isi lainnya tetap di sini */}
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
@@ -50,15 +71,76 @@ export const PriceSummary: React.FC<Props> = ({
             </span>
             <span>{formatCurrency(baseTotal)}</span>
           </div>
-        )}
+{addOns?.withDriver && (
+  <div className="flex justify-between text-gray-500 text-xs pl-2">
+    <span>↳ Sopir × {duration} hari</span>
+    <span>+ {formatCurrency(150000 * duration)}</span>
+  </div>
+)}
 
-        {/* Voucher discount */}
-        {appliedVoucher && appliedDiscount > 0 && (
-          <div className="flex justify-between text-sm text-green-600 font-semibold">
-            <span className="flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" />Voucher ({appliedVoucher.code})</span>
-            <span>− {formatCurrency(appliedDiscount)}</span>
-          </div>
-        )}
+{addOns?.premiumInsurance && (
+  <div className="flex justify-between text-gray-500 text-xs pl-2">
+    <span>↳ Premium Insurance × {duration} hari</span>
+    <span>+ {formatCurrency(75000 * duration)}</span>
+  </div>
+)}
+
+{addOns?.childSeat && (
+  <div className="flex justify-between text-gray-500 text-xs pl-2">
+    <span>↳ Child Seat × {duration} hari</span>
+    <span>+ {formatCurrency(50000 * duration)}</span>
+  </div>
+)}
+
+{(pickupFee ?? 0) > 0 && (
+  <div className="flex justify-between text-gray-500 text-xs pl-2">
+    <span>↳ Biaya Penjemputan</span>
+    <span>+ {formatCurrency(pickupFee!)}</span>
+  </div>
+)}
+
+{needsManualPickupConfirmation && (
+  <div className="flex justify-between text-amber-600 text-xs pl-2 font-semibold">
+    <span>↳ Biaya Penjemputan (Luar Zona)</span>
+    <span>Menunggu Agen</span>
+  </div>
+)}
+
+{(dropoffFee ?? 0) > 0 && (
+  <div className="flex justify-between text-gray-500 text-xs pl-2">
+    <span>↳ Biaya Pengembalian</span>
+    <span>+ {formatCurrency(dropoffFee!)}</span>
+  </div>
+)}
+
+{needsManualDropoffConfirmation && (
+  <div className="flex justify-between text-amber-600 text-xs pl-2 font-semibold">
+    <span>↳ Biaya Pengembalian (Luar Zona)</span>
+    <span>Menunggu Agen</span>
+  </div>
+)}
+
+{/* kondisi else tetap dipertahankan */}
+{!addOns && (
+  <div className="flex justify-between text-gray-600 text-sm">
+    <span>
+      {formatCurrency(pricePerPax)} / {priceUnitLabel} × {guestCount ?? pax} {unitLabel}
+      {duration > 1 && ` × ${duration} ${priceUnitLabel}`}
+    </span>
+    <span>{formatCurrency(baseTotal)}</span>
+  </div>
+)}
+
+{/* Voucher discount dari master */}
+{appliedVoucher && appliedDiscount > 0 && (
+  <div className="flex justify-between text-sm text-green-600 font-semibold">
+    <span className="flex items-center gap-1.5">
+      <Tag className="w-3.5 h-3.5" />
+      Voucher ({appliedVoucher.code})
+    </span>
+    <span>− {formatCurrency(appliedDiscount)}</span>
+  </div>
+)}
 
         {/* Admin fee */}
         <div className="flex justify-between text-sm text-gray-500">

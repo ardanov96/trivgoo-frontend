@@ -1,4 +1,4 @@
-import { ArrowUpDown, Gauge, Search, Users, X } from 'lucide-react';
+import { ArrowUpDown, Gauge, Search, Users, UserCog, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CATEGORY_TABS, SORT_OPTIONS, TOUR_TAGS, STAY_TAGS, filterContainerVariants, filterItemVariants, slideLeftVariants } from '../constants';
 import type { RentalFilters } from '../hooks/useExploreFilters';
@@ -78,7 +78,7 @@ export const FilterPanel = ({
       {/* Rental filters */}
       {isCarCategory && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Gauge className="h-5 w-5 text-gray-400" /></div>
             <select value={rentalFilters.transmission} onChange={(e) => onRentalFilterChange('transmission', e.target.value)}
@@ -94,6 +94,16 @@ export const FilterPanel = ({
               <option value="">Passenger Capacity</option>
               <option value="2">2 Passengers</option><option value="4">4 Passengers</option>
               <option value="6">6 Passengers</option><option value="8">8+ Passengers</option>
+            </select>
+            <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><UserCog className="h-5 w-5 text-gray-400" /></div>
+            <select value={rentalFilters.driverType} onChange={(e) => onRentalFilterChange('driverType', e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer appearance-none">
+              <option value="">Semua Tipe Sopir</option>
+              <option value="with_driver">Dengan Sopir</option>
+              <option value="without_driver">Lepas Kunci</option>
             </select>
             <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
