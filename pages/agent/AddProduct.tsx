@@ -452,7 +452,8 @@ const AgentAddProduct: React.FC = () => {
   const [markerPos, setMarkerPos] = useState<LatLng | null>(null);
   const [coverState, setCoverState] = useState<CoverState>(null);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
-  const [newBlockedDate, setNewBlockedDate] = useState("");
+  const [blockStartDate, setBlockStartDate] = useState("");
+  const [blockEndDate, setBlockEndDate] = useState("");
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("");
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -889,10 +890,54 @@ const AgentAddProduct: React.FC = () => {
   };
 
   const handleAddBlockedDate = () => {
-    if (newBlockedDate && !formData.blockedDates.includes(newBlockedDate)) {
-      setFormData((prev) => ({ ...prev, blockedDates: [...prev.blockedDates, newBlockedDate] }));
-      setNewBlockedDate("");
+    if (!blockStartDate) return;
+
+    // Handle Single Date Selection
+    if (!blockEndDate || blockStartDate === blockEndDate) {
+      if (!formData.blockedDates.includes(blockStartDate)) {
+        setFormData((prev) => ({ ...prev, blockedDates: [...prev.blockedDates, blockStartDate] }));
+      }
+      setBlockStartDate("");
+      setBlockEndDate("");
+      return;
     }
+
+    // Handle Date Range Selection
+    const start = new Date(blockStartDate);
+    const end = new Date(blockEndDate);
+
+    if (end < start) {
+      Swal.fire({
+        title: 'Invalid Range',
+        text: 'End date must be after or equal to the start date.',
+        icon: 'warning',
+        confirmButtonColor: '#0f172a',
+        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl' }
+      });
+      return;
+    }
+
+    const datesToAdd: string[] = [];
+    const current = new Date(start);
+
+    while (current <= end) {
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, '0');
+      const day = String(current.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      if (!formData.blockedDates.includes(dateStr)) {
+        datesToAdd.push(dateStr);
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    if (datesToAdd.length > 0) {
+      setFormData((prev) => ({ ...prev, blockedDates: [...prev.blockedDates, ...datesToAdd] }));
+    }
+
+    setBlockStartDate("");
+    setBlockEndDate("");
   };
 
   const removeBlockedDate = (date: string) =>
@@ -1504,9 +1549,18 @@ const AgentAddProduct: React.FC = () => {
               <div className="col-span-2">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Block Dates</label>
                 <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input type="date" className="flex-1 px-4 py-2 rounded-xl border border-gray-200" value={newBlockedDate} onChange={(e) => setNewBlockedDate(e.target.value)} />
-                    <button type="button" onClick={handleAddBlockedDate} className="px-4 py-2 bg-red-100 text-red-600 rounded-xl font-bold hover:bg-red-200 transition">Block</button>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1 grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[10px] text-gray-500 font-bold uppercase mb-1 block">Start Date</span>
+                        <input type="date" className="w-full px-4 py-2 h-[42px] rounded-xl border border-gray-200 focus:ring-2 focus:ring-red-200 focus:border-red-300 outline-none transition" value={blockStartDate} onChange={(e) => setBlockStartDate(e.target.value)} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-500 font-bold uppercase mb-1 block">End Date (Optional)</span>
+                        <input type="date" className="w-full px-4 py-2 h-[42px] rounded-xl border border-gray-200 focus:ring-2 focus:ring-red-200 focus:border-red-300 outline-none transition" value={blockEndDate} onChange={(e) => setBlockEndDate(e.target.value)} min={blockStartDate} />
+                      </div>
+                    </div>
+                    <button type="button" onClick={handleAddBlockedDate} className="px-5 py-2 h-[42px] bg-red-100 text-red-600 rounded-xl font-bold hover:bg-red-200 transition whitespace-nowrap">Block Range</button>
                   </div>
                   {formData.blockedDates.length > 0 && (
                     <div className="p-4 bg-red-50 rounded-xl border border-red-100">
