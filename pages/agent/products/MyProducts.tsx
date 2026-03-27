@@ -18,6 +18,7 @@ import CampaignsStrip  from '../components/CampaignStrip';
 import FlashSaleModal  from '../components/FlashSaleModal';
 import ProductCard     from '../components/ProductCard';
 import { getAddLabel } from '../utils/labels';
+import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -124,7 +125,9 @@ interface SubmissionPanelProps {
 }
 
 const SubmissionPanel: React.FC<SubmissionPanelProps> = ({ campaignSubs, flashSubs, onDismiss }) => {
-  const [expanded, setExpanded] = useState(true);
+  const { langPath } = useLangNavigate();
+  const [expanded, setExpanded] = useState(
+true);
   const [subPage,  setSubPage]  = useState(1);
 
   const STATUS_ORDER: Record<string, number> = {

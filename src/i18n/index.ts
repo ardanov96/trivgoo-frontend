@@ -7,8 +7,14 @@ import id from './locales/id/translation.json';
 import en from './locales/en/translation.json';
 import zh from './locales/zh/translation.json';
 import ar from './locales/ar/translation.json';
+import ms from './locales/ms/translation.json';
+import fr from './locales/fr/translation.json';
+import de from './locales/de/translation.json';
+import ja from './locales/ja/translation.json';
+import ko from './locales/ko/translation.json';
 
-export const SUPPORTED_LANGS = ['id', 'en', 'zh', 'ar'] as const;
+// ── Supported languages ────────────────────────────────────────────────────
+export const SUPPORTED_LANGS = ['id', 'en', 'zh', 'ar', 'ms', 'fr', 'de', 'ja', 'ko'] as const;
 export type SupportedLang = typeof SUPPORTED_LANGS[number];
 
 export const LANG_META: Record<SupportedLang, { label: string; flag: string; dir: 'ltr' | 'rtl' }> = {
@@ -16,8 +22,14 @@ export const LANG_META: Record<SupportedLang, { label: string; flag: string; dir
   en: { label: 'English',   flag: '🇬🇧', dir: 'ltr' },
   zh: { label: '中文',       flag: '🇨🇳', dir: 'ltr' },
   ar: { label: 'العربية',   flag: '🇸🇦', dir: 'rtl' },
+  ms: { label: 'Melayu',    flag: '🇲🇾', dir: 'ltr' },
+  fr: { label: 'Français',  flag: '🇫🇷', dir: 'ltr' },
+  de: { label: 'Deutsch',   flag: '🇩🇪', dir: 'ltr' },
+  ja: { label: '日本語',     flag: '🇯🇵', dir: 'ltr' },
+  ko: { label: '한국어',     flag: '🇰🇷', dir: 'ltr' },
 };
 
+// ── Init ───────────────────────────────────────────────────────────────────
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -27,6 +39,11 @@ i18n
       en: { translation: en },
       zh: { translation: zh },
       ar: { translation: ar },
+      ms: { translation: ms },
+      fr: { translation: fr },
+      de: { translation: de },
+      ja: { translation: ja },
+      ko: { translation: ko },
     },
     fallbackLng: 'id',
     detection: {

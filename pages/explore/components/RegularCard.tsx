@@ -1,7 +1,7 @@
 import { Heart, MapPin, ShoppingCart, Star, Tag } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
-import { useTranslation } from 'react-i18next';
 import { Product } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
 import { encodeId } from '../../../utils/hashids';
@@ -19,17 +19,24 @@ interface Props {
 }
 
 export const RegularCard = ({ product, isLoggedIn, isSaved, isInCart, onWishlist, onAddToCart }: Props) => {
+  const { t } = useTranslation();
   const activeVouchers = getActiveVouchers(product);
   const bestDiscount   = calcBestDiscount(activeVouchers, Number(product.price));
-  const { langPath } = useLangNavigate();
+  const { langPath }   = useLangNavigate();
 
   return (
     <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative">
       <div className="aspect-[4/3] relative overflow-hidden">
-        <img src={getImageUrl(product.image_url || product.image)} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
+        <img
+          src={getImageUrl(product.image_url || product.image)}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }}
+        />
 
         {isLoggedIn && (
-          <button onClick={onWishlist} className="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-2 rounded-full shadow-sm z-10 hover:scale-110 transition-transform group/btn active:scale-90">
+          <button onClick={onWishlist} className="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-2 rounded-full shadow-sm z-10 hover:scale-110 transition-transform group/btn active:scale-90"
+            title={t('product.save_wishlist', 'Save to Wishlist')}>
             <Heart className={`w-4 h-4 transition-colors ${isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400 group-hover/btn:text-red-500'}`} />
           </button>
         )}
@@ -43,7 +50,7 @@ export const RegularCard = ({ product, isLoggedIn, isSaved, isInCart, onWishlist
             <Tag className="w-3 h-3" />
             {activeVouchers.length === 1
               ? `${activeVouchers[0].type === 'percent' ? activeVouchers[0].value + '%' : formatRp(activeVouchers[0].value)} OFF`
-              : `${activeVouchers.length} Promo`}
+              : `${activeVouchers.length} ${t('common.popular', 'Promo')}`}
           </div>
         )}
       </div>
@@ -57,25 +64,35 @@ export const RegularCard = ({ product, isLoggedIn, isSaved, isInCart, onWishlist
         )}
 
         <div className="mt-auto pt-4 border-t border-gray-100">
-          <p className="text-sm text-gray-500 mb-1">From</p>
+          <p className="text-sm text-gray-500 mb-1">{t('explore.from', 'From')}</p>
           <p className="text-lg font-bold text-gray-900">
             {product.currency} {Number(product.price).toLocaleString('id-ID')}
-            <span className="text-sm font-medium text-gray-500"> /pax</span>
+            <span className="text-sm font-medium text-gray-500"> /{t('common.per_person', 'pax')}</span>
           </p>
           {bestDiscount > 0 && (
             <p className="text-xs text-green-600 font-semibold mt-0.5">
-              Mulai {product.currency} {(Number(product.price) - bestDiscount).toLocaleString('id-ID')} setelah promo
+              {t('explore.from', 'From')} {product.currency} {(Number(product.price) - bestDiscount).toLocaleString('id-ID')} {t('explore.after_promo', 'after promo')}
             </p>
           )}
           <VoucherPillList vouchers={activeVouchers} max={2} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-            <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} onClick={(e) => e.stopPropagation()} className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center">
-              See Details
+            <Link
+              to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)}
+              onClick={(e) => e.stopPropagation()}
+              className="border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center flex items-center justify-center"
+            >
+              {t('explore.view_details', 'See Details')}
             </Link>
-            <button onClick={onAddToCart} disabled={isInCart} className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98] ${isInCart ? 'border-green-500 text-green-600 bg-green-50 cursor-default' : 'border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md'}`}>
+            <button
+              onClick={onAddToCart}
+              disabled={isInCart}
+              className={`py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 border transform active:scale-[0.98] ${isInCart ? 'border-green-500 text-green-600 bg-green-50 cursor-default' : 'border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md'}`}
+            >
               <ShoppingCart className={`w-3.5 h-3.5 shrink-0 ${isInCart ? 'stroke-green-600' : ''}`} />
-              <span className="truncate">{isInCart ? 'Added' : 'Add to Cart'}</span>
+              <span className="truncate">
+                {isInCart ? t('product.added_to_cart', 'Added') : t('product.add_to_cart', 'Add to Cart')}
+              </span>
             </button>
           </div>
         </div>

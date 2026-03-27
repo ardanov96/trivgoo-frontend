@@ -18,6 +18,7 @@ import { useAuth } from '../../AuthContext';
 import { authService } from '../../services/authService';
 import { VerificationStatus } from '../../types';
 import http from '../../services/http';
+import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 
 type StatCardProps = {
   title: string;
@@ -71,6 +72,7 @@ interface WeeklySales {
 const AgentDashboard: React.FC = () => {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
+  const { langNavigate } = useLangNavigate();
   const location = useLocation();
 
   const [stats, setStats] = useState<DashboardStats | null>(null);

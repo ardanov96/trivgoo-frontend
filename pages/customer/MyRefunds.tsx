@@ -90,6 +90,7 @@ const fmt = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
 const MyRefunds: React.FC = () => {
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(MOCK_REFUNDS[0]?.id ?? null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | RefundStatus>('all');

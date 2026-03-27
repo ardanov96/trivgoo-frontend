@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { DESTINATION_PINS, FLIGHT_ROUTES, HERO_STYLES, EASE } from '../constants';
 
@@ -6,7 +7,9 @@ const PlanePath = () => (
   <path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2h-1A1.5 1.5 0 0 0 9 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L12 19v-5.5l9 2.5z" />
 );
 
-export const HeroSection = () => (
+export const HeroSection = () => {
+  const { t } = useTranslation();
+  return (
   <div
     className="relative text-white overflow-hidden"
     style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #6b1a12 0%, #a83328 35%, #c34134 65%, #E05845 100%)' }}
@@ -70,12 +73,12 @@ export const HeroSection = () => (
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center justify-center" style={{ minHeight: '100vh' }}>
       <div className="text-center max-w-4xl mx-auto">
         <motion.span initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="inline-block py-2 px-4 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-bold tracking-[0.2em] mb-6 uppercase border border-white/20">
-          Tentang Kami
+          {t('about.badge', 'About Us')}
         </motion.span>
         <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4, ease: EASE }} className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 leading-tight">
-          Satu Platform Untuk<br />
+          {t('about.hero_title1', 'One Platform For')}<br />
           <motion.span initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.75, ease: EASE }} className="text-transparent bg-clip-text bg-gradient-to-r from-white via-yellow-200 to-amber-300 inline-block">
-            Semua Kebutuhan Perjalanan
+            {t('about.hero_title2', 'All Your Travel Needs')}
           </motion.span>
         </motion.h1>
         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 1 }} className="text-xl text-gray-100 max-w-2xl mx-auto leading-relaxed">
@@ -84,4 +87,5 @@ export const HeroSection = () => (
       </div>
     </div>
   </div>
-);
+  );
+}

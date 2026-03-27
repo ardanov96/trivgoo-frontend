@@ -29,6 +29,7 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
   const bestDiscount   = calcBestDiscount(activeVouchers, baseTotal);
   const finalTotal     = baseTotal - bestDiscount;
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col md:flex-row relative w-full">

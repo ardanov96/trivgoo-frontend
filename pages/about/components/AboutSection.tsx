@@ -71,7 +71,8 @@ export const StatsSection = React.forwardRef<HTMLDivElement, StatsProps>(({ inVi
       <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-8" variants={staggerContainer} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
         {STATS.map((stat, index) => {
           const Icon = stat.icon;
-          return (
+          const { t } = useTranslation();
+  return (
             <motion.div key={index} className="text-center" variants={scaleIn} custom={index}>
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm mb-4">
                 <Icon className="w-8 h-8" />

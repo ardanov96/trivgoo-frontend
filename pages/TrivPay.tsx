@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Wallet, FileText, Camera, Star, ShieldCheck, Smartphone, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -13,6 +14,7 @@ const fadeUp = {
 };
 
 const TrivPay: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="bg-white">
 
@@ -33,10 +35,10 @@ const TrivPay: React.FC = () => {
               className="flex-1 text-center md:text-left"
             >
               <h1 className="text-3xl md:text-5xl font-serif font-bold text-primary-600 leading-tight mb-4">
-                Dompet Wisata yang<br /> Menemani Perjalananmu
+                {t('trivpay.hero_title', 'Travel Wallet That Accompanies Your Journey')}
               </h1>
               <p className="text-gray-600 text-sm md:text-base leading-relaxed mb-8 max-w-md mx-auto md:mx-0">
-                Simpan semua biaya, dokumen, poin serta kenangan perjalananmu di satu dompet perjalanan. Dompet Trivpay masih terintegrasi di aplikasi Trivgoo Apps.
+                {t('trivpay.hero_desc', 'Store all costs, documents, points and travel memories in one travel wallet. TrivPay is integrated in the Trivgoo Apps.')}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <a
@@ -94,7 +96,7 @@ const TrivPay: React.FC = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">
-              Apa itu Trivpay
+              {t('trivpay.what_title', 'What is TrivPay')}
             </h2>
           </motion.div>
 
@@ -108,14 +110,14 @@ const TrivPay: React.FC = () => {
               className="flex-1"
             >
               <p className="text-gray-600 text-base leading-relaxed mb-6">
-                Trivpay merupakan dompet pembayaran yang membantu kamu dalam menangani urusan keuangan pada saat perjalanan. Dompet perjalanan tersebut menyimpan:
+                {t('trivpay.what_desc', 'TrivPay is a payment wallet that helps you manage finances during your trip. The travel wallet stores:')}
               </p>
               <ul className="space-y-3">
                 {[
-                  { icon: Wallet,   text: 'Saldo perjalanan' },
-                  { icon: FileText, text: 'Dokumen yang berkaitan dengan perjalanan' },
-                  { icon: Camera,   text: 'Foto kenangan saat perjalanan' },
-                  { icon: Star,     text: 'Trivpoin (Poin yang didapat setelah melakukan pembelian dan pemberian review)' },
+                  { icon: Wallet,   text: t('trivpay.item_balance', 'Travel balance') },
+                  { icon: FileText, text: t('trivpay.item_docs', 'Travel-related documents') },
+                  { icon: Camera,   text: t('trivpay.item_photos', 'Travel memory photos') },
+                  { icon: Star,     text: t('trivpay.item_points', 'Trivpoints (Points earned after purchases and reviews)') },
                 ].map(({ icon: Icon, text }, i) => (
                   <motion.li
                     key={i}
@@ -166,10 +168,10 @@ const TrivPay: React.FC = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-3">
-              Fitur Unggulan TrivPay
+              {t('trivpay.features_title', 'TrivPay Key Features')}
             </h2>
             <p className="text-gray-500 max-w-xl mx-auto text-sm">
-              Semua yang kamu butuhkan selama perjalanan, ada dalam satu tempat.
+              {t('trivpay.features_desc', 'Everything you need during your trip, in one place.')}
             </p>
           </motion.div>
 
@@ -177,29 +179,29 @@ const TrivPay: React.FC = () => {
             {[
               {
                 icon: Wallet,
-                title: 'Saldo Perjalanan',
-                desc: 'Kelola anggaran wisatamu dengan mudah. Top up, transfer, dan pantau pengeluaran real-time.',
+                title: t('trivpay.feat_balance', 'Travel Balance'),
+                desc: t('trivpay.feat_balance_desc', 'Manage your travel budget easily. Top up, transfer, and monitor expenses in real-time.'),
                 color: 'bg-rose-50',
                 iconColor: 'text-primary-600',
               },
               {
                 icon: FileText,
-                title: 'Dokumen Digital',
-                desc: 'Simpan e-tiket, voucher hotel, dan dokumen perjalanan lainnya dalam satu tempat yang aman.',
+                title: t('trivpay.feat_docs', 'Digital Documents'),
+                desc: t('trivpay.feat_docs_desc', 'Store e-tickets, hotel vouchers, and other travel documents in one secure place.'),
                 color: 'bg-amber-50',
                 iconColor: 'text-amber-600',
               },
               {
                 icon: Camera,
-                title: 'Kenangan Wisata',
-                desc: 'Abadikan dan simpan foto perjalananmu langsung dari aplikasi. Kenangan yang tak terlupakan.',
+                title: t('trivpay.feat_memories', 'Travel Memories'),
+                desc: t('trivpay.feat_memories_desc', 'Capture and save travel photos directly from the app. Unforgettable memories.'),
                 color: 'bg-blue-50',
                 iconColor: 'text-blue-600',
               },
               {
                 icon: Star,
-                title: 'Trivpoin',
-                desc: 'Dapatkan poin dari setiap pembelian dan review. Tukar poin untuk diskon perjalanan berikutnya.',
+                title: t('trivpay.feat_points', 'Trivpoints'),
+                desc: t('trivpay.feat_points_desc', 'Earn points from every purchase and review. Redeem for discounts on your next trip.'),
                 color: 'bg-green-50',
                 iconColor: 'text-green-600',
               },
@@ -235,10 +237,10 @@ const TrivPay: React.FC = () => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-3">
-              Cara Kerja Trivpoin
+              {t('trivpay.points_title', 'How Trivpoints Work')}
             </h2>
             <p className="text-gray-500 max-w-xl mx-auto text-sm">
-              Kumpulkan poin dan hemat lebih banyak untuk setiap perjalananmu.
+              {t('trivpay.points_desc', 'Collect points and save more on every trip.')}
             </p>
           </motion.div>
 
@@ -247,20 +249,20 @@ const TrivPay: React.FC = () => {
               {
                 step: '01',
                 icon: ShieldCheck,
-                title: 'Lakukan Pembelian',
-                desc: 'Setiap pembelian produk wisata di Trivgoo akan menghasilkan Trivpoin otomatis.',
+                title: t('trivpay.step1_title', 'Make a Purchase'),
+                desc: t('trivpay.step1_desc', 'Every travel product purchase on Trivgoo automatically generates Trivpoints.'),
               },
               {
                 step: '02',
                 icon: Star,
-                title: 'Berikan Review',
-                desc: 'Tulis ulasan pengalaman perjalananmu dan dapatkan bonus Trivpoin ekstra.',
+                title: t('trivpay.step2_title', 'Write a Review'),
+                desc: t('trivpay.step2_desc', 'Write a travel review and earn bonus Trivpoints.'),
               },
               {
                 step: '03',
                 icon: Gift,
-                title: 'Tukar & Hemat',
-                desc: 'Gunakan Trivpoin untuk mendapatkan diskon menarik pada pembelian berikutnya.',
+                title: t('trivpay.step3_title', 'Redeem & Save'),
+                desc: t('trivpay.step3_desc', 'Use Trivpoints to get great discounts on your next purchase.'),
               },
             ].map(({ step, icon: Icon, title, desc }, i) => (
               <motion.div
@@ -309,13 +311,13 @@ const TrivPay: React.FC = () => {
           >
             <div className="flex items-center gap-2 mb-4 justify-center lg:justify-start">
               <Smartphone className="w-5 h-5 text-primary-200" />
-              <span className="text-primary-200 font-bold text-sm uppercase tracking-widest">Download Sekarang</span>
+              <span className="text-primary-200 font-bold text-sm uppercase tracking-widest">{t('trivpay.download_now', 'Download Now')}</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-5 leading-tight">
-              Mulai Perjalananmu<br /> Bersama TrivPay
+              {t('trivpay.cta_title', 'Start Your Journey with TrivPay')}
             </h2>
             <p className="text-primary-100 text-base mb-8">
-              Tersedia di App Store dan Google Play. Gratis untuk semua pengguna Trivgoo.
+              {t('trivpay.cta_desc', 'Available on App Store and Google Play. Free for all Trivgoo users.')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <a href="#" className="flex items-center justify-center bg-black px-6 py-3.5 rounded-2xl shadow-xl hover:-translate-y-1 transition-all active:scale-95">
@@ -342,7 +344,7 @@ const TrivPay: React.FC = () => {
                 className="w-44 h-44 object-contain"
               />
             </div>
-            <span className="text-white mt-4 text-xs uppercase tracking-widest font-semibold">Scan untuk download</span>
+            <span className="text-white mt-4 text-xs uppercase tracking-widest font-semibold">{t('trivpay.scan_to_download', 'Scan to download')}</span>
           </motion.div>
         </div>
       </section>

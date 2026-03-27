@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { EASE } from '../constants';
@@ -12,7 +13,9 @@ interface Props {
   onClose:      () => void;
 }
 
-export const ApplicationModal = ({ job, form, onChange, onSubmit, onClose }: Props) => (
+export const ApplicationModal = ({ job, form, onChange, onSubmit, onClose }: Props) => {
+  const { t } = useTranslation();
+  return (
   <motion.div
     className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -91,4 +94,5 @@ export const ApplicationModal = ({ job, form, onChange, onSubmit, onClose }: Pro
       </div>
     </motion.div>
   </motion.div>
-);
+  );
+}

@@ -7,7 +7,10 @@ import { fadeUp, scaleIn, stagger } from '../constants';
 
 interface Props { inView: boolean; }
 
-export const CtaSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, ref) => (
+export const CtaSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, ref) => {
+  const { t } = useTranslation();
+  const { langPath } = useLangNavigate();
+  return (
   <div className="bg-gradient-to-r from-primary-600 to-primary-700 py-20 text-white relative overflow-hidden" ref={ref}>
     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10" />
     <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -34,5 +37,6 @@ export const CtaSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, r
       </motion.div>
     </div>
   </div>
-));
+  );
+});
 CtaSection.displayName = 'CtaSection';

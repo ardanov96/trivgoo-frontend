@@ -7,6 +7,7 @@ import { ServicesSection }   from './about/components/ServicesSection';
 import { GallerySection }    from './about/components/GallerySection';
 import { CtaSection }        from './about/components/CtaSection';
 
+// AboutUs is a thin wrapper — t() is used inside each sub-component
 const AboutUs: React.FC = () => {
   const [activeGallery, setActiveGallery] = useState(0);
 

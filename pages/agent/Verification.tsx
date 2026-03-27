@@ -14,11 +14,13 @@
   import { agentService } from '../../services/agentService';
   import { authService } from '../../services/authService';
   import { AgentSpecialization, AgentType, VerificationStatus } from '../../types';
+import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 
   const AgentVerification: React.FC = () => {
     const { user, updateUser } = useAuth();
     const navigate = useNavigate();
 
+  const { langNavigate } = useLangNavigate();
     const [step, setStep] = useState(1);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);

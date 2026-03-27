@@ -9,6 +9,7 @@ import { FeaturedSection, TrendingSection, GridSection } from './blog/components
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TravelBlog: React.FC = () => {
+  const { t } = useTranslation();
   const { searchQuery, setSearchQuery, currentPosts, currentPage, totalPages, handlePageChange, clearFilters } = useBlogFilter();
 
   const featuredPosts = BLOG_POSTS.filter((p) => p.isFeatured);

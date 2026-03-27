@@ -46,7 +46,7 @@ const CATEGORIES: Category[] = [
     slug: 'activities',
     description: 'Fun daily activities',
     image: 'https://picsum.photos/seed/cat3/400/300',
-  }, // Kept for legacy
+  },
   {
     id: 4,
     name: 'Transportation',
@@ -88,9 +88,9 @@ let CAMPAIGNS: FlashSaleCampaign[] = [
 let PRODUCTS: Product[] = [
   {
     id: 101,
-    ownerId: 2,
-    ownerName: 'Agent Smith',
-    categoryId: 1,
+    owner_id: 2,
+    owner_name: 'Agent Smith',
+    category_id: 1,
     name: 'Ultimate Bali Tour',
     location: 'Bali, Indonesia',
     price: 150,
@@ -101,14 +101,13 @@ let PRODUCTS: Product[] = [
     image:
       'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
     images: [
-      'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1552120476-945690e87d3a?auto=format&fit=crop&w=1200&q=80',
+      { url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80' },
+      { url: 'https://images.unsplash.com/photo-1552120476-945690e87d3a?auto=format&fit=crop&w=1200&q=80' },
     ],
     features: ['Transport', 'Lunch', 'Guide', 'Entrance Fees'],
-    dailyCapacity: 20,
-    isActive: true,
-    // Block dates: 2 days from now and 5 days from now for demo
-    blockedDates: [getFutureDate(2), getFutureDate(5)],
+    daily_capacity: 20,
+    is_active: true,
+    blocked_dates: [getFutureDate(2), getFutureDate(5)],
     details: {
       type: 'tour',
       tourCategory: TourCategory.CULTURAL,
@@ -140,9 +139,9 @@ let PRODUCTS: Product[] = [
   },
   {
     id: 102,
-    ownerId: 2,
-    ownerName: 'Agent Smith',
-    categoryId: 2,
+    owner_id: 2,
+    owner_name: 'Agent Smith',
+    category_id: 2,
     name: 'Sunset Private Villa',
     location: 'Santorini, Greece',
     price: 450,
@@ -153,12 +152,12 @@ let PRODUCTS: Product[] = [
     image:
       'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80',
     images: [
-      'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80',
+      { url: 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=80' },
     ],
     features: ['Private Pool', 'Ocean View', 'Breakfast', 'Wifi'],
-    dailyCapacity: 1,
-    isActive: true,
-    blockedDates: [getFutureDate(1), getFutureDate(3)], // Demo blocked dates
+    daily_capacity: 1,
+    is_active: true,
+    blocked_dates: [getFutureDate(1), getFutureDate(3)],
     details: {
       type: 'stay',
       stayCategory: StayCategory.VILLA,
@@ -182,9 +181,9 @@ let PRODUCTS: Product[] = [
   },
   {
     id: 105,
-    ownerId: 2,
-    ownerName: 'Agent Smith',
-    categoryId: 4,
+    owner_id: 2,
+    owner_name: 'Agent Smith',
+    category_id: 4,
     name: 'Toyota Avanza Rental',
     location: 'Bali, Indonesia',
     price: 35,
@@ -194,11 +193,11 @@ let PRODUCTS: Product[] = [
     image:
       'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1200&q=80',
     images: [
-      'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1200&q=80',
+      { url: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1200&q=80' },
     ],
     features: ['7 Seater', 'Automatic', 'AC', 'Bluetooth'],
-    dailyCapacity: 5,
-    isActive: true,
+    daily_capacity: 5,
+    is_active: true,
     details: {
       type: 'car',
       transportCategory: TransportCategory.CAR_RENTAL,
@@ -229,7 +228,7 @@ const USERS: User[] = [
     role: UserRole.AGENT,
     balance: 1250.0,
     avatar: 'https://picsum.photos/seed/u2/100/100',
-    verificationStatus: VerificationStatus.VERIFIED,
+    verification_status: VerificationStatus.VERIFIED,
     specialization: AgentSpecialization.TOUR,
     agentType: AgentType.INDIVIDUAL,
   },
@@ -240,7 +239,7 @@ const USERS: User[] = [
     role: UserRole.AGENT,
     balance: 0,
     avatar: 'https://picsum.photos/seed/u4/100/100',
-    verificationStatus: VerificationStatus.UNVERIFIED,
+    verification_status: VerificationStatus.UNVERIFIED,
   },
   {
     id: 3,
@@ -255,6 +254,7 @@ const BOOKINGS: Booking[] = [
   {
     id: 5001,
     userId: 3,
+    userName: 'John Doe',
     productId: 101,
     productName: 'Ultimate Bali Tour',
     productImage:
@@ -263,7 +263,6 @@ const BOOKINGS: Booking[] = [
     totalPrice: 300,
     status: BookingStatus.CONFIRMED,
     date: '2023-11-15',
-    createdAt: '2023-10-01',
     contactDetails: { name: 'John Doe', email: 'user@gmail.com', phone: '08123456789' },
   },
 ];
@@ -296,8 +295,8 @@ class MockService {
     return new Promise((resolve) => {
       setTimeout(() => {
         const related = PRODUCTS.filter(
-          (p) => p.categoryId === categoryId && p.id !== currentProductId,
-        ).slice(0, 3); // Return top 3 related products
+          (p) => p.category_id === categoryId && p.id !== currentProductId,
+        ).slice(0, 3);
         resolve(related);
       }, 400);
     });
@@ -315,7 +314,6 @@ class MockService {
 
   getAllBookings(): Promise<Booking[]> {
     return new Promise((resolve) => {
-      // Enrich bookings with user names for admin view
       const enrichedBookings = BOOKINGS.map((booking) => {
         const user = USERS.find((u) => u.id === booking.userId);
         return {
@@ -331,11 +329,9 @@ class MockService {
     return new Promise((resolve) => {
       const booking = BOOKINGS.find((b) => b.id === id);
       if (booking) {
-        // Commission Logic: If status changes to CONFIRMED (and wasn't already), credit the agent
         if (status === BookingStatus.CONFIRMED && booking.status !== BookingStatus.CONFIRMED) {
-          // Find Product to find Owner & Check if it was a campaign product
           const product = PRODUCTS.find((p) => p.id === booking.productId);
-          let commissionRate = 0.11; // Default 11%
+          let commissionRate = 0.11;
 
           if (
             product &&
@@ -343,7 +339,6 @@ class MockService {
             product.flashSale.status === 'approved' &&
             product.flashSale.campaignId
           ) {
-            // Find campaign to get discounted fee
             const campaign = CAMPAIGNS.find((c) => c.id === product.flashSale?.campaignId);
             if (campaign) {
               commissionRate = campaign.adminFeePercentage / 100;
@@ -354,7 +349,7 @@ class MockService {
           const agentEarnings = booking.totalPrice - platformFee;
 
           if (product) {
-            const agent = USERS.find((u) => u.id === product.ownerId);
+            const agent = USERS.find((u) => u.id === product.owner_id);
             if (agent) {
               agent.balance = (agent.balance || 0) + agentEarnings;
             }
@@ -369,7 +364,6 @@ class MockService {
     });
   }
 
-  // Simulate completion of a booking (e.g. date passed)
   completeBooking(id: number): Promise<boolean> {
     return this.updateBookingStatus(id, BookingStatus.COMPLETED);
   }
@@ -386,7 +380,6 @@ class MockService {
         if (!product.reviews) product.reviews = [];
         product.reviews.push(newReview);
 
-        // Recalculate Rating
         const totalRating = product.reviews.reduce((acc, r) => acc + r.rating, 0);
         product.rating = parseFloat((totalRating / product.reviews.length).toFixed(1));
 
@@ -416,7 +409,7 @@ class MockService {
       setTimeout(() => {
         const existingUser = USERS.find((u) => u.email === userData.email);
         if (existingUser) {
-          resolve(false); // Email already taken
+          resolve(false);
           return;
         }
 
@@ -429,7 +422,7 @@ class MockService {
             userData.name,
           )}&background=random`,
           balance: 0,
-          verificationStatus:
+          verification_status:
             userData.role === UserRole.AGENT ? VerificationStatus.UNVERIFIED : undefined,
           specialization: userData.specialization,
         };
@@ -440,12 +433,10 @@ class MockService {
     });
   }
 
-  createBooking(booking: Omit<Booking, 'id' | 'createdAt' | 'status'>): Promise<Booking> {
+  createBooking(booking: Omit<Booking, 'id' | 'status'>): Promise<Booking> {
     return new Promise((resolve) => {
-      // AUTO-CAPACITY LOGIC
       const product = PRODUCTS.find((p) => p.id === booking.productId);
-      if (product && product.dailyCapacity) {
-        // Count existing bookings for this product on this date
+      if (product && product.daily_capacity) {
         const bookingsOnDate = BOOKINGS.filter(
           (b) =>
             b.productId === booking.productId &&
@@ -454,14 +445,12 @@ class MockService {
         );
 
         const currentTotalQuantity = bookingsOnDate.reduce((sum, b) => sum + b.quantity, 0);
-
-        // Check if this new booking fits
         const newTotal = currentTotalQuantity + booking.quantity;
 
-        if (newTotal >= product.dailyCapacity) {
-          if (!product.blockedDates) product.blockedDates = [];
-          if (!product.blockedDates.includes(booking.date)) {
-            product.blockedDates.push(booking.date);
+        if (newTotal >= product.daily_capacity) {
+          if (!product.blocked_dates) product.blocked_dates = [];
+          if (!product.blocked_dates.includes(booking.date)) {
+            product.blocked_dates.push(booking.date);
             console.log(
               `Date ${booking.date} blocked for product ${product.name} (Capacity reached)`,
             );
@@ -472,20 +461,17 @@ class MockService {
       const newBooking: Booking = {
         ...booking,
         id: Math.floor(Math.random() * 10000),
-        status: BookingStatus.PENDING, // Initially pending payment
-        createdAt: new Date().toISOString().split('T')[0],
+        status: BookingStatus.PENDING,
       };
       BOOKINGS.push(newBooking);
       setTimeout(() => resolve(newBooking), 1000);
     });
   }
 
-  // New Methods for Agent Product Management
   getAgentProducts(agentId: number): Promise<Product[]> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        // Filter products belonging to this agent
-        resolve(PRODUCTS.filter((p) => p.ownerId === agentId));
+        resolve(PRODUCTS.filter((p) => p.owner_id === agentId));
       }, 500);
     });
   }
@@ -493,7 +479,7 @@ class MockService {
   getAgentBookings(agentId: number): Promise<Booking[]> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const agentProductIds = PRODUCTS.filter((p) => p.ownerId === agentId).map((p) => p.id);
+        const agentProductIds = PRODUCTS.filter((p) => p.owner_id === agentId).map((p) => p.id);
         const agentBookings = BOOKINGS.filter((b) => agentProductIds.includes(b.productId));
 
         const enriched = agentBookings.map((b) => {
@@ -508,16 +494,16 @@ class MockService {
 
   addProduct(product: Omit<Product, 'id' | 'rating' | 'reviews'>): Promise<boolean> {
     return new Promise((resolve) => {
-      const user = USERS.find((u) => u.id === product.ownerId);
+      const user = USERS.find((u) => u.id === product.owner_id);
       const newProduct: Product = {
         ...product,
         id: Math.floor(Math.random() * 10000),
-        ownerName: user?.name,
+        owner_name: user?.name,
         rating: 0,
         reviews: [],
-        isActive: true, // Default active
-        dailyCapacity: product.dailyCapacity || 10,
-        blockedDates: product.blockedDates || [],
+        is_active: true,
+        daily_capacity: product.daily_capacity || 10,
+        blocked_dates: product.blocked_dates || [],
       };
       PRODUCTS.push(newProduct);
       setTimeout(() => resolve(true), 1000);
@@ -548,7 +534,7 @@ class MockService {
     return new Promise((resolve) => {
       const product = PRODUCTS.find((p) => p.id === id);
       if (product) {
-        product.isActive = !product.isActive;
+        product.is_active = !product.is_active;
         resolve(true);
       } else {
         resolve(false);
@@ -601,8 +587,6 @@ class MockService {
       if (product && product.flashSale) {
         product.flashSale.status = 'approved';
         product.flashSale.endTime = endTime;
-        // Optionally update display price, or keep distinct
-        // product.price = product.flashSale.salePrice;
         resolve(true);
       } else {
         resolve(false);
@@ -647,10 +631,8 @@ class MockService {
         return;
       }
 
-      // Deduct balance
       agent.balance = (agent.balance || 0) - amount;
 
-      // Create Request
       const newRequest: PayoutRequest = {
         id: Math.floor(Math.random() * 10000),
         userId: agentId,
@@ -691,7 +673,6 @@ class MockService {
       const request = PAYOUT_REQUESTS.find((p) => p.id === id);
       if (request) {
         if (status === PayoutStatus.REJECTED && request.status === PayoutStatus.PENDING) {
-          // Refund balance if rejected
           const agent = USERS.find((u) => u.id === request.userId);
           if (agent) {
             agent.balance = (agent.balance || 0) + request.amount;
@@ -722,7 +703,7 @@ class MockService {
     return new Promise((resolve) => {
       const user = USERS.find((u) => u.id === userId);
       if (user && user.role === UserRole.AGENT) {
-        user.verificationStatus = VerificationStatus.PENDING;
+        user.verification_status = VerificationStatus.PENDING;
         user.agentType = data.type;
         user.documents = { idCard: 'uploaded', taxId: data.taxId };
         user.bankDetails = {
@@ -742,7 +723,7 @@ class MockService {
     return new Promise((resolve) => {
       const user = USERS.find((u) => u.id === userId);
       if (user) {
-        user.verificationStatus = VerificationStatus.VERIFIED;
+        user.verification_status = VerificationStatus.VERIFIED;
         resolve(true);
       } else {
         resolve(false);
@@ -754,7 +735,7 @@ class MockService {
     return new Promise((resolve) => {
       const user = USERS.find((u) => u.id === userId);
       if (user) {
-        user.verificationStatus = VerificationStatus.REJECTED;
+        user.verification_status = VerificationStatus.REJECTED;
         resolve(true);
       } else {
         resolve(false);

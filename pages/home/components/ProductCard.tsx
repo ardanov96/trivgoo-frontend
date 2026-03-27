@@ -3,8 +3,8 @@
 import { Heart, MapPin, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
-// ✅ useTranslation dihapus karena belum dipakai
 import { Product } from '../../../types';
 import { generateSlug } from '../../../utils/slugify';
 import { encodeId } from '../../../utils/hashids';
@@ -24,6 +24,7 @@ interface Props {
 
 export const ProductCard = ({ product, index, priceUnit, isLoggedIn, isSaved, isInCart, onWishlist, onAddToCart }: Props) => {
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   return (
   <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: index * 0.1 }}>
     <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col relative h-full">

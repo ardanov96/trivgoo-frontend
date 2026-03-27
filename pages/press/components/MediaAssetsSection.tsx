@@ -6,6 +6,7 @@ import { fadeUp, scaleIn, stagger, MEDIA_ASSETS, getAssetLabel } from '../consta
 import type { MediaAsset } from '../constants';
 
 const getAssetIcon = (type: MediaAsset['type']) => {
+  const { t } = useTranslation();
   switch (type) {
     case 'video':     return <Video     className="w-5 h-5" />;
     case 'press-kit': return <FileText  className="w-5 h-5" />;

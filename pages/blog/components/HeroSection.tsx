@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -11,7 +12,9 @@ interface Props {
   onSearchChange:(q: string) => void;
 }
 
-export const HeroSection = ({ searchQuery, onSearchChange }: Props) => (
+export const HeroSection = ({ searchQuery, onSearchChange }: Props) => {
+  const { t } = useTranslation();
+  return (
   <div className="relative text-white overflow-hidden" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #E05845 0%, #E06A45 30%, #E07B45 60%, #E08C45 100%)' }}>
     <style>{HERO_STYLES}</style>
 
@@ -123,4 +126,5 @@ export const HeroSection = ({ searchQuery, onSearchChange }: Props) => (
       </div>
     </div>
   </div>
-);
+  );
+}

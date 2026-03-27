@@ -27,6 +27,7 @@ interface NotifCategory {
 
 const MyNotifications: React.FC = () => {
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const [masterEnabled, setMasterEnabled] = useState(true);
   const [quietHours, setQuietHours] = useState(false);
   const [quietStart, setQuietStart] = useState('22:00');

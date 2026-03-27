@@ -10,7 +10,9 @@ interface Props {
   onApply: (job: JobPosition) => void;
 }
 
-export const JobsSection = React.forwardRef<HTMLDivElement, Props>(({ inView, onApply }, ref) => (
+export const JobsSection = React.forwardRef<HTMLDivElement, Props>(({ inView, onApply }, ref) => {
+  const { t } = useTranslation();
+  return (
   <div id="open-positions" className="bg-gray-50 py-20 md:py-28" ref={ref}>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -37,5 +39,6 @@ export const JobsSection = React.forwardRef<HTMLDivElement, Props>(({ inView, on
       </motion.div>
     </div>
   </div>
-));
+  );
+});
 JobsSection.displayName = 'JobsSection';

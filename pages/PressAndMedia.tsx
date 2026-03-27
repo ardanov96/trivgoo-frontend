@@ -13,6 +13,7 @@ import { CtaSection }            from './press/components/CtaSection';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PressAndMedia: React.FC = () => {
+  const { t } = useTranslation();
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
 
   const pressReveal    = useReveal();

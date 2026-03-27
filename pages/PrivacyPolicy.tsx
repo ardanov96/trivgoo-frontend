@@ -1,6 +1,7 @@
 import { ArrowLeft, ChevronRight, Shield } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { Link } from 'react-router-dom';
 
 // ── Section data ──────────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ const NavItem: React.FC<{ section: typeof SECTIONS[0]; active: boolean; onClick:
 
 const PrivacyPolicy: React.FC = () => {
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState('tentang');
 
   useEffect(() => {

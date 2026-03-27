@@ -9,6 +9,7 @@ interface Props { inView: boolean; }
 export const CultureSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, ref) => {
   const perksReveal = useReveal();
 
+  const { t } = useTranslation();
   return (
     <div id="culture" className="bg-white py-20 md:py-28" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

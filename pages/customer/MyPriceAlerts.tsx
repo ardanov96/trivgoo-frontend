@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import { useLangNavigate } from '../../src/hooks/useLangNavigate';
+import { Link } from 'react-router-dom';
 import {
   ChevronRight, Bell, BellOff, Plane, TrendingDown, TrendingUp,
   Minus, Plus, X, ArrowRight, Sparkles, Target,
@@ -35,6 +35,7 @@ const fmt = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
 const TrendBadge: React.FC<{ trend: PriceTrend; pct: number }> = ({ trend, pct }) => {
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   if (trend === 'down') return (
     <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
       <TrendingDown className="w-3 h-3" /> Turun {pct}%

@@ -15,6 +15,7 @@ import { useAuth } from '../AuthContext';
 import { useToast } from '../components/ToastContext';
 import { mockService } from '../services/mockService';
 import { BookingStatus, Product } from '../types';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 
 interface LocationState {
   product: Product;
@@ -34,7 +35,7 @@ interface LocationState {
 
 const Payment: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const { langNavigate } = useLangNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
   const { showToast } = useToast();

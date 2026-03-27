@@ -19,7 +19,8 @@ export const ServicesSection = React.forwardRef<HTMLDivElement, Props>(({ inView
           const Icon    = service.icon;
           const isEven  = index % 2 === 0;
 
-          return (
+          const { t } = useTranslation();
+  return (
             <motion.div
               key={index}
               className="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100"

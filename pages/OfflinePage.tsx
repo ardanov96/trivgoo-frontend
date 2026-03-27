@@ -28,6 +28,7 @@ const SignalBars = ({ active }: { active: boolean }) => (
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 const OfflinePage: React.FC = () => {
+  const { t } = useTranslation();
   const [isOnline,  setIsOnline]  = useState(navigator.onLine);
   const [retrying,  setRetrying]  = useState(false);
   const [justBack,  setJustBack]  = useState(false);
@@ -176,7 +177,7 @@ const OfflinePage: React.FC = () => {
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">TIPS</p>
                 <ul className="space-y-2.5">
                   {[
-                    'Periksa koneksi Wi-Fi atau data seluler',
+                    t('errors.offline_desc', 'Check your connection') + ' Wi-Fi atau data seluler',
                     'Restart router atau modem',
                     'Aktifkan mode pesawat, lalu matikan kembali',
                     'Coba pindah ke jaringan lain',
@@ -199,7 +200,7 @@ const OfflinePage: React.FC = () => {
                 <motion.span animate={retrying ? { rotate: 360 } : { rotate: 0 }} transition={{ duration: 0.8, repeat: retrying ? Infinity : 0, ease: 'linear' }}>
                   <RefreshCw className="w-4 h-4" />
                 </motion.span>
-                {retrying ? 'Memeriksa koneksi...' : 'Coba Lagi'}
+                {retrying ? 'Memeriksa koneksi...' : t('errors.try_again', 'Try Again')}
               </motion.button>
             </motion.div>
           )}

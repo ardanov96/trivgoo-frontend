@@ -79,6 +79,7 @@ const CardVisual: React.FC<{ card: SavedCard; selected: boolean; onClick: () => 
 
 const MyCards: React.FC = () => {
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const [cards, setCards] = useState<SavedCard[]>(MOCK_CARDS);
   const [selectedId, setSelectedId] = useState<string>(MOCK_CARDS[0]?.id ?? '');
   const [showAdd, setShowAdd] = useState(false);

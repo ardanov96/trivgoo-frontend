@@ -1,8 +1,10 @@
 // pages/PromoCampaignPage.tsx
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Tag, Calendar, Percent, ShoppingBag, MapPin } from 'lucide-react';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { getCampaignById, getCampaignJoinedProducts, resolveBannerUrl, type PromoCampaign } from '../services/promoService';
 import { encodeId } from '../utils/hashids';
 import { generateSlug } from '../utils/slugify';
@@ -167,6 +169,8 @@ const ProductCard: React.FC<{ p: CampaignProduct; idx: number }> = ({ p, idx }) 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const PromoCampaignPage: React.FC = () => {
+  const { langNavigate } = useLangNavigate();
+  const { t } = useTranslation();
   const { id }   = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -214,7 +218,7 @@ const PromoCampaignPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <SEO
         title={campaign ? `${campaign.name} – Trivgoo` : 'Promo Campaign – Trivgoo'}
-        description={campaign?.description || 'Temukan produk-produk pilihan dalam promo campaign eksklusif ini.'}
+        description={campaign?.description || t('promo.seo_desc', 'Discover selected products in this exclusive promo campaign.')}
       />
 
       {/* ══ Hero banner ══════════════════════════════════════════════════════ */}
@@ -394,7 +398,7 @@ const PromoCampaignPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
             style={{ background: '#F1EFE8', color: '#444441', border: '0.5px solid #B4B2A9' }}
           >
-            Min. Rp {Number(campaign.min_transaction).toLocaleString('id-ID')}
+            {t('promo.min_transaction', 'Min.')} Rp {Number(campaign.min_transaction).toLocaleString('id-ID')}
           </span>
         )}
 
@@ -404,7 +408,7 @@ const PromoCampaignPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
             style={{ background: '#EEEDFE', color: '#3C3489', border: '0.5px solid #AFA9EC' }}
           >
-            Member {campaign.min_tier_name}
+            {t('promo.member', 'Member')} {campaign.min_tier_name}
           </span>
         )}
 
@@ -435,7 +439,7 @@ const PromoCampaignPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
             style={{ background: '#FFF8EC', color: '#633806', border: '0.5px solid #FAC775' }}
           >
-            Maks. Rp {Number(campaign.max_discount).toLocaleString('id-ID')}
+            {t('promo.max_discount_label', 'Max.')} Rp {Number(campaign.max_discount).toLocaleString('id-ID')}
           </span>
         )}
 
@@ -448,9 +452,9 @@ const PromoCampaignPage: React.FC = () => {
         {/* Products heading */}
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-bold text-gray-900">
-            Produk dalam Campaign
+            {t('promo.products_in_campaign', 'Products in Campaign')}
             {total > 0 && (
-              <span className="ml-2 text-sm text-gray-400 font-normal">({total} produk)</span>
+              <span className="ml-2 text-sm text-gray-400 font-normal">({total} {t('promo.products_count', 'products')})</span>
             )}
           </h2>
         </div>
@@ -467,7 +471,7 @@ const PromoCampaignPage: React.FC = () => {
             className="py-20 text-center"
           >
             <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400 font-medium">Belum ada produk dalam campaign ini.</p>
+            <p className="text-gray-400 font-medium">{t('promo.no_products', 'No products in this campaign yet.')}</p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
@@ -485,17 +489,17 @@ const PromoCampaignPage: React.FC = () => {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className="px-5 py-2.5 rounded-full border border-gray-200 text-sm font-bold disabled:opacity-40 hover:bg-white transition-colors"
             >
-              ← Prev
+              ← {t('common.previous', 'Prev')}
             </button>
             <span className="text-sm text-gray-500">
-              Hal <span className="font-bold text-gray-800">{page}</span> / {totalPages}
+              {t('promo.page', 'Page')} <span className="font-bold text-gray-800">{page}</span> / {totalPages}
             </span>
             <button
               disabled={page >= totalPages || isLoadingProducts}
               onClick={() => setPage((p) => p + 1)}
               className="px-5 py-2.5 rounded-full border border-gray-200 text-sm font-bold disabled:opacity-40 hover:bg-white transition-colors"
             >
-              Next →
+              {t('common.next', 'Next')} →
             </button>
           </div>
         )}

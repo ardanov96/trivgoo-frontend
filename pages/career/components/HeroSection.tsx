@@ -11,7 +11,9 @@ interface Props {
   onViewCulture:   () => void;
 }
 
-export const HeroSection = ({ onViewPositions, onViewCulture }: Props) => (
+export const HeroSection = ({ onViewPositions, onViewCulture }: Props) => {
+  const { t } = useTranslation();
+  return (
   <div
     className="relative text-white overflow-hidden"
     style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #5a1209 0%, #8c2518 30%, #b83428 60%, #E05845 100%)' }}
@@ -75,4 +77,5 @@ export const HeroSection = ({ onViewPositions, onViewCulture }: Props) => (
       </div>
     </div>
   </div>
-);
+  );
+}

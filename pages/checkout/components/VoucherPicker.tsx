@@ -12,6 +12,7 @@ interface Props {
 }
 
 export const VoucherPicker: React.FC<Props> = ({ availableVouchers, amount, appliedVoucher, onApply, onRemove }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const now = new Date();
 

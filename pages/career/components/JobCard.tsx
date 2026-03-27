@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Briefcase, Calendar, Clock, MapPin, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fadeUp } from '../constants';
@@ -9,7 +10,9 @@ interface Props {
   onApply: (job: JobPosition) => void;
 }
 
-export const JobCard = ({ job, index, onApply }: Props) => (
+export const JobCard = ({ job, index, onApply }: Props) => {
+  const { t } = useTranslation();
+  return (
   <motion.div
     variants={fadeUp}
     custom={index}
@@ -67,4 +70,5 @@ export const JobCard = ({ job, index, onApply }: Props) => (
       </button>
     </div>
   </motion.div>
-);
+  );
+}

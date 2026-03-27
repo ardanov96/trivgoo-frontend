@@ -12,6 +12,7 @@ interface Props {
 export const GallerySection = React.forwardRef<HTMLDivElement, Props>(({ inView, activeGallery, onTabChange }, ref) => {
   const current = GALLERY_TABS[activeGallery];
 
+  const { t } = useTranslation();
   return (
     <div className="bg-white py-20 md:py-28" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

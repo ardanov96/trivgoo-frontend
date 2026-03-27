@@ -37,6 +37,7 @@ const TYPE_CONFIG: Record<PassengerType, { label: string; icon: React.ReactNode;
 
 const MyPassengers: React.FC = () => {
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const [passengers, setPassengers] = useState<Passenger[]>(MOCK_PASSENGERS);
   const [selectedId, setSelectedId] = useState<string>(MOCK_PASSENGERS[0]?.id ?? '');
   const [showAdd, setShowAdd] = useState(false);

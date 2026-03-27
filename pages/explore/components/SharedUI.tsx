@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { DollarSign, Percent } from 'lucide-react';
 import { formatRp } from '../utils';
 
@@ -6,6 +7,7 @@ import { formatRp } from '../utils';
 interface VoucherPillListProps { vouchers: any[]; max?: number; }
 
 export const VoucherPillList = ({ vouchers, max = 2 }: VoucherPillListProps) => {
+  const { t } = useTranslation();
   if (!vouchers.length) return null;
   const shown = vouchers.slice(0, max);
   const rest  = vouchers.length - max;
@@ -17,7 +19,7 @@ export const VoucherPillList = ({ vouchers, max = 2 }: VoucherPillListProps) => 
           {v.type === 'percent' ? `${v.value}% OFF` : `${formatRp(v.value)} OFF`}
         </span>
       ))}
-      {rest > 0 && <span className="text-[10px] text-orange-500 font-bold">+{rest} lagi</span>}
+      {rest > 0 && <span className="text-[10px] text-orange-500 font-bold">+{rest} {t('common.more', 'more')}</span>}
     </div>
   );
 };

@@ -1,7 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { EASE, HERO_STYLES, MEDIA_SNIPPETS, FLOATING_ORBS, CIRCUIT_H, CIRCUIT_V, CIRCUIT_DOTS } from '../constants';
 
-export const HeroSection = () => (
+export const HeroSection = () => {
+  const { t } = useTranslation();
+  return (
   <div className="relative text-white overflow-hidden" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #5a1209 0%, #8c2518 30%, #b83428 60%, #E05845 100%)' }}>
     <style>{HERO_STYLES}</style>
 
@@ -46,4 +49,5 @@ export const HeroSection = () => (
       </div>
     </div>
   </div>
-);
+  );
+}

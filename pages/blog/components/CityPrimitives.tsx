@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 // ── Paper plane ───────────────────────────────────────────────────────────────
 interface PaperPlaneProps { x: number; y: number; size?: number; delay: number; rotate?: number; }
@@ -20,6 +21,7 @@ const BUILDING_COLORS = [
 ];
 
 export const Skyscraper = ({ x, height, width = 30, windows, delay }: SkyscraperProps) => {
+  const { t } = useTranslation();
   const color         = BUILDING_COLORS[x % BUILDING_COLORS.length];
   const windowColor   = 'rgba(255,200,120,0.7)';
   const windowSpacing = height / (windows + 1);

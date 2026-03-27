@@ -6,7 +6,9 @@ import { fadeUp, stagger, PRESS_COVERAGE } from '../constants';
 
 interface Props { inView: boolean; }
 
-export const CoverageSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, ref) => (
+export const CoverageSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, ref) => {
+  const { t } = useTranslation();
+  return (
   <div className="bg-white py-20 md:py-28" ref={ref}>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -53,5 +55,6 @@ export const CoverageSection = React.forwardRef<HTMLDivElement, Props>(({ inView
       </motion.div>
     </div>
   </div>
-));
+  );
+});
 CoverageSection.displayName = 'CoverageSection';

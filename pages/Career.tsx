@@ -12,6 +12,7 @@ import { CtaSection }         from './career/components/CtaSection';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const Career: React.FC = () => {
+  const { t } = useTranslation();
   const [selectedJob, setSelectedJob] = useState<JobPosition | null>(null);
   const { form, handleChange, reset } = useApplicationForm();
 

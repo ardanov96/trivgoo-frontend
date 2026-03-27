@@ -20,7 +20,8 @@ export const ContactSection = React.forwardRef<HTMLDivElement, Props>(({ inView 
         <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12" variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
           {CONTACT_INFO.map((contact, index) => {
             const Icon = contact.icon;
-            return (
+            const { t } = useTranslation();
+  return (
               <motion.a key={index} href={contact.link} variants={scaleIn} custom={index} whileHover={{ y: -6, boxShadow: '0 16px 40px rgba(0,0,0,0.09)' }} className="group bg-white p-6 rounded-2xl border border-gray-100 transition-all duration-300 block">
                 <div className="p-3 bg-primary-50 rounded-xl inline-block mb-4 text-primary-600 group-hover:bg-primary-100 transition-colors">
                   <Icon className="w-6 h-6" />

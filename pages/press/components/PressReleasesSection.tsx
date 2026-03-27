@@ -6,7 +6,9 @@ import { fadeUp, fadeLeft, fadeRight, stagger, PRESS_RELEASES, getCategoryColor 
 
 interface Props { inView: boolean; }
 
-export const PressReleasesSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, ref) => (
+export const PressReleasesSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, ref) => {
+  const { t } = useTranslation();
+  return (
   <div className="bg-gray-50 py-20 md:py-28" ref={ref}>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -46,5 +48,6 @@ export const PressReleasesSection = React.forwardRef<HTMLDivElement, Props>(({ i
       </motion.div>
     </div>
   </div>
-));
+  );
+});
 PressReleasesSection.displayName = 'PressReleasesSection';

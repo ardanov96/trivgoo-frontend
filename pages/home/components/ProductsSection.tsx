@@ -23,6 +23,7 @@ interface Props {
 
 export const ProductsSection = ({ products, isLoading }: Props) => {
   const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState('All');
   const [visibleCars,   setVisibleCars]   = useState(4);
   const [visibleHotels, setVisibleHotels] = useState(4);

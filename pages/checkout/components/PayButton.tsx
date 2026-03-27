@@ -10,30 +10,33 @@ interface PayButtonProps {
   onClick:         () => void;
 }
 
-export const PayButton: React.FC<PayButtonProps> = ({ loading, appliedDiscount, onClick }) => (
-  <div className="pt-2 pb-6">
-    <button onClick={onClick} disabled={loading}
-      className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'}`}>
-      {loading ? (
-        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-      ) : (
-        <>
-          <CreditCard className="w-5 h-5" />
-          Lanjut ke Pembayaran
-          {appliedDiscount > 0 && (
-            <span className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-1">
-              Hemat {formatCurrency(appliedDiscount)}
-            </span>
-          )}
-          <ChevronRight className="w-5 h-5" />
-        </>
-      )}
-    </button>
-    <p className="text-center text-xs text-gray-400 mt-3">
-      Dengan mengklik tombol di atas, Anda menyetujui Syarat & Ketentuan yang berlaku.
-    </p>
-  </div>
-);
+export const PayButton: React.FC<PayButtonProps> = ({ loading, appliedDiscount, onClick }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="pt-2 pb-6">
+      <button onClick={onClick} disabled={loading}
+        className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'}`}>
+        {loading ? (
+          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <>
+            <CreditCard className="w-5 h-5" />
+            Lanjut ke Pembayaran
+            {appliedDiscount > 0 && (
+              <span className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-1">
+                Hemat {formatCurrency(appliedDiscount)}
+              </span>
+            )}
+            <ChevronRight className="w-5 h-5" />
+          </>
+        )}
+      </button>
+      <p className="text-center text-xs text-gray-400 mt-3">
+        Dengan mengklik tombol di atas, Anda menyetujui Syarat & Ketentuan yang berlaku.
+      </p>
+    </div>
+  );
+};
 
 // ── Rental info banner ────────────────────────────────────────────────────────
 export const RentalInfoBanner: React.FC = () => (

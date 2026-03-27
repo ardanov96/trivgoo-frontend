@@ -1,5 +1,7 @@
 import { ArrowRight, Lightbulb, Map, MapPin, Send, Sparkles, Star } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import ReactMarkdown from 'react-markdown';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
@@ -16,6 +18,7 @@ const SUGGESTIONS = [
 ];
 
 const AITripPlanner: React.FC = () => {
+  const { t } = useTranslation();
   const { langPath } = useLangNavigate();
   const [userStory, setUserStory] = useState('');
   const [itinerary, setItinerary] = useState<string>('');
@@ -64,11 +67,11 @@ const AITripPlanner: React.FC = () => {
             <Sparkles className="w-6 h-6 text-primary-600" />
           </div>
           <h1 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-4 leading-tight">
-            Siapkan Perjalananmu sesuai budgetmu!
+            {t('ai_planner.title', 'Plan Your Trip Within Your Budget!')}
           </h1>
           <p className="text-base md:text-lg text-gray-500 max-w-2xl mx-auto px-4">
-            Tell us your story, budget, and dreams. Our AI will craft a personalized itinerary and
-            match you with the perfect Trivgoo services.
+            {t('ai_planner.desc1', 'Tell us your story, budget, and dreams. Our AI will craft a personalized itinerary and')}
+            {t('ai_planner.desc2', 'match you with the perfect Trivgoo services.')}
           </p>
         </div>
 
@@ -80,7 +83,7 @@ const AITripPlanner: React.FC = () => {
               <div className="relative">
                 <textarea
                   className="w-full h-40 p-5 pr-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none text-base md:text-lg text-gray-700 bg-gray-50 focus:bg-white transition-all shadow-inner"
-                  placeholder="Example: I want to visit Bali for 3 days. I'm confused about where to go and stay. My budget is only $300. I love nature and spicy food..."
+                  placeholder={t('ai_planner.placeholder', "Example: I want to visit Bali for 3 days. I'm confused about where to go and stay. My budget is only $300. I love nature and spicy food...")}
                   value={userStory}
                   onChange={(e) => setUserStory(e.target.value)}
                 ></textarea>
@@ -93,11 +96,11 @@ const AITripPlanner: React.FC = () => {
                     {isLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Thinking...
+                        {t('ai_planner.thinking', 'Thinking...')}
                       </>
                     ) : (
                       <>
-                        Generate Plan <Send className="w-4 h-4 ml-2" />
+                        {t('ai_planner.generate', 'Generate Plan')} <Send className="w-4 h-4 ml-2" />
                       </>
                     )}
                   </button>
@@ -109,7 +112,7 @@ const AITripPlanner: React.FC = () => {
             {!hasSearched && (
               <div className="mt-6">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center">
-                  <Lightbulb className="w-4 h-4 mr-2" /> Try these prompts
+                  <Lightbulb className="w-4 h-4 mr-2" /> {t('ai_planner.try_prompts', 'Try these prompts')}
                 </p>
                 <div className="flex flex-wrap gap-2 md:gap-3">
                   {SUGGESTIONS.map((suggestion, idx) => (
@@ -134,7 +137,7 @@ const AITripPlanner: React.FC = () => {
             <div className={`lg:col-span-2 ${isLoading ? 'opacity-50' : ''}`}>
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8 h-full">
                 <h3 className="text-2xl font-serif font-bold text-gray-900 mb-6 flex items-center">
-                  <Map className="w-6 h-6 mr-3 text-primary-500" /> Your Personal Itinerary
+                  <Map className="w-6 h-6 mr-3 text-primary-500" /> {t('ai_planner.your_itinerary', 'Your Personal Itinerary')}
                 </h3>
                 {isLoading ? (
                   <div className="space-y-4">
@@ -155,7 +158,7 @@ const AITripPlanner: React.FC = () => {
             <div className="lg:col-span-1">
               <div className="sticky top-24">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Star className="w-5 h-5 mr-2 text-orange-500 fill-current" /> Recommended For You
+                  <Star className="w-5 h-5 mr-2 text-orange-500 fill-current" /> {t('ai_planner.recommended', 'Recommended For You')}
                 </h3>
 
                 {isLoading ? (
@@ -211,14 +214,14 @@ const AITripPlanner: React.FC = () => {
                 ) : (
                   <div className="bg-gray-50 rounded-2xl p-6 text-center border border-dashed border-gray-200">
                     <p className="text-gray-500 text-sm">
-                      No specific packages matched your exact request, but you can explore more
-                      options.
+                      {t('ai_planner.no_match', 'No specific packages matched your request, but you can explore more')}
+                      {t('ai_planner.options', 'options.')}
                     </p>
                     <Link
                       to={langPath('/explore')}
                       className="inline-block mt-4 text-primary-600 font-bold text-sm hover:underline"
                     >
-                      Browse All
+                      {t('common.see_all', 'Browse All')}
                     </Link>
                   </div>
                 )}
