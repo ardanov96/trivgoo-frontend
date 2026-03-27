@@ -10,6 +10,7 @@ import { authService } from "../services/authService";
 import { UserRole } from "../types";
 import UserAvatar from "./UserAvatar";
 import { useLangNavigate } from "@/src/hooks/useLangNavigate";
+import { LANG_META, SUPPORTED_LANGS, SupportedLang } from '@/src/i18n';
 
 const PublicLayout: React.FC = () => {
   const { user, logout, updateUser } = useAuth();
@@ -24,6 +25,8 @@ const PublicLayout: React.FC = () => {
   const didFetchMeRef = useRef(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { langPath, langNavigate, lang } = useLangNavigate();
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = React.useState(false);
+  const langDropdownRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -60,6 +63,77 @@ const PublicLayout: React.FC = () => {
   const handleLogout = () => { logout(); langNavigate('/'); };
   const isHome = location.pathname === `/${lang}` || location.pathname === `/${lang}/`;
   const iconCls = scrolled || !isHome ? "text-gray-600 hover:bg-gray-100" : "text-white/90 hover:bg-white/20";
+
+  // Close lang dropdown on outside click
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target as Node)) {
+        setIsLangDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+
+  const currentLangMeta = LANG_META[lang as SupportedLang] ?? LANG_META['id'];
+
+  const LangSwitcher = () => (
+    <div className="relative" ref={langDropdownRef}>
+      <button
+        onClick={() => setIsLangDropdownOpen(o => !o)}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+          scrolled || !isHome
+            ? 'text-gray-600 hover:bg-gray-100 hover:text-primary-600'
+            : 'text-white/90 hover:text-white hover:bg-white/10'
+        }`}
+        title="Change language"
+      >
+        <span className="text-base leading-none">{currentLangMeta.flag}</span>
+        <span className="text-xs font-bold uppercase hidden lg:block">{lang}</span>
+        <ChevronDown className={`w-3 h-3 transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isLangDropdownOpen && (
+        <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="px-3 py-2 border-b border-gray-50">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pilih Bahasa</p>
+          </div>
+          <div className="py-1 max-h-72 overflow-y-auto">
+            {SUPPORTED_LANGS.map((l) => {
+              const meta = LANG_META[l];
+              const isActive = l === lang;
+              return (
+                <button
+                  key={l}
+                  onClick={() => {
+                    localStorage.setItem('trivgoo_lang', l);
+                    setIsLangDropdownOpen(false);
+                    const currentPath = window.location.pathname;
+                    const rest = currentPath.replace(new RegExp('^/[a-z]{2}(?=/|$)'), '') || '/';
+                    window.location.href = '/' + l + rest;
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700 font-bold'
+                      : 'text-gray-700 hover:bg-gray-50 font-medium'
+                  }`}
+                >
+                  <span className="text-lg leading-none">{meta.flag}</span>
+                  <div className="flex-1 text-left">
+                    <p className="text-xs font-bold">{meta.label}</p>
+                  </div>
+                  {isActive && (
+                    <div className="w-2 h-2 rounded-full bg-primary-500" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   const WishlistIcon = ({ mobile = false }: { mobile?: boolean }) => (
     <Link to={langPath('/wishlist')} title={t('nav.wishlist', 'Wishlist')}
@@ -111,6 +185,7 @@ const PublicLayout: React.FC = () => {
 
             {/* Desktop right */}
             <div className="hidden md:flex md:items-center space-x-2">
+              <LangSwitcher />
               <WishlistIcon />
               <CartIcon />
               {user ? (

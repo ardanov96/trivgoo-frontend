@@ -410,7 +410,8 @@ const DeliveryConfigSection: React.FC<DeliveryConfigSectionProps> = ({ config, o
 
 const AgentAddProduct: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const { lang, id } = useParams<{ lang: string; id: string }>();
+  const basePath = `/${lang ?? 'id'}`;
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -465,6 +466,21 @@ const AgentAddProduct: React.FC = () => {
     tripType: "Open Trip" as "Open Trip" | "Private Trip" | "Group Trip",
     inclusions: [""],
     exclusions: [""],
+  });
+
+  // ── Group Trip pricing tiers ─────────────────────────────────────────────
+  const [groupPricingTiers, setGroupPricingTiers] = useState([
+    { label: 'Group of 6-10', minPax: 6,  maxPax: 10, discountPct: 15 },
+    { label: 'Group of 3-5',  minPax: 3,  maxPax: 5,  discountPct: 8  },
+    { label: 'Group of 2',    minPax: 2,  maxPax: 2,  discountPct: 0  },
+  ]);
+
+  // ── Child pricing ────────────────────────────────────────────────────────
+  const [childPricing, setChildPricing] = useState({
+    enabled: false,
+    infant: 100,  // bayi 0-1 tahun gratis by default
+    child: 30,    // anak 2-11 tahun diskon 30%
+    teen: 15,     // remaja 12-17 tahun diskon 15%
   });
 
   const [itineraryItems, setItineraryItems] = useState<ItineraryDay[]>([]);
@@ -702,6 +718,12 @@ const AgentAddProduct: React.FC = () => {
                   inclusions: product.details.inclusions,
                   exclusions: product.details.exclusions,
                 });
+                if ((product.details as any).groupPricingTiers) {
+                  setGroupPricingTiers((product.details as any).groupPricingTiers);
+                }
+                if ((product.details as any).childPricing) {
+                  setChildPricing((product.details as any).childPricing);
+                }
                 setItineraryItems(product.details.itinerary);
               } else if (product.details.type === "stay") {
                 setSelectedSubCategory(product.details.stayCategory);
@@ -728,11 +750,11 @@ const AgentAddProduct: React.FC = () => {
               }
             }
           } else {
-            navigate("/agent/products");
+            navigate(`${basePath}/agent/products`);
           }
         } catch (err) {
           console.error(err);
-          navigate("/agent/products");
+          navigate(`${basePath}/agent/products`);
         }
       })();
     }
@@ -820,7 +842,7 @@ const AgentAddProduct: React.FC = () => {
             You must complete the agent verification process and be approved by an admin before you can add products.
           </p>
           <button
-            onClick={() => navigate("/agent/verification")}
+            onClick={() => navigate(`${basePath}/agent/verification`)}
             className="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold shadow-lg hover:bg-amber-700 transition-colors"
           >
             Go to Verification
@@ -957,6 +979,8 @@ const AgentAddProduct: React.FC = () => {
         duration: tourDetails.duration || "1 Day",
         tripType: tourDetails.tripType,
         minPax: tourDetails.tripType === 'Private Trip' ? 1 : tourDetails.tripType === 'Group Trip' ? 6 : 2,
+        groupPricingTiers: tourDetails.tripType === 'Group Trip' ? groupPricingTiers : undefined,
+        childPricing: childPricing.enabled ? childPricing : undefined,
         itinerary: itineraryItems,
         inclusions: tourDetails.inclusions.filter((i) => i),
         exclusions: tourDetails.exclusions.filter((i) => i),
@@ -1140,7 +1164,7 @@ const AgentAddProduct: React.FC = () => {
         customClass: { popup: 'rounded-3xl' }
       });
 
-      navigate("/agent/products");
+      navigate(`${basePath}/agent/products`);
     } catch (error: any) {
       console.error('[SUBMIT ERROR]', error);
       Swal.fire({
@@ -1160,7 +1184,7 @@ const AgentAddProduct: React.FC = () => {
       {/* Header */}
       <div className="flex items-center mb-8 sticky top-0 bg-gray-50 z-20 py-4">
         <button
-          onClick={() => navigate("/agent/products")}
+          onClick={() => navigate(`${basePath}/agent/products`)}
           className="mr-4 p-2 hover:bg-gray-200 rounded-full transition-colors bg-white shadow-sm border border-gray-200"
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -1328,6 +1352,145 @@ const AgentAddProduct: React.FC = () => {
                     {tourDetails.tripType === 'Group Trip' && 'Paket khusus grup besar. Minimum 6 peserta.'}
                   </p>
                 </div>
+
+                {/* ── Group Trip Pricing Tiers ── */}
+                {tourDetails.tripType === 'Group Trip' && (
+                  <div className="bg-purple-50 rounded-2xl p-5 border border-purple-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-sm font-bold text-purple-900">Pricing per Group Size</p>
+                        <p className="text-xs text-purple-500 mt-0.5">Diskon otomatis dari base price berdasarkan jumlah peserta</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {groupPricingTiers.map((tier, idx) => (
+                        <div key={idx} className="bg-white rounded-xl p-3 border border-purple-100 flex items-center gap-3">
+                          <div className="flex-1 grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Label</label>
+                              <input
+                                type="text"
+                                value={tier.label}
+                                onChange={e => {
+                                  const t = [...groupPricingTiers];
+                                  t[idx] = { ...t[idx], label: e.target.value };
+                                  setGroupPricingTiers(t);
+                                }}
+                                className="w-full px-2 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-purple-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Min–Max Pax</label>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number" min={1}
+                                  value={tier.minPax}
+                                  onChange={e => {
+                                    const t = [...groupPricingTiers];
+                                    t[idx] = { ...t[idx], minPax: Number(e.target.value) };
+                                    setGroupPricingTiers(t);
+                                  }}
+                                  className="w-12 px-2 py-1.5 text-xs rounded-lg border border-gray-200 text-center focus:outline-none focus:border-purple-400"
+                                />
+                                <span className="text-gray-400 text-xs">–</span>
+                                <input
+                                  type="number" min={1}
+                                  value={tier.maxPax === 99 ? '' : tier.maxPax}
+                                  placeholder="∞"
+                                  onChange={e => {
+                                    const t = [...groupPricingTiers];
+                                    t[idx] = { ...t[idx], maxPax: e.target.value === '' ? 99 : Number(e.target.value) };
+                                    setGroupPricingTiers(t);
+                                  }}
+                                  className="w-12 px-2 py-1.5 text-xs rounded-lg border border-gray-200 text-center focus:outline-none focus:border-purple-400"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Diskon %</label>
+                              <div className="relative">
+                                <input
+                                  type="number" min={0} max={99}
+                                  value={tier.discountPct}
+                                  onChange={e => {
+                                    const t = [...groupPricingTiers];
+                                    t[idx] = { ...t[idx], discountPct: Number(e.target.value) };
+                                    setGroupPricingTiers(t);
+                                  }}
+                                  className="w-full px-2 py-1.5 pr-6 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-purple-400"
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setGroupPricingTiers(groupPricingTiers.filter((_, i) => i !== idx))}
+                            className="text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                            disabled={groupPricingTiers.length <= 1}
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setGroupPricingTiers([...groupPricingTiers, { label: 'Group baru', minPax: 1, maxPax: 99, discountPct: 0 }])}
+                      className="mt-3 flex items-center gap-1 text-xs font-bold text-purple-600 hover:underline"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Tambah Tier
+                    </button>
+                    <div className="mt-3 bg-purple-100 rounded-xl px-3 py-2">
+                      <p className="text-[10px] text-purple-700 font-semibold">
+                        💡 Diskon dihitung dari base price per orang. Contoh: base Rp 500k, diskon 15% → Rp 425k/orang untuk tier ini.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Child Pricing ── */}
+                <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-sm font-bold text-amber-900">Harga Anak-anak</p>
+                      <p className="text-xs text-amber-500 mt-0.5">Diskon % dari base price per kategori usia</p>
+                    </div>
+                    <div
+                      onClick={() => setChildPricing(p => ({ ...p, enabled: !p.enabled }))}
+                      className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${childPricing.enabled ? 'bg-amber-500' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${childPricing.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </div>
+                  </div>
+                  {childPricing.enabled && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { key: 'infant', label: '🍼 Bayi', desc: '0–1 tahun' },
+                        { key: 'child',  label: '👦 Anak', desc: '2–11 tahun' },
+                        { key: 'teen',   label: '🧑 Remaja', desc: '12–17 tahun' },
+                      ].map(cat => (
+                        <div key={cat.key} className="bg-white rounded-xl p-3 border border-amber-100 text-center">
+                          <p className="text-sm mb-0.5">{cat.label}</p>
+                          <p className="text-[10px] text-gray-400 mb-2">{cat.desc}</p>
+                          <div className="relative">
+                            <input
+                              type="number" min={0} max={100}
+                              value={childPricing[cat.key as keyof typeof childPricing] as number}
+                              onChange={e => setChildPricing(p => ({ ...p, [cat.key]: Number(e.target.value) }))}
+                              className="w-full px-2 py-1.5 pr-6 text-sm font-bold rounded-lg border border-gray-200 text-center focus:outline-none focus:border-amber-400"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
+                          </div>
+                          <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                            {childPricing[cat.key as keyof typeof childPricing] === 100 ? 'GRATIS' : `Diskon ${childPricing[cat.key as keyof typeof childPricing]}%`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Duration</label>

@@ -475,6 +475,11 @@ const ProductDetail: React.FC = () => {
   const [termsOpen, setTermsOpen] = useState(false);
   const [tourDate, setTourDate] = useState('');
   const [tourPax, setTourPax] = useState(2);
+  // Group Trip tier & child pax
+  const [selectedTierIdx, setSelectedTierIdx] = useState(0);
+  const [infantPax,  setInfantPax]  = useState(0);
+  const [childPax,   setChildPax]   = useState(0);
+  const [teenPax,    setTeenPax]    = useState(0);
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
   const [carPickupDate, setCarPickupDate] = useState('');
@@ -601,6 +606,38 @@ const ProductDetail: React.FC = () => {
   const needsManualPickup = pickupType === 'lokasi_lain' && pickupDelivery.fee === -1;
   const needsManualDropoff = dropoffType === 'lokasi_lain' && dropoffDelivery.fee === -1;
 
+  // ── Group & Child price helpers ────────────────────────────────────────────
+  const getGroupTiers = () => (tourDetails as any)?.groupPricingTiers || [];
+  const getChildPricing = () => (tourDetails as any)?.childPricing;
+
+  const getTierPrice = (basePrice: number) => {
+    const tiers = getGroupTiers();
+    if (!tiers.length || tourDetails?.tripType !== 'Group Trip') return basePrice;
+    const tier = tiers[selectedTierIdx];
+    if (!tier) return basePrice;
+    return Math.round(basePrice * (1 - tier.discountPct / 100));
+  };
+
+  const getChildPrice = (basePrice: number, type: 'infant' | 'child' | 'teen') => {
+    const cp = getChildPricing();
+    if (!cp?.enabled) return basePrice;
+    const discountPct = cp[type] ?? 0;
+    return Math.round(basePrice * (1 - discountPct / 100));
+  };
+
+  const calcTourTotal = (basePrice: number) => {
+    const tierPrice = getTierPrice(basePrice);
+    const adultTotal = tierPrice * tourPax;
+    const cp = getChildPricing();
+    if (!cp?.enabled) return adultTotal;
+    const infantTotal = getChildPrice(basePrice, 'infant') * infantPax;
+    const childTotal  = getChildPrice(basePrice, 'child')  * childPax;
+    const teenTotal   = getChildPrice(basePrice, 'teen')   * teenPax;
+    return adultTotal + infantTotal + childTotal + teenTotal;
+  };
+
+  const totalPaxCount = () => tourPax + infantPax + childPax + teenPax;
+
   const generateCheckoutPayload = (type: 'tour_stay' | 'car') => {
     if (!product) return null;
     const errors: Record<string, string> = {};
@@ -650,8 +687,18 @@ const ProductDetail: React.FC = () => {
       return {
         productId: product.id, productName: product.name, location: product.location,
         image: product.image_url || product.image, currency: product.currency || 'IDR',
-        pricePerPax: Number(product.price), pax: qty, guestCount: qty, duration: dur,
-        totalPrice: Number(product.price) * qty * dur,
+        pricePerPax: isTourProduct ? getTierPrice(Number(product.price)) : Number(product.price),
+        basePricePerPax: Number(product.price),
+        pax: isTourProduct ? totalPaxCount() : qty,
+        guestCount: isTourProduct ? totalPaxCount() : qty,
+        duration: dur,
+        totalPrice: isTourProduct ? calcTourTotal(Number(product.price)) : Number(product.price) * qty * dur,
+        adultPax: isTourProduct ? tourPax : qty,
+        infantPax: isTourProduct ? infantPax : 0,
+        childPax: isTourProduct ? childPax : 0,
+        teenPax: isTourProduct ? teenPax : 0,
+        selectedTier: isTourProduct ? getGroupTiers()[selectedTierIdx] : null,
+        childPricing: isTourProduct ? getChildPricing() : null,
         date: isTourProduct ? tourDate : `${checkInDate} - ${checkOutDate}`,
         unitLabel: isTourProduct ? 'Tiket' : 'Malam',
         priceUnitLabel: isTourProduct ? 'orang' : 'malam',
@@ -914,19 +961,146 @@ const ProductDetail: React.FC = () => {
                     <div className="mb-5 pb-4 border-b border-gray-100"><p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('explore.from', 'Starting from')}</p><p className="text-3xl font-extrabold text-gray-900">{product.currency} {Number(product.price).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-400 ml-1">/{isTourProduct ? 'orang' : 'malam'}</span></p><div className="flex items-center gap-1.5 mt-1"><span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded"><Star className="w-3 h-3 inline mr-0.5" />{avgRatingStr}</span><span className="text-xs text-gray-500">{reviewCount} ulasan</span></div></div>
                     <ProductVoucherBanner vouchers={productVouchers} />
                     {isTourProduct ? (<>
-                      <div className="mb-4"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.select_date', 'Date')} <span className="text-red-500">*</span></label><div className="relative"><CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" /><DatePicker selected={parseDateStr(tourDate)} onChange={(date: Date | null) => { setTourDate(toDateStr(date)); setFieldErrors(p => ({ ...p, tourDate: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Pilih Tanggal" wrapperClassName="w-full" className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.tourDate ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`} /></div><FieldError name="tourDate" /></div>
-                      <div className="mb-5"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.participants', 'Participants')} <span className="text-red-500">*</span></label><div className={`flex items-center gap-3 border rounded-xl p-2 bg-gray-50 ${fieldErrors.tourPax ? 'border-red-400' : 'border-gray-200'}`}><button onClick={() => {
-                          const _tt = (product?.details as any)?.tripType || 'Open Trip';
-                          const _min = _tt === 'Private Trip' ? 1 : _tt === 'Group Trip' ? 6 : 2;
-                          setTourPax(p => Math.max(_min, p - 1));
-                        }} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button><span className="flex-1 text-center font-extrabold text-gray-900">{tourPax} orang</span><button onClick={() => setTourPax(p => p + 1)} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button></div><FieldError name="tourPax" /></div>
+                      {/* ── Group Trip Tier Selector ── */}
+                    {tourDetails?.tripType === 'Group Trip' && getGroupTiers().length > 0 && (
+                      <div className="mb-4">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+                          Pilih Ukuran Group <span className="text-red-500">*</span>
+                        </label>
+                        <div className="space-y-2">
+                          {getGroupTiers().map((tier: any, idx: number) => {
+                            const tierPrice = Math.round(Number(product.price) * (1 - tier.discountPct / 100));
+                            const isSelected = selectedTierIdx === idx;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTierIdx(idx);
+                                  setTourPax(tier.minPax);
+                                }}
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${
+                                  isSelected
+                                    ? 'border-primary-500 bg-primary-50'
+                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                }`}
+                              >
+                                <div className="text-left">
+                                  <p className={`text-sm font-bold ${isSelected ? 'text-primary-700' : 'text-gray-800'}`}>
+                                    {tier.label}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-0.5">
+                                    {tier.minPax}–{tier.maxPax === 99 ? '∞' : tier.maxPax} peserta
+                                  </p>
+                                </div>
+                                <div className="text-right shrink-0 ml-3">
+                                  <p className={`text-sm font-extrabold ${isSelected ? 'text-primary-600' : 'text-gray-900'}`}>
+                                    {product.currency} {tierPrice.toLocaleString('id-ID')}
+                                  </p>
+                                  <p className="text-[10px] text-gray-400">/orang</p>
+                                  {tier.discountPct > 0 && (
+                                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                                      -{tier.discountPct}%
+                                    </span>
+                                  )}
+                                </div>
+                                {isSelected && (
+                                  <div className="ml-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shrink-0">
+                                    <Check className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mb-4"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.select_date', 'Date')} <span className="text-red-500">*</span></label><div className="relative"><CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" /><DatePicker selected={parseDateStr(tourDate)} onChange={(date: Date | null) => { setTourDate(toDateStr(date)); setFieldErrors(p => ({ ...p, tourDate: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Pilih Tanggal" wrapperClassName="w-full" className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.tourDate ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`} /></div><FieldError name="tourDate" /></div>
+                      <div className="mb-4">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                          {t('product.participants', 'Participants')} <span className="text-red-500">*</span>
+                        </label>
+                        {/* Dewasa */}
+                        <div className={`flex items-center gap-3 border rounded-xl p-2 bg-gray-50 mb-2 ${fieldErrors.tourPax ? 'border-red-400' : 'border-gray-200'}`}>
+                          <span className="text-xs text-gray-500 w-16 shrink-0">🧑 Dewasa</span>
+                          <button onClick={() => {
+                            const _tt = (product?.details as any)?.tripType || 'Open Trip';
+                            const tier = getGroupTiers()[selectedTierIdx];
+                            const _min = tier ? tier.minPax : (_tt === 'Private Trip' ? 1 : _tt === 'Group Trip' ? 6 : 2);
+                            setTourPax(p => Math.max(_min, p - 1));
+                          }} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button>
+                          <span className="flex-1 text-center font-extrabold text-gray-900">{tourPax}</span>
+                          <button onClick={() => {
+                            const tier = getGroupTiers()[selectedTierIdx];
+                            if (tier && tier.maxPax !== 99 && tourPax >= tier.maxPax) return;
+                            setTourPax(p => p + 1);
+                          }} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button>
+                        </div>
+                        <FieldError name="tourPax" />
+
+                        {/* Child pax — hanya tampil jika childPricing enabled */}
+                        {getChildPricing()?.enabled && (
+                          <div className="space-y-2 mt-2">
+                            {[
+                              { key: 'infant', label: '🍼 Bayi', desc: '0–1 tahun', pax: infantPax, setter: setInfantPax, priceType: 'infant' as const },
+                              { key: 'child',  label: '👦 Anak',  desc: '2–11 tahun', pax: childPax,  setter: setChildPax,  priceType: 'child' as const  },
+                              { key: 'teen',   label: '🧑 Remaja', desc: '12–17 tahun', pax: teenPax, setter: setTeenPax,  priceType: 'teen' as const   },
+                            ].map(cat => {
+                              const price = getChildPrice(Number(product.price), cat.priceType);
+                              const discountPct = getChildPricing()?.[cat.priceType] ?? 0;
+                              return (
+                                <div key={cat.key} className="flex items-center gap-3 border border-amber-100 rounded-xl p-2 bg-amber-50">
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-xs font-bold text-gray-700">{cat.label}</span>
+                                    <span className="text-[10px] text-gray-400 ml-1">{cat.desc}</span>
+                                    <div className="text-[10px] text-amber-600 font-semibold">
+                                      {discountPct === 100 ? 'GRATIS' : `${product.currency} ${price.toLocaleString('id-ID')}/orang`}
+                                    </div>
+                                  </div>
+                                  <button onClick={() => cat.setter(p => Math.max(0, p - 1))} className="w-8 h-8 rounded-lg bg-white border border-amber-200 flex items-center justify-center hover:border-amber-400 transition-all"><Minus className="w-3.5 h-3.5" /></button>
+                                  <span className="w-6 text-center font-extrabold text-gray-900 text-sm">{cat.pax}</span>
+                                  <button onClick={() => cat.setter(p => p + 1)} className="w-8 h-8 rounded-lg bg-white border border-amber-200 flex items-center justify-center hover:border-amber-400 transition-all"><Plus className="w-3.5 h-3.5" /></button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </>) : (<>
                       <div className="mb-4"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.stay_dates', 'Stay Dates')} <span className="text-red-500">*</span></label><div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.checkIn || fieldErrors.checkOut ? 'border-red-400' : 'border-gray-200'}`}><div className="p-3 bg-gray-50 border-r border-gray-200"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Check-in</label><DatePicker selected={parseDateStr(checkInDate)} onChange={(date: Date | null) => { const str = toDateStr(date); setCheckInDate(str); if (checkOutDate && str >= checkOutDate) setCheckOutDate(''); setFieldErrors(p => ({ ...p, checkIn: '', checkOut: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Check-in" wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div><div className="p-3 bg-gray-50"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Check-out</label><DatePicker selected={parseDateStr(checkOutDate)} onChange={(date: Date | null) => { setCheckOutDate(toDateStr(date)); setFieldErrors(p => ({ ...p, checkOut: '' })); }} minDate={parseDateStr(checkInDate) || new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Check-out" wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div></div>{checkInDate && checkOutDate && nights > 0 && <p className="text-xs text-primary-600 font-semibold mt-1.5 pl-1">{nights} malam</p>}<FieldError name="checkIn" /><FieldError name="checkOut" /></div>
                       <div className="mb-5"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('common.guests', 'Guests')} <span className="text-red-500">*</span></label><div className="flex items-center gap-3 border border-gray-200 rounded-xl p-2 bg-gray-50"><button onClick={() => setStayGuests(g => Math.max(1, g - 1))} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button><span className="flex-1 text-center font-extrabold text-gray-900">{stayGuests} tamu</span><button onClick={() => setStayGuests(g => g + 1)} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button></div></div>
                     </>)}
                     <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2">
-                      {isTourProduct ? (<div className="flex justify-between text-sm text-gray-600"><span>{tourPax} orang × {product.currency} {Number(product.price).toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(Number(product.price) * tourPax).toLocaleString('id-ID')}</span></div>) : (<div className="flex justify-between text-sm text-gray-600"><span>{nights > 0 ? `${nights} malam` : '— malam'} × {stayGuests} tamu × {product.currency} {Number(product.price).toLocaleString('id-ID')}</span><span className="font-semibold">{nights > 0 ? `${product.currency} ${(Number(product.price) * nights * stayGuests).toLocaleString('id-ID')}` : '—'}</span></div>)}
-                      <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900"><span>{t('checkout.total', 'Total')}</span><span className="text-primary-600">{nights > 0 || isTourProduct ? `${product.currency} ${tourStayTotal.toLocaleString('id-ID')}` : '—'}</span></div>
+                      {isTourProduct ? (
+                        <div className="space-y-1.5">
+                          {/* Dewasa */}
+                          <div className="flex justify-between text-sm text-gray-600">
+                            <span>{tourPax} dewasa × {product.currency} {getTierPrice(Number(product.price)).toLocaleString('id-ID')}</span>
+                            <span className="font-semibold">{product.currency} {(getTierPrice(Number(product.price)) * tourPax).toLocaleString('id-ID')}</span>
+                          </div>
+                          {/* Child rows */}
+                          {getChildPricing()?.enabled && infantPax > 0 && (
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{infantPax} bayi × {getChildPricing().infant === 100 ? 'GRATIS' : `${product.currency} ${getChildPrice(Number(product.price), 'infant').toLocaleString('id-ID')}`}</span>
+                              <span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price), 'infant') * infantPax).toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
+                          {getChildPricing()?.enabled && childPax > 0 && (
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{childPax} anak × {product.currency} {getChildPrice(Number(product.price), 'child').toLocaleString('id-ID')}</span>
+                              <span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price), 'child') * childPax).toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
+                          {getChildPricing()?.enabled && teenPax > 0 && (
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{teenPax} remaja × {product.currency} {getChildPrice(Number(product.price), 'teen').toLocaleString('id-ID')}</span>
+                              <span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price), 'teen') * teenPax).toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (<div className="flex justify-between text-sm text-gray-600"><span>{nights > 0 ? `${nights} malam` : '— malam'} × {stayGuests} tamu × {product.currency} {Number(product.price).toLocaleString('id-ID')}</span><span className="font-semibold">{nights > 0 ? `${product.currency} ${(Number(product.price) * nights * stayGuests).toLocaleString('id-ID')}` : '—'}</span></div>)}
+                      <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900"><span>{t('checkout.total', 'Total')}</span><span className="text-primary-600">{isTourProduct ? `${product.currency} ${calcTourTotal(Number(product.price)).toLocaleString('id-ID')}` : nights > 0 ? `${product.currency} ${tourStayTotal.toLocaleString('id-ID')}` : '—'}</span></div>
                     </div>
                     <button onClick={handleAddToCart} disabled={isInCart(product.id)} className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${isInCart(product.id) ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30'}`}>{isInCart(product.id) ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t('product.added_to_cart', 'Added to Cart')}</span> : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> Pesan Sekarang</span>}</button>
                     <button onClick={() => handleReserveNow('tour_stay')} className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3">{t('product.reserve_now', 'Reserve Now')}</button>
