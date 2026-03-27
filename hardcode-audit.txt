@@ -1,0 +1,22 @@
+# Hardcoded Text Audit Report
+Generated: 2026-03-27T06:13:47.885Z
+Total hardcoded strings found: 5
+
+---
+
+## pages/customer/ProfileSettings.tsx
+ID: 2 | EN: 0 | Total: 2
+
+  Line 317 [ID]: Masukkan nama lengkap
+  Line 409 [ID]: Masukkan kota tempat tinggal
+
+## pages/ProductDetail.tsx
+ID: 2 | EN: 0 | Total: 2
+
+  Line 1031 [ID]: Ketik lokasi penjemputan (misal: bandara)...
+  Line 1060 [ID]: Ketik lokasi pengembalian (misal: hotel)...
+
+## pages/Register.tsx
+ID: 0 | EN: 0 | Total: 1
+
+  Line 159 [??]: e.g. 081234567890

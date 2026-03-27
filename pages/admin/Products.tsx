@@ -100,7 +100,6 @@ interface ConfirmDialogProps {
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open, action, type, productName, context, image, onConfirm, onCancel, isLoading,
 }) => {
-  const { langPath } = useLangNavigate();
   const isApprove = action === "approve";
 
   // Close on Escape
@@ -618,7 +617,7 @@ const AdminProducts: React.FC = () => {
               />
             </div>
             <Link
-              to={langPath('/admin/promo/campaigns')}
+              to={window.location.pathname.split('/').slice(0,2).join('/') + '/admin/promo/campaigns'}
               className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg font-bold shadow-md hover:bg-gray-800 transition-colors gap-2"
             >
               <ExternalLink className="w-4 h-4" /> Manage Campaigns
@@ -665,7 +664,7 @@ const AdminProducts: React.FC = () => {
               ) : campaigns.length === 0 ? (
                 <div className="py-12 text-center text-gray-500">
                   No campaigns found.{" "}
-                  <Link to={langPath('/admin/promo/campaigns')} className="text-primary-600 font-bold hover:underline">Create one here.</Link>
+                  <Link to={window.location.pathname.split('/').slice(0,2).join('/') + '/admin/promo/campaigns'} className="text-primary-600 font-bold hover:underline">Create one here.</Link>
                 </div>
               ) : (
                 campaigns.map((c) => {

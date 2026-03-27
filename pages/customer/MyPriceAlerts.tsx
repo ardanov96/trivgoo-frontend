@@ -54,6 +54,8 @@ const TrendBadge: React.FC<{ trend: PriceTrend; pct: number }> = ({ trend, pct }
 };
 
 const MyPriceAlerts: React.FC = () => {
+  const { langPath } = useLangNavigate();
+  const { t } = useTranslation();
   const [alerts, setAlerts] = useState<PriceAlert[]>(MOCK_ALERTS);
   const [showAdd, setShowAdd] = useState(false);
   const [newFrom, setNewFrom] = useState('');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 import { Camera, ChevronRight, Check, ChevronDown, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -11,6 +12,7 @@ const ProfileSettings: React.FC = () => {
   const { user, updateUser, refreshMe, logout } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { langNavigate } = useLangNavigate();
   const [activeTab, setActiveTab] = useState<'info' | 'security'>('info');
 
   // Date parsing

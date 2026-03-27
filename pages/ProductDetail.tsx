@@ -541,6 +541,14 @@ const ProductDetail: React.FC = () => {
   useEffect(() => { if (pickupType === 'kantor') setPickupDelivery(INITIAL_DELIVERY); }, [pickupType]);
   useEffect(() => { if (dropoffType === 'kantor') setDropoffDelivery(INITIAL_DELIVERY); }, [dropoffType]);
 
+  // Set default tourPax berdasarkan tripType saat product berhasil dimuat
+  useEffect(() => {
+    if (!product) return;
+    const tt = (product.details as any)?.tripType || 'Open Trip';
+    const defaultMin = tt === 'Private Trip' ? 1 : tt === 'Group Trip' ? 6 : 2;
+    setTourPax(prev => Math.max(prev, defaultMin));
+  }, [product]);
+
   useEffect(() => {
     const load = async () => {
       if (!id) {
@@ -599,8 +607,10 @@ const ProductDetail: React.FC = () => {
     if (type === 'tour_stay') {
       const isTourProduct = isTour(product.details);
       if (isTourProduct) {
+        const _tripType = (product.details as any)?.tripType || 'Open Trip';
+        const _minPax = _tripType === 'Private Trip' ? 1 : _tripType === 'Group Trip' ? 6 : 2;
         if (!tourDate) errors.tourDate = 'Pilih tanggal tour terlebih dahulu';
-        if (tourPax < 2) errors.tourPax = t('product.min_pax_error', 'Minimum 2 participants');
+        if (tourPax < _minPax) errors.tourPax = `Minimum ${_minPax} peserta untuk ${_tripType}`;
       } else {
         if (!checkInDate) errors.checkIn = 'Pilih tanggal check-in';
         if (!checkOutDate) errors.checkOut = 'Pilih tanggal check-out';
@@ -785,11 +795,16 @@ const ProductDetail: React.FC = () => {
     const isTourProduct = !!tourDetails;
     const categoryLabel = isTourProduct ? 'Tour & Activity' : 'Hotel & Villa';
     const categoryLink = isTourProduct ? '/explore?category_id=1' : '/explore?category_id=2';
+    // Hitung minPax dari tripType
+    const tripType = (tourDetails as any)?.tripType || 'Open Trip';
+    const minPaxFromTripType = tripType === 'Private Trip' ? 1 : tripType === 'Group Trip' ? 6 : 2;
+    const minPax = (tourDetails as any)?.minPax ?? minPaxFromTripType;
+
     const highlights = isTourProduct ? [
       { icon: Clock, label: 'Durasi', value: (tourDetails as any)?.duration || 'Full Day' },
-      { icon: Users, label: 'Min. Peserta', value: `${(tourDetails as any)?.minPax || 2} orang` },
-      { icon: Award, label: 'Kategori', value: (tourDetails as any)?.tourCategory || 'Wisata' },
-      { icon: CheckCircle2, label: 'Bahasa', value: (tourDetails as any)?.language || 'Indonesia' },
+      { icon: Users, label: 'Min. Peserta', value: `${minPax} orang` },
+      { icon: Award, label: 'Tipe Trip', value: tripType },
+      { icon: CheckCircle2, label: 'Kategori', value: (tourDetails as any)?.tourCategory || 'Wisata' },
     ] : [
       { icon: CalendarDays, label: 'Min. Menginap', value: `${(stayDetails as any)?.minNight || 1} malam` },
       { icon: Users, label: 'Tamu', value: `${(stayDetails as any)?.maxGuest || 2} tamu` },
@@ -900,7 +915,11 @@ const ProductDetail: React.FC = () => {
                     <ProductVoucherBanner vouchers={productVouchers} />
                     {isTourProduct ? (<>
                       <div className="mb-4"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.select_date', 'Date')} <span className="text-red-500">*</span></label><div className="relative"><CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" /><DatePicker selected={parseDateStr(tourDate)} onChange={(date: Date | null) => { setTourDate(toDateStr(date)); setFieldErrors(p => ({ ...p, tourDate: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Pilih Tanggal" wrapperClassName="w-full" className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.tourDate ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`} /></div><FieldError name="tourDate" /></div>
-                      <div className="mb-5"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.participants', 'Participants')} <span className="text-red-500">*</span></label><div className={`flex items-center gap-3 border rounded-xl p-2 bg-gray-50 ${fieldErrors.tourPax ? 'border-red-400' : 'border-gray-200'}`}><button onClick={() => setTourPax(p => Math.max(2, p - 1))} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button><span className="flex-1 text-center font-extrabold text-gray-900">{tourPax} orang</span><button onClick={() => setTourPax(p => p + 1)} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button></div><FieldError name="tourPax" /></div>
+                      <div className="mb-5"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.participants', 'Participants')} <span className="text-red-500">*</span></label><div className={`flex items-center gap-3 border rounded-xl p-2 bg-gray-50 ${fieldErrors.tourPax ? 'border-red-400' : 'border-gray-200'}`}><button onClick={() => {
+                          const _tt = (product?.details as any)?.tripType || 'Open Trip';
+                          const _min = _tt === 'Private Trip' ? 1 : _tt === 'Group Trip' ? 6 : 2;
+                          setTourPax(p => Math.max(_min, p - 1));
+                        }} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button><span className="flex-1 text-center font-extrabold text-gray-900">{tourPax} orang</span><button onClick={() => setTourPax(p => p + 1)} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button></div><FieldError name="tourPax" /></div>
                     </>) : (<>
                       <div className="mb-4"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.stay_dates', 'Stay Dates')} <span className="text-red-500">*</span></label><div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.checkIn || fieldErrors.checkOut ? 'border-red-400' : 'border-gray-200'}`}><div className="p-3 bg-gray-50 border-r border-gray-200"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Check-in</label><DatePicker selected={parseDateStr(checkInDate)} onChange={(date: Date | null) => { const str = toDateStr(date); setCheckInDate(str); if (checkOutDate && str >= checkOutDate) setCheckOutDate(''); setFieldErrors(p => ({ ...p, checkIn: '', checkOut: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Check-in" wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div><div className="p-3 bg-gray-50"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Check-out</label><DatePicker selected={parseDateStr(checkOutDate)} onChange={(date: Date | null) => { setCheckOutDate(toDateStr(date)); setFieldErrors(p => ({ ...p, checkOut: '' })); }} minDate={parseDateStr(checkInDate) || new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Check-out" wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div></div>{checkInDate && checkOutDate && nights > 0 && <p className="text-xs text-primary-600 font-semibold mt-1.5 pl-1">{nights} malam</p>}<FieldError name="checkIn" /><FieldError name="checkOut" /></div>
                       <div className="mb-5"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('common.guests', 'Guests')} <span className="text-red-500">*</span></label><div className="flex items-center gap-3 border border-gray-200 rounded-xl p-2 bg-gray-50"><button onClick={() => setStayGuests(g => Math.max(1, g - 1))} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button><span className="flex-1 text-center font-extrabold text-gray-900">{stayGuests} tamu</span><button onClick={() => setStayGuests(g => g + 1)} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button></div></div>

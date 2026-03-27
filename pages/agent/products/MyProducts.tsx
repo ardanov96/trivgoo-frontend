@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight, Search, SlidersHorizontal,
 } from 'lucide-react';
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAuth }                          from '../../../AuthContext';
@@ -18,8 +18,6 @@ import CampaignsStrip  from '../components/CampaignStrip';
 import FlashSaleModal  from '../components/FlashSaleModal';
 import ProductCard     from '../components/ProductCard';
 import { getAddLabel } from '../utils/labels';
-import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface CampaignSubmission {
@@ -125,7 +123,7 @@ interface SubmissionPanelProps {
 }
 
 const SubmissionPanel: React.FC<SubmissionPanelProps> = ({ campaignSubs, flashSubs, onDismiss }) => {
-  const { langPath } = useLangNavigate();
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(
 true);
   const [subPage,  setSubPage]  = useState(1);
@@ -493,6 +491,8 @@ const ProdPagination: React.FC<ProdPaginationProps> = ({
 const MyProducts: React.FC = () => {
   const { user }      = useAuth();
   const navigate      = useNavigate();
+  const { lang }      = useParams<{ lang: string }>();
+  const basePath      = `/${lang ?? 'id'}/agent`;
   const { showToast } = useToast();
 
   const [products,  setProducts]  = useState<AgentProduct[]>([]);
@@ -737,7 +737,7 @@ const MyProducts: React.FC = () => {
           <p className="text-gray-500 text-sm">Manage availability, pricing, and details.</p>
         </div>
         <Link
-          to={langPath('/agent/products/new')}
+          to={`${basePath}/products/new`}
           className="flex items-center px-5 py-3 bg-primary-600 text-white rounded-xl font-bold shadow-lg shadow-primary-600/20 hover:bg-primary-700 transition-all hover:-translate-y-0.5"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -772,7 +772,7 @@ const MyProducts: React.FC = () => {
           <p className="text-gray-500 mb-8 max-w-md mx-auto">
             You haven't listed any services yet. Start adding your first product to reach thousands of travelers.
           </p>
-          <Link to={langPath('/agent/products/new')}
+          <Link to={`${basePath}/products/new`}
             className="text-primary-600 font-bold hover:underline flex items-center justify-center">
             <Plus className="w-4 h-4 mr-1" /> {getAddLabel(user?.specialization)}
           </Link>
@@ -806,7 +806,7 @@ const MyProducts: React.FC = () => {
                       onToggleStatus={() => handleToggleStatus(product.id)}
                       onDelete={() => handleDelete(product.id)}
                       onJoinFlashSale={() => openFlashSaleModal(product)}
-                      onNavigateEdit={() => langNavigate(`/agent/products/edit/${product.id}`)}
+                      onNavigateEdit={() => navigate(`${basePath}/products/edit/${product.id}`)}
                     />
                     {(prodCampaignSubs.length > 0 || prodFlashSubs.length > 0) && (
                       <div className="mt-1.5 ml-2 flex items-center gap-2 flex-wrap">

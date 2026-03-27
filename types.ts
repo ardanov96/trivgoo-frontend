@@ -108,14 +108,14 @@ export type UploadMediaResponse = {
   items?: UploadedMediaItem[];
 };
 
+export type TripType = 'Open Trip' | 'Private Trip' | 'Group Trip';
+
 export interface TourDetails {
   type: "tour";
   tourCategory: TourCategory;
   duration: string;
-  groupSize: string;
-  difficulty: "Easy" | "Moderate" | "Hard";
-  ageRestriction?: string;
-  meetingPoint: string;
+  tripType?: "Open Trip" | "Private Trip" | "Group Trip";
+  minPax?: number;
   itinerary: ItineraryDay[];
   inclusions: string[];
   exclusions: string[];
@@ -425,6 +425,8 @@ export interface ItineraryItem {
 export interface AdminProductDetails {
   type: string;
   duration: string;
+  tripType?: "Open Trip" | "Private Trip" | "Group Trip";
+  minPax?: number;
   groupSize: string;
   itinerary: ItineraryItem[];
   difficulty: string;

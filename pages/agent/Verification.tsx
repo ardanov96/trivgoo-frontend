@@ -9,18 +9,16 @@
     XCircle,
   } from 'lucide-react';
   import React, { useEffect, useRef, useState } from 'react';
-  import { useNavigate } from 'react-router-dom';
+  import { useNavigate, useParams } from 'react-router-dom';
   import { useAuth } from '../../AuthContext';
   import { agentService } from '../../services/agentService';
   import { authService } from '../../services/authService';
   import { AgentSpecialization, AgentType, VerificationStatus } from '../../types';
-import { useLangNavigate } from '../../src/hooks/useLangNavigate';
-
   const AgentVerification: React.FC = () => {
     const { user, updateUser } = useAuth();
     const navigate = useNavigate();
-
-  const { langNavigate } = useLangNavigate();
+  const { lang } = useParams<{ lang: string }>();
+  const basePath = `/${lang ?? 'id'}`;
     const [step, setStep] = useState(1);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -43,7 +41,7 @@ import { useLangNavigate } from '../../src/hooks/useLangNavigate';
     const didFetchRef = useRef(false);
 
     useEffect(() => {
-      if (!user) langNavigate('/login');
+      if (!user) navigate(`${basePath}/login`);
     }, [user, navigate]);
 
     useEffect(() => {
@@ -84,7 +82,7 @@ import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 
     useEffect(() => {
       if (user?.verification_status === VerificationStatus.VERIFIED) {
-        langNavigate('/agent');
+        navigate(`${basePath}/agent`);
       }
     }, [user?.verification_status, navigate]);
 
@@ -134,14 +132,14 @@ import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button
-                onClick={() => langNavigate('/agent')}
+                onClick={() => navigate(`${basePath}/agent`)}
                 className="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20"
               >
                 <LayoutDashboard className="w-5 h-5 mr-2" />
                 Explore Dashboard
               </button>
               <button
-                onClick={() => langNavigate('/')}
+                onClick={() => navigate(`${basePath}/`)}
                 className="inline-flex items-center justify-center px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
               >
                 Return Home

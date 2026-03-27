@@ -12,14 +12,12 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../../AuthContext';
 import { authService } from '../../services/authService';
 import { VerificationStatus } from '../../types';
 import http from '../../services/http';
-import { useLangNavigate } from '../../src/hooks/useLangNavigate';
-
 type StatCardProps = {
   title: string;
   value: React.ReactNode;
@@ -72,7 +70,8 @@ interface WeeklySales {
 const AgentDashboard: React.FC = () => {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
-  const { langNavigate } = useLangNavigate();
+  const { lang } = useParams<{ lang: string }>();
+  const basePath = `/${lang ?? 'id'}`;
   const location = useLocation();
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -105,7 +104,7 @@ const AgentDashboard: React.FC = () => {
         const status = err?.response?.status;
         if (status === 401) {
           logout();
-          langNavigate('/login', { replace: true });
+          navigate(`${basePath}/login`, { replace: true });
         }
       }
     })();
@@ -165,7 +164,7 @@ const AgentDashboard: React.FC = () => {
       description: isWaitingDoc ? 'Submit ID & Bank details' : 'Documents under review',
       status: isWaitingDoc ? 'current' : (isPending ? 'pending' : (isVerified ? 'completed' : 'locked')),
       actionLabel: isPending ? 'Under Review' : 'Verify Now',
-      actionLink: '/agent/verification',
+      actionLink: `${basePath}/agent/verification`,
       icon: (isVerified ? CheckCircle : isPending ? Clock : Circle) as React.ElementType,
     },
     {
@@ -173,7 +172,7 @@ const AgentDashboard: React.FC = () => {
       description: 'List your first service',
       status: isVerified ? 'current' : 'locked',
       actionLabel: 'Add Product',
-      actionLink: '/agent/products/new',
+      actionLink: `${basePath}/agent/products/new`,
       icon: (isVerified ? Circle : Lock) as React.ElementType,
     },
   ];
