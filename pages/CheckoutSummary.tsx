@@ -31,12 +31,12 @@ const CheckoutSummary: React.FC = () => {
 
   const bookingData = location.state;
 
-  // ── Guard 1: missing booking data ────────────────────────────────────────
+  // ── Guard 1: missing booking data ──────────────────────────────────────
   React.useEffect(() => {
     if (!bookingData || !bookingData.productName) langNavigate('/explore', { replace: true });
   }, [bookingData]);
 
-  // ── Guard 2: must be logged in ───────────────────────────────────────────
+  // ── Guard 2: must be logged in ─────────────────────────────────────────
   React.useEffect(() => {
     if (!user) {
       langNavigate('/login', {
@@ -50,18 +50,18 @@ const CheckoutSummary: React.FC = () => {
 
   const {
     productId,
-    productName              = 'Trivgoo Booking',
+    productName               = 'Trivgoo Booking',
     location: productLocation = '-',
-    date                     = '',
-    pax                      = 1,
-    pricePerPax              = 0,
-    basePricePerPax          = 0,
-    totalPrice               = 0,
-    image                    = '',
-    duration                 = 1,
+    date                      = '',
+    pax                       = 1,
+    pricePerPax               = 0,
+    basePricePerPax           = 0,
+    totalPrice                = 0,
+    image                     = '',
+    duration                  = 1,
     guestCount,
-    unitLabel                = t('checkout.ticket', 'Ticket'),
-    priceUnitLabel           = t('common.person', 'person'),
+    unitLabel                 = t('checkout.ticket', 'Ticket'),
+    priceUnitLabel            = t('common.person', 'person'),
     vehicleType,
     transmission,
     seats,
@@ -69,7 +69,7 @@ const CheckoutSummary: React.FC = () => {
     year,
     fuelPolicy,
     withDriver,
-    addOns,                  // ✅ car add-ons (withDriver, premiumInsurance, childSeat)
+    addOns,
     pickupTime,
     returnTime,
     pickupType,
@@ -94,28 +94,18 @@ const CheckoutSummary: React.FC = () => {
 
   const baseTotal  = Number(totalPrice);
   const finalTotal = Math.max(0, baseTotal - voucher.appliedDiscount) + ADMIN_FEE;
+
+  // Blokir pembayaran jika masih ada biaya antar/jemput yang menunggu konfirmasi agen
   const hasPendingManualQuote = isCarBooking && (needsManualPickupConfirmation || needsManualDropoffConfirmation);
+
   const normalizedQuantity = isCarBooking ? 1 : (pax || 1);
   const normalizedDuration = Math.max(1, Number(duration || 1));
-  const pricingContext = {
-    vehicleType: vehicleType || null,
-    duration: normalizedDuration,
-    pax: pax || 1,
-    addOns: addOns || {
-      withDriver: Boolean(withDriver),
-      premiumInsurance: false,
-      childSeat: false,
-    },
-    pickupFee: Number(pickupFee || 0),
-    dropoffFee: Number(dropoffFee || 0),
-    pickupType: pickupType || null,
-    dropoffType: dropoffType || null,
-    pickupAddress: pickupAddress || null,
-    dropoffAddress: dropoffAddress || null,
-    pickupDeliveryKm: pickupDeliveryKm ?? null,
-    dropoffDeliveryKm: dropoffDeliveryKm ?? null,
-    needsManualPickupConfirmation: Boolean(needsManualPickupConfirmation),
-    needsManualDropoffConfirmation: Boolean(needsManualDropoffConfirmation),
+
+  // ── Resolved add-ons (single source of truth) ─────────────────────────
+  const resolvedAddOns = {
+    withDriver:       Boolean(addOns?.withDriver       ?? withDriver ?? false),
+    premiumInsurance: Boolean(addOns?.premiumInsurance ?? false),
+    childSeat:        Boolean(addOns?.childSeat        ?? false),
   };
 
   const handlePayment = async () => {
@@ -124,6 +114,7 @@ const CheckoutSummary: React.FC = () => {
       return;
     }
     if (isSubmitting.current) return;
+
     if (hasPendingManualQuote) {
       Swal.fire(
         t('checkout.manual_quote_title', 'Menunggu Konfirmasi Biaya'),
@@ -135,6 +126,7 @@ const CheckoutSummary: React.FC = () => {
       );
       return;
     }
+
     if (!contact.validate()) {
       Swal.fire(
         t('checkout.incomplete_title', 'Please Complete Your Data'),
@@ -153,21 +145,19 @@ const CheckoutSummary: React.FC = () => {
         ? date.includes(' - ') ? date.split(' - ')[0] : date
         : new Date().toISOString().split('T')[0];
 
-      const pricingContext = {
-        vehicleType:  vehicleType  || null,
-        duration:     duration     || 1,
-        pax:          pax          || 1,
-        pickupFee:    pickupFee    || 0,
-        dropoffFee:   dropoffFee   || 0,
-        addOns: {
-          withDriver:        addOns?.withDriver        ?? withDriver ?? false,
-          premiumInsurance:  addOns?.premiumInsurance  ?? false,
-          childSeat:         addOns?.childSeat         ?? false,
-        },
-        voucherCode: voucher.appliedVoucher?.code || null,
-      };
+      // ✅ pricing_context sebagai JSON STRING — wajib untuk safeJsonParse() di backend
+      const pricingContextStr = JSON.stringify({
+        vehicleType:  vehicleType || null,
+        duration:     normalizedDuration,
+        pax:          normalizedQuantity,
+        pickupFee:    Number(pickupFee  || 0),
+        dropoffFee:   Number(dropoffFee || 0),
+        addOns:       resolvedAddOns,
+        voucherCode:  voucher.appliedVoucher?.code || null,
+      });
 
       const res = await http.post('/payment/create-payment', {
+        // ── Core fields ───────────────────────────────────────────────
         id:           orderId,
         amount:       finalTotal,
         name:         contact.form.name,
@@ -177,22 +167,32 @@ const CheckoutSummary: React.FC = () => {
         user_id:      user.id,
         product_id:   productId || null,
         admin_fee:    ADMIN_FEE,
-        duration:     normalizedDuration,
-        vehicle_type: vehicleType || null,
-        addOns:       pricingContext.addOns,
-        pickupFee:    pricingContext.pickupFee,
-        dropoffFee:   pricingContext.dropoffFee,
-        withDriver:   Boolean(addOns?.withDriver ?? withDriver),
-        original_amount: baseTotal,
-        pricing_context: pricingContext,
         date:         startDateStr,
         start_time:   startTime || null,
-        end_time:     endTime || null,
+        end_time:     endTime   || null,
+
+        // ── pricing_context sebagai JSON string ───────────────────────
+        // backend: safeJsonParse() membaca ini, normalizePricingContext() memprosesnya
+        pricing_context: pricingContextStr,
+
+        // ── Top-level car extras — dibutuhkan hasExplicitCarExtras ────
+        // backend mengecek KEDUA sumber: rawContext DAN payload top-level
+        pickup_fee:       Number(pickupFee  || 0),
+        dropoff_fee:      Number(dropoffFee || 0),
+        pickupFee:        Number(pickupFee  || 0),
+        dropoffFee:       Number(dropoffFee || 0),
+        withDriver:       resolvedAddOns.withDriver,
+        premiumInsurance: resolvedAddOns.premiumInsurance,
+        childSeat:        resolvedAddOns.childSeat,
+        vehicle_type:     vehicleType || null,
+        duration:         normalizedDuration,
+
+        // ── Voucher fields ────────────────────────────────────────────
+        original_amount: baseTotal,
         ...(voucher.appliedVoucher ? {
           voucher_code:    voucher.appliedVoucher.code,
           voucher_id:      voucher.appliedVoucher.id,
           discount_amount: voucher.appliedDiscount,
-          original_amount: baseTotal,
         } : {}),
       });
 
@@ -220,7 +220,10 @@ const CheckoutSummary: React.FC = () => {
       setLoading(false);
       isSubmitting.current = false;
 
-      const msg             = error.response?.data?.message || error.message || t('checkout.payment_failed', 'Failed to process payment');
+      const msg = error.response?.data?.message
+        || error.message
+        || t('checkout.payment_failed', 'Failed to process payment');
+
       const isCapacityError = msg.includes('Kapasitas Penuh') || msg.includes('stok item');
 
       Swal.fire({
@@ -308,9 +311,15 @@ const CheckoutSummary: React.FC = () => {
         />
 
         {isCarBooking && <RentalInfoBanner />}
+
+        {/* Banner peringatan jika biaya antar/jemput belum dikonfirmasi */}
         {hasPendingManualQuote && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
-            Biaya antar atau pengembalian masih menunggu konfirmasi agen. Pembayaran akan dibuka setelah harga final dikonfirmasi.
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+            <span className="text-amber-500 mt-0.5">⚠️</span>
+            <span>
+              Biaya antar atau pengembalian masih menunggu konfirmasi agen.
+              Pembayaran akan dibuka setelah harga final dikonfirmasi.
+            </span>
           </div>
         )}
 
