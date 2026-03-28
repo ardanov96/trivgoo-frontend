@@ -192,13 +192,6 @@ const Login: React.FC = () => {
               </Link>
             </p>
           </div>
-
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-            <p className="text-sm text-gray-500 mb-2">{t('auth.become_agent_prompt', 'Want to register as a Partner?')}</p>
-            <Link to={langPath('/register/agent')} className="inline-flex items-center justify-center px-4 py-2 border border-primary-200 text-sm font-medium rounded-lg text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors">
-              {t('auth.become_agent', 'Register as Agent')}
-            </Link>
-          </div>
         </div>
       </div>
     </div>
