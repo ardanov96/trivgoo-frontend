@@ -209,6 +209,7 @@ const AppRoutes: React.FC = () => (
   <Routes>
     {/* ── Root redirect → geo-detect atau saved lang ── */}
     <Route path="/" element={<RootRedirect />} />
+    <Route path="/payment/result" element={<PaymentResult />} />
 
     {/* ── Semua route dibungkus /:lang ── */}
     <Route path="/:lang" element={<LangBootstrap><Outlet /></LangBootstrap>}>

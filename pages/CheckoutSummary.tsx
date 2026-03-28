@@ -72,6 +72,12 @@ const CheckoutSummary: React.FC = () => {
     addOns,
     pickupTime,
     returnTime,
+    pickupType,
+    dropoffType,
+    pickupAddress,
+    dropoffAddress,
+    pickupDeliveryKm,
+    dropoffDeliveryKm,
     startTime,
     endTime,
     pickupFee                     = 0,
@@ -88,6 +94,29 @@ const CheckoutSummary: React.FC = () => {
 
   const baseTotal  = Number(totalPrice);
   const finalTotal = Math.max(0, baseTotal - voucher.appliedDiscount) + ADMIN_FEE;
+  const hasPendingManualQuote = isCarBooking && (needsManualPickupConfirmation || needsManualDropoffConfirmation);
+  const normalizedQuantity = isCarBooking ? 1 : (pax || 1);
+  const normalizedDuration = Math.max(1, Number(duration || 1));
+  const pricingContext = {
+    vehicleType: vehicleType || null,
+    duration: normalizedDuration,
+    pax: pax || 1,
+    addOns: addOns || {
+      withDriver: Boolean(withDriver),
+      premiumInsurance: false,
+      childSeat: false,
+    },
+    pickupFee: Number(pickupFee || 0),
+    dropoffFee: Number(dropoffFee || 0),
+    pickupType: pickupType || null,
+    dropoffType: dropoffType || null,
+    pickupAddress: pickupAddress || null,
+    dropoffAddress: dropoffAddress || null,
+    pickupDeliveryKm: pickupDeliveryKm ?? null,
+    dropoffDeliveryKm: dropoffDeliveryKm ?? null,
+    needsManualPickupConfirmation: Boolean(needsManualPickupConfirmation),
+    needsManualDropoffConfirmation: Boolean(needsManualDropoffConfirmation),
+  };
 
   const handlePayment = async () => {
     if (!user) {
@@ -95,6 +124,17 @@ const CheckoutSummary: React.FC = () => {
       return;
     }
     if (isSubmitting.current) return;
+    if (hasPendingManualQuote) {
+      Swal.fire(
+        t('checkout.manual_quote_title', 'Menunggu Konfirmasi Biaya'),
+        t(
+          'checkout.manual_quote_desc',
+          'Biaya antar atau pengembalian untuk rental mobil ini masih menunggu konfirmasi agen. Mohon tunggu harga final sebelum melanjutkan pembayaran.'
+        ),
+        'info'
+      );
+      return;
+    }
     if (!contact.validate()) {
       Swal.fire(
         t('checkout.incomplete_title', 'Please Complete Your Data'),
@@ -119,10 +159,18 @@ const CheckoutSummary: React.FC = () => {
         name:         contact.form.name,
         email:        contact.form.email,
         product_name: productName,
-        quantity:     pax || 1,
+        quantity:     normalizedQuantity,
         user_id:      user.id,
         product_id:   productId || null,
         admin_fee:    ADMIN_FEE,
+        duration:     normalizedDuration,
+        vehicle_type: vehicleType || null,
+        addOns:       pricingContext.addOns,
+        pickupFee:    pricingContext.pickupFee,
+        dropoffFee:   pricingContext.dropoffFee,
+        withDriver:   Boolean(addOns?.withDriver ?? withDriver),
+        original_amount: baseTotal,
+        pricing_context: pricingContext,
         date:         startDateStr,
         start_time:   startTime || null,
         end_time:     endTime || null,
@@ -241,9 +289,15 @@ const CheckoutSummary: React.FC = () => {
         />
 
         {isCarBooking && <RentalInfoBanner />}
+        {hasPendingManualQuote && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+            Biaya antar atau pengembalian masih menunggu konfirmasi agen. Pembayaran akan dibuka setelah harga final dikonfirmasi.
+          </div>
+        )}
 
         <PayButton
           loading={loading}
+          disabled={hasPendingManualQuote}
           appliedDiscount={voucher.appliedDiscount}
           onClick={handlePayment}
         />

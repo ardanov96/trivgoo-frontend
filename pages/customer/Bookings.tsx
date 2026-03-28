@@ -575,13 +575,42 @@ const CustomerBookings: React.FC = () => {
   };
 
   const handlePayNow = async (b: Booking) => {
-    const url = (b as any).paymentUrl;
-    if (url) { window.location.href = url; return; }
+    const externalId = (b as any).externalId;
+    const fallbackUrl = (b as any).paymentUrl;
+
+    if (!externalId && fallbackUrl) {
+      window.location.href = fallbackUrl;
+      return;
+    }
+
+    if (!externalId) {
+      alert('Link pembayaran tidak tersedia. Silakan hubungi admin atau customer service untuk dibuatkan ulang.');
+      return;
+    }
+
     try {
-      const res = await http.post('/payment/create-payment', { id: `TRV-${b.id}-${Date.now()}`, amount: b.totalPrice, name: user?.name || b.userName, email: user?.email || '', product_name: b.productName, quantity: b.quantity, user_id: user?.id || null, product_id: b.productId || null });
-      const payUrl = res.data?.data?.payment_url;
-      if (payUrl) { window.location.href = payUrl; }
-      else { alert(t('bookings.pay_error', 'Failed to get payment link.')); }
+      const res = await http.get(`/payment/status/${encodeURIComponent(externalId)}`);
+      const payment = res.data?.data || {};
+      const paymentStatus = String(payment.payment_status || b.paymentStatus || '').toUpperCase();
+      const paymentUrl = payment.payment_url || fallbackUrl;
+
+      if (paymentStatus === 'PAID') {
+        alert('Booking ini sudah dibayar.');
+        await loadBookings();
+        return;
+      }
+
+      if (paymentStatus === 'PENDING' && paymentUrl) {
+        window.location.href = paymentUrl;
+        return;
+      }
+
+      if (paymentStatus === 'EXPIRED') {
+        alert('Link pembayaran sudah kedaluwarsa. Silakan hubungi admin atau customer service untuk dibuatkan ulang.');
+        return;
+      }
+
+      alert('Link pembayaran tidak tersedia lagi. Silakan hubungi admin atau customer service untuk dibuatkan ulang.');
     } catch (err: any) { alert(err.response?.data?.message || t('bookings.pay_error', 'Failed to process payment')); }
   };
 
