@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 import { useAuth }    from '../AuthContext';
 import { useCart }    from '../components/CartContext';
 import http           from '../services/http';
-import { useLangNavigate } from '../src/hooks/useLangNavigate'; // ✅ fix missing import
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 
 import { ADMIN_FEE }          from './checkout/constants';
 import { useContactForm }     from './checkout/hooks/useContactForm';
@@ -23,7 +23,7 @@ const CheckoutSummary: React.FC = () => {
   const navigate           = useNavigate();
   const location           = useLocation();
   const { t }              = useTranslation();
-  const { langNavigate }   = useLangNavigate(); // ✅ fix
+  const { langNavigate }   = useLangNavigate();
   const { user }           = useAuth();
   const { removeFromCart } = useCart();
   const [loading, setLoading] = useState(false);
@@ -33,13 +33,13 @@ const CheckoutSummary: React.FC = () => {
 
   // ── Guard 1: missing booking data ────────────────────────────────────────
   React.useEffect(() => {
-    if (!bookingData || !bookingData.productName) langNavigate('/explore', { replace: true }); // ✅
+    if (!bookingData || !bookingData.productName) langNavigate('/explore', { replace: true });
   }, [bookingData]);
 
   // ── Guard 2: must be logged in ───────────────────────────────────────────
   React.useEffect(() => {
     if (!user) {
-      langNavigate('/login', { // ✅
+      langNavigate('/login', {
         replace: true,
         state: { from: location.pathname + location.search },
       });
@@ -50,18 +50,18 @@ const CheckoutSummary: React.FC = () => {
 
   const {
     productId,
-    productName           = 'Trivgoo Booking',
+    productName              = 'Trivgoo Booking',
     location: productLocation = '-',
-    date                  = '',
-    pax                   = 1,
-    pricePerPax           = 0,
-    basePricePerPax       = 0,
-    totalPrice            = 0,
-    image                 = '',
-    duration              = 1,
+    date                     = '',
+    pax                      = 1,
+    pricePerPax              = 0,
+    basePricePerPax          = 0,
+    totalPrice               = 0,
+    image                    = '',
+    duration                 = 1,
     guestCount,
-    unitLabel             = t('checkout.ticket', 'Ticket'),
-    priceUnitLabel        = t('common.person', 'person'),
+    unitLabel                = t('checkout.ticket', 'Ticket'),
+    priceUnitLabel           = t('common.person', 'person'),
     vehicleType,
     transmission,
     seats,
@@ -69,16 +69,16 @@ const CheckoutSummary: React.FC = () => {
     year,
     fuelPolicy,
     withDriver,
-    addOns,
+    addOns,                  // ✅ car add-ons (withDriver, premiumInsurance, childSeat)
     pickupTime,
     returnTime,
     startTime,
     endTime,
-    pickupFee                     = 0,
-    dropoffFee                    = 0,
-    needsManualPickupConfirmation = false,
-    needsManualDropoffConfirmation= false,
-    availableVouchers             = [],
+    pickupFee                      = 0,
+    dropoffFee                     = 0,
+    needsManualPickupConfirmation  = false,
+    needsManualDropoffConfirmation = false,
+    availableVouchers              = [],
   } = bookingData;
 
   const isCarBooking = vehicleType === 'car';
@@ -91,7 +91,7 @@ const CheckoutSummary: React.FC = () => {
 
   const handlePayment = async () => {
     if (!user) {
-      langNavigate('/login', { state: { from: location.pathname + location.search } }); // ✅
+      langNavigate('/login', { state: { from: location.pathname + location.search } });
       return;
     }
     if (isSubmitting.current) return;
@@ -113,19 +113,37 @@ const CheckoutSummary: React.FC = () => {
         ? date.includes(' - ') ? date.split(' - ')[0] : date
         : new Date().toISOString().split('T')[0];
 
+      const pricingContext = {
+        vehicleType:  vehicleType  || null,
+        duration:     duration     || 1,
+        pax:          pax          || 1,
+        pickupFee:    pickupFee    || 0,
+        dropoffFee:   dropoffFee   || 0,
+        addOns: {
+          withDriver:        addOns?.withDriver        ?? withDriver ?? false,
+          premiumInsurance:  addOns?.premiumInsurance  ?? false,
+          childSeat:         addOns?.childSeat         ?? false,
+        },
+        voucherCode: voucher.appliedVoucher?.code || null,
+      };
+
       const res = await http.post('/payment/create-payment', {
-        id:           orderId,
-        amount:       finalTotal,
-        name:         contact.form.name,
-        email:        contact.form.email,
-        product_name: productName,
-        quantity:     pax || 1,
-        user_id:      user.id,
-        product_id:   productId || null,
-        admin_fee:    ADMIN_FEE,
-        date:         startDateStr,
-        start_time:   startTime || null,
-        end_time:     endTime || null,
+        id:               orderId,
+        amount:           finalTotal,
+        name:             contact.form.name,
+        email:            contact.form.email,
+        product_name:     productName,
+        quantity:         pax || 1,
+        user_id:          user.id,
+        product_id:       productId || null,
+        admin_fee:        ADMIN_FEE,
+        date:             startDateStr,
+        start_time:       startTime  || null,
+        end_time:         endTime    || null,
+
+        // ✅ pricing_context sebagai JSON string — dibaca normalizePricingContext() di backend
+        pricing_context:  JSON.stringify(pricingContext),
+
         ...(voucher.appliedVoucher ? {
           voucher_code:    voucher.appliedVoucher.code,
           voucher_id:      voucher.appliedVoucher.id,
@@ -137,32 +155,37 @@ const CheckoutSummary: React.FC = () => {
       const { payment_url } = res.data?.data || {};
       if (!payment_url) throw new Error(t('checkout.no_payment_url', 'Payment URL not detected.'));
 
+      // ✅ Bersihkan cart setelah payment URL didapat
       if (productId) {
         removeFromCart(productId);
         try {
           const raw = window.localStorage.getItem('triv_cart_v1');
           if (raw) {
             const parsed = JSON.parse(raw);
-            window.localStorage.setItem('triv_cart_v1', JSON.stringify(parsed.filter((i: any) => i.product.id !== productId)));
+            window.localStorage.setItem(
+              'triv_cart_v1',
+              JSON.stringify(parsed.filter((i: any) => i.product.id !== productId))
+            );
           }
         } catch { /* silent */ }
       }
 
       window.location.href = payment_url;
+
     } catch (error: any) {
       setLoading(false);
       isSubmitting.current = false;
 
       const msg             = error.response?.data?.message || error.message || t('checkout.payment_failed', 'Failed to process payment');
-      const isCapacityError = msg.includes('Kapasitas Penuh');
+      const isCapacityError = msg.includes('Kapasitas Penuh') || msg.includes('stok item');
 
       Swal.fire({
-        title:              isCapacityError ? t('checkout.full_title', 'Fully Booked!') : t('common.error', 'Error'),
-        text:               isCapacityError
+        title:             isCapacityError ? t('checkout.full_title', 'Fully Booked!') : t('common.error', 'Error'),
+        text:              isCapacityError
           ? t('checkout.full_desc', 'Sorry, tickets/units for this date just ran out. Please choose another date.')
           : msg,
-        icon:               isCapacityError ? 'warning' : 'error',
-        confirmButtonText:  t('common.ok', 'OK'),
+        icon:              isCapacityError ? 'warning' : 'error',
+        confirmButtonText: t('common.ok', 'OK'),
         confirmButtonColor: isCapacityError ? '#f97316' : '#ef4444',
       });
     }
