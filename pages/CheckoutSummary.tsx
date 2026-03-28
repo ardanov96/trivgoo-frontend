@@ -7,7 +7,7 @@ import Swal from 'sweetalert2';
 import { useAuth }    from '../AuthContext';
 import { useCart }    from '../components/CartContext';
 import http           from '../services/http';
-import { useLangNavigate } from '../src/hooks/useLangNavigate'; // ✅ fix missing import
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 
 import { ADMIN_FEE }          from './checkout/constants';
 import { useContactForm }     from './checkout/hooks/useContactForm';
@@ -23,7 +23,7 @@ const CheckoutSummary: React.FC = () => {
   const navigate           = useNavigate();
   const location           = useLocation();
   const { t }              = useTranslation();
-  const { langNavigate }   = useLangNavigate(); // ✅ fix
+  const { langNavigate }   = useLangNavigate();
   const { user }           = useAuth();
   const { removeFromCart } = useCart();
   const [loading, setLoading] = useState(false);
@@ -31,15 +31,15 @@ const CheckoutSummary: React.FC = () => {
 
   const bookingData = location.state;
 
-  // ── Guard 1: missing booking data ────────────────────────────────────────
+  // ── Guard 1: missing booking data ──────────────────────────────────────
   React.useEffect(() => {
-    if (!bookingData || !bookingData.productName) langNavigate('/explore', { replace: true }); // ✅
+    if (!bookingData || !bookingData.productName) langNavigate('/explore', { replace: true });
   }, [bookingData]);
 
-  // ── Guard 2: must be logged in ───────────────────────────────────────────
+  // ── Guard 2: must be logged in ─────────────────────────────────────────
   React.useEffect(() => {
     if (!user) {
-      langNavigate('/login', { // ✅
+      langNavigate('/login', {
         replace: true,
         state: { from: location.pathname + location.search },
       });
@@ -50,18 +50,18 @@ const CheckoutSummary: React.FC = () => {
 
   const {
     productId,
-    productName           = 'Trivgoo Booking',
+    productName               = 'Trivgoo Booking',
     location: productLocation = '-',
-    date                  = '',
-    pax                   = 1,
-    pricePerPax           = 0,
-    basePricePerPax       = 0,
-    totalPrice            = 0,
-    image                 = '',
-    duration              = 1,
+    date                      = '',
+    pax                       = 1,
+    pricePerPax               = 0,
+    basePricePerPax           = 0,
+    totalPrice                = 0,
+    image                     = '',
+    duration                  = 1,
     guestCount,
-    unitLabel             = t('checkout.ticket', 'Ticket'),
-    priceUnitLabel        = t('common.person', 'person'),
+    unitLabel                 = t('checkout.ticket', 'Ticket'),
+    priceUnitLabel            = t('common.person', 'person'),
     vehicleType,
     transmission,
     seats,
@@ -80,11 +80,11 @@ const CheckoutSummary: React.FC = () => {
     dropoffDeliveryKm,
     startTime,
     endTime,
-    pickupFee                     = 0,
-    dropoffFee                    = 0,
-    needsManualPickupConfirmation = false,
-    needsManualDropoffConfirmation= false,
-    availableVouchers             = [],
+    pickupFee                      = 0,
+    dropoffFee                     = 0,
+    needsManualPickupConfirmation  = false,
+    needsManualDropoffConfirmation = false,
+    availableVouchers              = [],
   } = bookingData;
 
   const isCarBooking = vehicleType === 'car';
@@ -94,36 +94,27 @@ const CheckoutSummary: React.FC = () => {
 
   const baseTotal  = Number(totalPrice);
   const finalTotal = Math.max(0, baseTotal - voucher.appliedDiscount) + ADMIN_FEE;
+
+  // Blokir pembayaran jika masih ada biaya antar/jemput yang menunggu konfirmasi agen
   const hasPendingManualQuote = isCarBooking && (needsManualPickupConfirmation || needsManualDropoffConfirmation);
+
   const normalizedQuantity = isCarBooking ? 1 : (pax || 1);
   const normalizedDuration = Math.max(1, Number(duration || 1));
-  const pricingContext = {
-    vehicleType: vehicleType || null,
-    duration: normalizedDuration,
-    pax: pax || 1,
-    addOns: addOns || {
-      withDriver: Boolean(withDriver),
-      premiumInsurance: false,
-      childSeat: false,
-    },
-    pickupFee: Number(pickupFee || 0),
-    dropoffFee: Number(dropoffFee || 0),
-    pickupType: pickupType || null,
-    dropoffType: dropoffType || null,
-    pickupAddress: pickupAddress || null,
-    dropoffAddress: dropoffAddress || null,
-    pickupDeliveryKm: pickupDeliveryKm ?? null,
-    dropoffDeliveryKm: dropoffDeliveryKm ?? null,
-    needsManualPickupConfirmation: Boolean(needsManualPickupConfirmation),
-    needsManualDropoffConfirmation: Boolean(needsManualDropoffConfirmation),
+
+  // ── Resolved add-ons (single source of truth) ─────────────────────────
+  const resolvedAddOns = {
+    withDriver:       Boolean(addOns?.withDriver       ?? withDriver ?? false),
+    premiumInsurance: Boolean(addOns?.premiumInsurance ?? false),
+    childSeat:        Boolean(addOns?.childSeat        ?? false),
   };
 
   const handlePayment = async () => {
     if (!user) {
-      langNavigate('/login', { state: { from: location.pathname + location.search } }); // ✅
+      langNavigate('/login', { state: { from: location.pathname + location.search } });
       return;
     }
     if (isSubmitting.current) return;
+
     if (hasPendingManualQuote) {
       Swal.fire(
         t('checkout.manual_quote_title', 'Menunggu Konfirmasi Biaya'),
@@ -135,6 +126,7 @@ const CheckoutSummary: React.FC = () => {
       );
       return;
     }
+
     if (!contact.validate()) {
       Swal.fire(
         t('checkout.incomplete_title', 'Please Complete Your Data'),
@@ -153,7 +145,19 @@ const CheckoutSummary: React.FC = () => {
         ? date.includes(' - ') ? date.split(' - ')[0] : date
         : new Date().toISOString().split('T')[0];
 
+      // ✅ pricing_context sebagai JSON STRING — wajib untuk safeJsonParse() di backend
+      const pricingContextStr = JSON.stringify({
+        vehicleType:  vehicleType || null,
+        duration:     normalizedDuration,
+        pax:          normalizedQuantity,
+        pickupFee:    Number(pickupFee  || 0),
+        dropoffFee:   Number(dropoffFee || 0),
+        addOns:       resolvedAddOns,
+        voucherCode:  voucher.appliedVoucher?.code || null,
+      });
+
       const res = await http.post('/payment/create-payment', {
+        // ── Core fields ───────────────────────────────────────────────
         id:           orderId,
         amount:       finalTotal,
         name:         contact.form.name,
@@ -163,54 +167,72 @@ const CheckoutSummary: React.FC = () => {
         user_id:      user.id,
         product_id:   productId || null,
         admin_fee:    ADMIN_FEE,
-        duration:     normalizedDuration,
-        vehicle_type: vehicleType || null,
-        addOns:       pricingContext.addOns,
-        pickupFee:    pricingContext.pickupFee,
-        dropoffFee:   pricingContext.dropoffFee,
-        withDriver:   Boolean(addOns?.withDriver ?? withDriver),
-        original_amount: baseTotal,
-        pricing_context: pricingContext,
         date:         startDateStr,
         start_time:   startTime || null,
-        end_time:     endTime || null,
+        end_time:     endTime   || null,
+
+        // ── pricing_context sebagai JSON string ───────────────────────
+        // backend: safeJsonParse() membaca ini, normalizePricingContext() memprosesnya
+        pricing_context: pricingContextStr,
+
+        // ── Top-level car extras — dibutuhkan hasExplicitCarExtras ────
+        // backend mengecek KEDUA sumber: rawContext DAN payload top-level
+        pickup_fee:       Number(pickupFee  || 0),
+        dropoff_fee:      Number(dropoffFee || 0),
+        pickupFee:        Number(pickupFee  || 0),
+        dropoffFee:       Number(dropoffFee || 0),
+        withDriver:       resolvedAddOns.withDriver,
+        premiumInsurance: resolvedAddOns.premiumInsurance,
+        childSeat:        resolvedAddOns.childSeat,
+        vehicle_type:     vehicleType || null,
+        duration:         normalizedDuration,
+
+        // ── Voucher fields ────────────────────────────────────────────
+        original_amount: baseTotal,
         ...(voucher.appliedVoucher ? {
           voucher_code:    voucher.appliedVoucher.code,
           voucher_id:      voucher.appliedVoucher.id,
           discount_amount: voucher.appliedDiscount,
-          original_amount: baseTotal,
         } : {}),
       });
 
       const { payment_url } = res.data?.data || {};
       if (!payment_url) throw new Error(t('checkout.no_payment_url', 'Payment URL not detected.'));
 
+      // ✅ Bersihkan cart setelah payment URL didapat
       if (productId) {
         removeFromCart(productId);
         try {
           const raw = window.localStorage.getItem('triv_cart_v1');
           if (raw) {
             const parsed = JSON.parse(raw);
-            window.localStorage.setItem('triv_cart_v1', JSON.stringify(parsed.filter((i: any) => i.product.id !== productId)));
+            window.localStorage.setItem(
+              'triv_cart_v1',
+              JSON.stringify(parsed.filter((i: any) => i.product.id !== productId))
+            );
           }
         } catch { /* silent */ }
       }
 
       window.location.href = payment_url;
+
     } catch (error: any) {
       setLoading(false);
       isSubmitting.current = false;
 
-      const msg             = error.response?.data?.message || error.message || t('checkout.payment_failed', 'Failed to process payment');
-      const isCapacityError = msg.includes('Kapasitas Penuh');
+      const msg = error.response?.data?.message
+        || error.message
+        || t('checkout.payment_failed', 'Failed to process payment');
+
+      const isCapacityError = msg.includes('Kapasitas Penuh') || msg.includes('stok item');
 
       Swal.fire({
-        title:              isCapacityError ? t('checkout.full_title', 'Fully Booked!') : t('common.error', 'Error'),
-        text:               isCapacityError
+        title:             isCapacityError ? t('checkout.full_title', 'Fully Booked!') : t('common.error', 'Error'),
+        text:              isCapacityError
           ? t('checkout.full_desc', 'Sorry, tickets/units for this date just ran out. Please choose another date.')
           : msg,
-        icon:               isCapacityError ? 'warning' : 'error',
-        confirmButtonText:  t('common.ok', 'OK'),
+        icon:              isCapacityError ? 'warning' : 'error',
+        confirmButtonText: t('common.ok', 'OK'),
         confirmButtonColor: isCapacityError ? '#f97316' : '#ef4444',
       });
     }
@@ -289,9 +311,15 @@ const CheckoutSummary: React.FC = () => {
         />
 
         {isCarBooking && <RentalInfoBanner />}
+
+        {/* Banner peringatan jika biaya antar/jemput belum dikonfirmasi */}
         {hasPendingManualQuote && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
-            Biaya antar atau pengembalian masih menunggu konfirmasi agen. Pembayaran akan dibuka setelah harga final dikonfirmasi.
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+            <span className="text-amber-500 mt-0.5">⚠️</span>
+            <span>
+              Biaya antar atau pengembalian masih menunggu konfirmasi agen.
+              Pembayaran akan dibuka setelah harga final dikonfirmasi.
+            </span>
           </div>
         )}
 

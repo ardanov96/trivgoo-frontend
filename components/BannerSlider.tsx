@@ -141,7 +141,6 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
   const [direction, setDirection] = useState<1 | -1>(1);
   const [paused, setPaused]       = useState(false);
 
-  // ✅ Gunakan useLangNavigate
   const { langNavigate, langPath } = useLangNavigate();
 
   useEffect(() => { injectStyles(); }, []);
@@ -180,6 +179,10 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
   const fallback = GRADIENT_FALLBACKS[current % GRADIENT_FALLBACKS.length];
   const hasBanner = !!c.banner_image;
 
+  // Apakah banner gelap → pakai teks putih, atau terang → pakai shadow gelap
+  // Default: selalu pakai teks putih + text-shadow agar terbaca di atas gambar apapun
+  const hasOverlayNeeded = hasBanner;
+
   return (
     <div
       className="relative w-full select-none rounded-2xl overflow-hidden banner-border-glow banner-container"
@@ -204,7 +207,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
           exit="exit"
           transition={slideTransition}
           className="absolute inset-0 cursor-pointer"
-          onClick={() => langNavigate(`/promo/campaign/${c.id}`)} // ✅
+          onClick={() => langNavigate(`/promo/campaign/${c.id}`)}
           title={`Lihat promo ${c.name}`}
         >
           {hasBanner ? (
@@ -216,10 +219,15 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
           ) : (
             <div className={`w-full h-full bg-gradient-to-br ${fallback}`} />
           )}
+
+          {/* ── Gradient overlay kiri agar teks terbaca di atas foto ── */}
+          {hasOverlayNeeded && (
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
+          )}
         </motion.div>
       </AnimatePresence>
 
-      {/* ══ LAYER 2: Konten info — pojok KIRI ════════════════════════════ */}
+      {/* ══ LAYER 2: Info promo — overlay kiri ══════════════════════════ */}
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={`info-${c.id}`}
@@ -231,13 +239,67 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
           transition={infoTransition}
           className="absolute inset-0 flex flex-col justify-center px-6 md:px-10 py-4 pointer-events-none z-[2]"
         >
+          {/* Badge tipe promo */}
+          <div className={`inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full text-[11px] font-bold mb-2 ${badge.bg} ${badge.text}`}>
+            {badge.icon}
+            {badge.label}
+          </div>
+
+          {/* Nama campaign */}
+          <h3
+            className="text-white font-extrabold leading-tight mb-1 drop-shadow-lg"
+            style={{
+              fontSize: 'clamp(0.85rem, 2.2vw, 1.35rem)',
+              maxWidth: '55%',
+              textShadow: '0 1px 6px rgba(0,0,0,0.55)',
+            }}
+          >
+            {c.name}
+          </h3>
+
+          {/* Deskripsi singkat */}
+          {c.description && (
+            <p
+              className="text-white/85 font-medium leading-snug mb-2.5 drop-shadow"
+              style={{
+                fontSize: 'clamp(0.7rem, 1.4vw, 0.85rem)',
+                maxWidth: '50%',
+                textShadow: '0 1px 4px rgba(0,0,0,0.50)',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {c.description}
+            </p>
+          )}
+
+          {/* Nominal diskon */}
+          <div className="flex items-center gap-2">
+            <span
+              className="font-extrabold text-amber-300 drop-shadow-lg"
+              style={{
+                fontSize: 'clamp(1rem, 2.8vw, 1.6rem)',
+                textShadow: '0 1px 8px rgba(0,0,0,0.50)',
+              }}
+            >
+              {formatDiscount(c)}
+            </span>
+            <span
+              className="text-white/70 font-semibold"
+              style={{ fontSize: 'clamp(0.65rem, 1.2vw, 0.78rem)' }}
+            >
+              {c.discount_type === 'percent' ? 'DISKON' : 'POTONGAN'}
+            </span>
+          </div>
         </motion.div>
       </AnimatePresence>
 
       {/* ══ LAYER 3: CTA button — kiri bawah ════════════════════════════ */}
       <div className="absolute bottom-3 left-6 md:bottom-4 md:left-10 pointer-events-auto z-[3]">
         <Link
-          to={langPath(`/promo/campaign/${c.id}`)} // ✅
+          to={langPath(`/promo/campaign/${c.id}`)}
           onClick={e => e.stopPropagation()}
           className="inline-flex items-center gap-1.5 bg-white text-gray-900 font-bold text-xs px-4 py-2 rounded-lg hover:bg-primary-50 hover:text-primary-700 transition-all shadow-lg active:scale-95 group"
         >
@@ -249,7 +311,6 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
       {/* ══ LAYER 4: Navigasi — sisi KIRI & KANAN banner ═════════════════ */}
       {active.length > 1 && (
         <>
-          {/* Tombol KIRI */}
           <button
             onClick={prev}
             className="nav-btn-side absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/25 text-white hover:bg-black/60 z-[3] shadow-lg overflow-hidden"
@@ -259,7 +320,6 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
             <span><ChevronLeft className="w-4 h-4 md:w-5 md:h-5" /></span>
           </button>
 
-          {/* Tombol KANAN */}
           <button
             onClick={next}
             className="nav-btn-side absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/25 text-white hover:bg-black/60 z-[3] shadow-lg overflow-hidden"
@@ -269,7 +329,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({
             <span><ChevronRight className="w-4 h-4 md:w-5 md:h-5" /></span>
           </button>
 
-          {/* Dots — tengah bawah */}
+          {/* Dots */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-auto z-[3]">
             {active.map((_, i) => (
               <button
