@@ -7,7 +7,7 @@ interface Props {
   availableVouchers: any[];
   amount:            number;
   appliedVoucher:    any | null;
-  onApply:           (voucher: any, discount: number) => void;
+  onApply:           (voucher: any, amount: number) => void;
   onRemove:          () => void;
 }
 
@@ -29,7 +29,7 @@ export const VoucherPicker: React.FC<Props> = ({ availableVouchers, amount, appl
 
   const handleSelect = (v: any) => {
     if (Number(amount) < Number(v.min_transaction)) return;
-    onApply(v, calcDiscount(v, amount));
+    onApply(v, amount);
     setOpen(false);
   };
 
