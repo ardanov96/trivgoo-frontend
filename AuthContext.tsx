@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         persist_user(u);
         return { success: true, user: u };
       } catch (e: any) {
-        return { success: false, message: e?.message || 'Login failed' };
+        return { success: false, message: e?.response?.data?.message || e?.message || 'Login failed' };
       }
     },
     [persist_user],
