@@ -6,16 +6,18 @@ import { formatCurrency } from '../constants';
 // ── Pay CTA button ────────────────────────────────────────────────────────────
 interface PayButtonProps {
   loading:         boolean;
+  disabled?:       boolean;
   appliedDiscount: number;
   onClick:         () => void;
 }
 
-export const PayButton: React.FC<PayButtonProps> = ({ loading, appliedDiscount, onClick }) => {
+export const PayButton: React.FC<PayButtonProps> = ({ loading, disabled = false, appliedDiscount, onClick }) => {
   const { t } = useTranslation();
+  const isDisabled = loading || disabled;
   return (
     <div className="pt-2 pb-6">
-      <button onClick={onClick} disabled={loading}
-        className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'}`}>
+      <button onClick={onClick} disabled={isDisabled}
+        className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${isDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-primary-600 active:scale-95'}`}>
         {loading ? (
           <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
         ) : (
