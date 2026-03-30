@@ -93,7 +93,7 @@ const CheckoutSummary: React.FC = () => {
 
   const isCarBooking = vehicleType === 'car';
 
-  const contact = useContactForm(user.email || '');
+  const contact = useContactForm(user.email || '', user.name || '', user.phone_number || '');
   const voucher = useVoucher();
 
   const baseTotal = Number(totalPrice);
@@ -181,6 +181,8 @@ const CheckoutSummary: React.FC = () => {
         dropoff_fee:      Number(dropoffFee || 0),
         pickupFee:        Number(pickupFee  || 0),
         dropoffFee:       Number(dropoffFee || 0),
+        pickup_location:  pickupAddress || null,
+        dropoff_location: dropoffAddress || null,
         withDriver:       resolvedAddOns.withDriver,
         premiumInsurance: resolvedAddOns.premiumInsurance,
         childSeat:        resolvedAddOns.childSeat,
