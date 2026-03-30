@@ -6,8 +6,8 @@ export interface ContactForm {
   phone: string;
 }
 
-export const useContactForm = (initialEmail = '') => {
-  const [form,   setForm]   = useState<ContactForm>({ name: '', email: initialEmail, phone: '' });
+export const useContactForm = (initialEmail = '', initialName = '', initialPhone = '') => {
+  const [form,   setForm]   = useState<ContactForm>({ name: initialName, email: initialEmail, phone: initialPhone });
   const [errors, setErrors] = useState<Partial<ContactForm>>({});
 
   const setField = (field: keyof ContactForm, value: string) => {

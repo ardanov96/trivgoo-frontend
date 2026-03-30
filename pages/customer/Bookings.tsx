@@ -230,7 +230,7 @@ const MobileBookingCard: React.FC<{
               {booking.status === BookingStatus.COMPLETED && (booking as any).reviewId && (
                 <Link to={langPath(`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`)} className="p-1.5 bg-amber-50 rounded-lg text-amber-600 hover:bg-amber-100"><Star className="w-4 h-4 fill-amber-600" /></Link>
               )}
-              <Link to={langPath(`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`)} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
+              <Link to={langPath(`/my-bookings/${booking.id}`)} className="p-1.5 bg-gray-100 rounded-lg text-gray-600 hover:text-gray-900">
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
@@ -390,7 +390,7 @@ const BookingTable: React.FC<BookingTableProps> = ({ data, activeTab, onPay, onC
                           <Star className="w-3.5 h-3.5 mr-1 fill-amber-600" /> {t('bookings.my_review', 'My Review')}
                         </Link>
                       )}
-                      <Link to={langPath(`/product/${encodeId(booking.productId)}/${generateSlug(booking.productName)}`)} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
+                      <Link to={langPath(`/my-bookings/${booking.id}`)} className="flex items-center text-gray-400 hover:text-gray-600 px-2 py-1">
                         <span className="sr-only">Details</span> <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>

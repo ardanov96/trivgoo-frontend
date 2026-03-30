@@ -76,6 +76,7 @@ import AgentVouchers           from './pages/agent/AgentVouchers'; // ← tambah
 
 // ── Customer Pages ─────────────────────────────────────────────────────────
 import CustomerBookings        from './pages/customer/Bookings';
+import CustomerBookingDetail   from './pages/customer/BookingDetail';
 import CustomerProfileSettings from './pages/customer/ProfileSettings';
 import LoyaltyPage             from './pages/customer/LoyaltyPage';
 import RedeemPointPage         from './pages/customer/RedeemPointPage';
@@ -244,6 +245,7 @@ const AppRoutes: React.FC = () => (
         {/* Customer protected */}
         <Route path="payment"            element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><Payment /></ProtectedRoute>} />
         <Route path="my-bookings"        element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerBookings /></ProtectedRoute>} />
+        <Route path="my-bookings/:id"    element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerBookingDetail /></ProtectedRoute>} />
         <Route path="my-account"         element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerProfileSettings /></ProtectedRoute>} />
         <Route path="loyalty"            element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><LoyaltyPage /></ProtectedRoute>} />
         <Route path="loyalty/redeem"     element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><RedeemPointPage /></ProtectedRoute>} />
