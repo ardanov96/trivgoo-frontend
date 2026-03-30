@@ -552,13 +552,13 @@
     "scan_to_download": "Imbas untuk muat turun"
   },
   "promo": {
-    "products_in_campaign": "Produk dalam Kempen",
-    "no_products": "Belum ada produk dalam kempen ini.",
+    "products_in_campaign": "Produk dalam Campaign",
+    "no_products": "Belum ada produk dalam Campaign ini.",
     "page": "Halaman",
     "min_transaction": "Min.",
     "member": "Ahli",
     "max_discount_label": "Maks.",
-    "seo_desc": "Temui produk pilihan dalam kempen promosi eksklusif ini."
+    "seo_desc": "Temui produk pilihan dalam Campaign promosi eksklusif ini."
   },
   "ai_planner": {
     "title": "Rancang Perjalanan Anda Mengikut Bajet!",

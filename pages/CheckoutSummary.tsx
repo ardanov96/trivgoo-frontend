@@ -1,8 +1,3 @@
-// Perubahan utama:
-//   1. useVoucher() sekarang return appliedPair + totalDiscountFor()
-//   2. VoucherPicker menerima appliedPair, onApply(v), onRemove(owner)
-//   3. finalTotal dihitung dengan totalDiscountFor(baseTotal)
-//   4. Kirim KEDUA voucher ke backend jika keduanya terpakai
 
 import React, { useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';

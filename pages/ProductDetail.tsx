@@ -207,52 +207,131 @@ const DeliveryFeeBadge: React.FC<DeliveryFeeBadgeProps> = ({ info, type }) => {
 
 interface ProductVoucherBannerProps { vouchers: any[]; }
 const ProductVoucherBanner: React.FC<ProductVoucherBannerProps> = ({ vouchers }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expandedAdmin, setExpandedAdmin] = useState(false);
+  const [expandedAgent, setExpandedAgent] = useState(false);
+
   if (!vouchers || vouchers.length === 0) return null;
+
   const now = new Date();
-  const active = vouchers.filter(v => v.is_active && (!v.expires_at || new Date(v.expires_at) >= now));
-  if (active.length === 0) return null;
+
+  // Pisahkan admin (platform) dan agent
+  const adminVouchers = vouchers.filter(v =>
+    (v.scope_owner === 'admin' || !v.scope_owner) &&
+    v.is_active &&
+    (!v.expires_at || new Date(v.expires_at) >= now)
+  );
+  const agentVouchers = vouchers.filter(v =>
+    v.scope_owner === 'agent' &&
+    v.is_active &&
+    (!v.expires_at || new Date(v.expires_at) >= now)
+  );
+
+  if (adminVouchers.length === 0 && agentVouchers.length === 0) return null;
+
   const PREVIEW_COUNT = 2;
-  const displayed = expanded ? active : active.slice(0, PREVIEW_COUNT);
-  const hasMore = active.length > PREVIEW_COUNT;
-  return (
-    <div className="rounded-2xl overflow-hidden border border-orange-200 shadow-sm mb-5">
-      <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-white" />
-        <p className="text-white text-xs font-extrabold uppercase tracking-wider">{active.length} Promo Tersedia!</p>
+
+  const VoucherRow = ({ v }: { v: any }) => (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${v.type === 'percent' ? 'bg-blue-100' : 'bg-green-100'}`}>
+        {v.type === 'percent'
+          ? <Percent className="w-4 h-4 text-blue-600" />
+          : <DollarSign className="w-4 h-4 text-green-600" />
+        }
       </div>
-      <div className="bg-gradient-to-b from-orange-50 to-amber-50 divide-y divide-orange-100">
-        {displayed.map((v: any) => (
-          <div key={v.id} className="flex items-center gap-3 px-4 py-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${v.type === 'percent' ? 'bg-blue-100' : 'bg-green-100'}`}>
-              {v.type === 'percent' ? <Percent className="w-4 h-4 text-blue-600" /> : <DollarSign className="w-4 h-4 text-green-600" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-extrabold text-xs text-gray-900 font-mono tracking-widest">{v.code}</span>
-                {v.expires_at && <span className="text-[10px] text-orange-500 font-semibold">s/d {new Date(v.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>}
-              </div>
-              {v.description && <p className="text-[11px] text-gray-500 truncate mt-0.5">{v.description}</p>}
-              {v.min_transaction > 0 && <p className="text-[10px] text-gray-400 mt-0.5">Min. transaksi {formatRp(v.min_transaction)}</p>}
-            </div>
-            <div className="shrink-0 text-right">
-              <span className={`inline-block px-2.5 py-1 rounded-xl text-xs font-extrabold ${v.type === 'percent' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'}`}>
-                {v.type === 'percent' ? `${v.value}% OFF` : `${formatRp(v.value)} OFF`}
-              </span>
-              {v.type === 'percent' && v.max_discount && <p className="text-[10px] text-gray-400 mt-0.5 text-right">maks. {formatRp(v.max_discount)}</p>}
-            </div>
-          </div>
-        ))}
-        {hasMore && (
-          <button type="button" onClick={() => setExpanded(p => !p)}
-            className="w-full py-2.5 text-xs font-bold text-orange-600 hover:bg-orange-100 transition-colors flex items-center justify-center gap-1">
-            {expanded ? <><ChevronUp className="w-3.5 h-3.5" /> Sembunyikan</> : <><ChevronDown className="w-3.5 h-3.5" /> +{active.length - PREVIEW_COUNT} promo lainnya</>}
-          </button>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-extrabold text-xs text-gray-900 font-mono tracking-widest">{v.code}</span>
+          {v.expires_at && (
+            <span className="text-[10px] text-orange-500 font-semibold">
+              s/d {new Date(v.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+            </span>
+          )}
+        </div>
+        {v.description && <p className="text-[11px] text-gray-500 truncate mt-0.5">{v.description}</p>}
+        {v.min_transaction > 0 && (
+          <p className="text-[10px] text-gray-400 mt-0.5">Min. transaksi {formatRp(v.min_transaction)}</p>
         )}
       </div>
-      <div className="bg-orange-50 border-t border-orange-100 px-4 py-2 flex items-center gap-1.5">
-        <Tag className="w-3 h-3 text-orange-400 shrink-0" />
-        <p className="text-[10px] text-orange-500 font-semibold">Pilih voucher di halaman checkout untuk mendapat diskon</p>
+      <div className="shrink-0 text-right">
+        <span className={`inline-block px-2.5 py-1 rounded-xl text-xs font-extrabold ${v.type === 'percent' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'}`}>
+          {v.type === 'percent' ? `${v.value}% OFF` : `${formatRp(v.value)} OFF`}
+        </span>
+        {v.type === 'percent' && v.max_discount && (
+          <p className="text-[10px] text-gray-400 mt-0.5 text-right">maks. {formatRp(v.max_discount)}</p>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3 mb-5">
+
+      {/* ── Voucher Platform (Admin) ── */}
+      {adminVouchers.length > 0 && (
+        <div className="rounded-2xl overflow-hidden border border-blue-200 shadow-sm">
+          <div className="bg-gradient-to-r from-blue-500 to-primary-500 px-4 py-2.5 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-white" />
+            <p className="text-white text-xs font-extrabold uppercase tracking-wider">
+              {adminVouchers.length} Voucher Platform
+            </p>
+            <span className="ml-auto text-[10px] text-blue-100 font-semibold">Berlaku semua produk</span>
+          </div>
+          <div className="bg-gradient-to-b from-blue-50 to-white divide-y divide-blue-100">
+            {(expandedAdmin ? adminVouchers : adminVouchers.slice(0, PREVIEW_COUNT)).map((v: any) => (
+              <VoucherRow key={v.id} v={v} />
+            ))}
+            {adminVouchers.length > PREVIEW_COUNT && (
+              <button
+                type="button"
+                onClick={() => setExpandedAdmin(p => !p)}
+                className="w-full py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-1"
+              >
+                {expandedAdmin
+                  ? <><ChevronUp className="w-3.5 h-3.5" /> Sembunyikan</>
+                  : <><ChevronDown className="w-3.5 h-3.5" /> +{adminVouchers.length - PREVIEW_COUNT} voucher lainnya</>
+                }
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Voucher Agent (Eksklusif) ── */}
+      {agentVouchers.length > 0 && (
+        <div className="rounded-2xl overflow-hidden border border-orange-200 shadow-sm">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-white" />
+            <p className="text-white text-xs font-extrabold uppercase tracking-wider">
+              {agentVouchers.length} Promo Eksklusif Agen
+            </p>
+            <span className="ml-auto text-[10px] text-orange-100 font-semibold">Khusus produk ini</span>
+          </div>
+          <div className="bg-gradient-to-b from-orange-50 to-amber-50 divide-y divide-orange-100">
+            {(expandedAgent ? agentVouchers : agentVouchers.slice(0, PREVIEW_COUNT)).map((v: any) => (
+              <VoucherRow key={v.id} v={v} />
+            ))}
+            {agentVouchers.length > PREVIEW_COUNT && (
+              <button
+                type="button"
+                onClick={() => setExpandedAgent(p => !p)}
+                className="w-full py-2.5 text-xs font-bold text-orange-600 hover:bg-orange-100 transition-colors flex items-center justify-center gap-1"
+              >
+                {expandedAgent
+                  ? <><ChevronUp className="w-3.5 h-3.5" /> Sembunyikan</>
+                  : <><ChevronDown className="w-3.5 h-3.5" /> +{agentVouchers.length - PREVIEW_COUNT} promo lainnya</>
+                }
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Footer info */}
+      <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 flex items-center gap-1.5">
+        <Tag className="w-3 h-3 text-gray-400 shrink-0" />
+        <p className="text-[10px] text-gray-500 font-semibold">
+          Pilih voucher di halaman checkout untuk mendapat diskon
+        </p>
       </div>
     </div>
   );

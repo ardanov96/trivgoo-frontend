@@ -1,7 +1,6 @@
 'use client';
 
 import { ArrowRight, Brain, ChevronLeft, ChevronRight, Clock, Map, MapPin, Quote, Sparkles, Star } from 'lucide-react';
-// Clock is already imported above
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -20,38 +19,39 @@ import { DESTINATION_STORIES, ITINERARY_CARDS, PROMO_CARDS, REVIEWS, WHY_CHOOSE_
 export const AiPlannerSection = () => {
   const { langPath } = useLangNavigate();
   return (
-  <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-100px' }} variants={aiContainerVariants} className="bg-white py-16 md:py-24 relative overflow-hidden">
-    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary-200 to-transparent" />
-    <div className="absolute -left-20 top-40 w-64 h-64 bg-primary-50 rounded-full blur-3xl opacity-50" />
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-      <div className="text-center mb-16">
-        <span className="text-primary-600 font-bold text-sm uppercase tracking-widest mb-3 block">Future of Travel</span>
-        <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-6">Smart AI Trip Planner</h2>
-        <p className="text-gray-500 max-w-3xl mx-auto text-lg leading-relaxed">Leading AI technology that understands your preferences and creates the perfect itinerary according to your wishes and budget.</p>
-      </div>
-      <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-        {[
-          { Icon: Brain,    title: 'Smart Recommendations', desc: "AI learns your preferences to suggest hidden gems you'll love." },
-          { Icon: Clock,    title: 'Time Optimization',     desc: 'Maximize your holiday with efficiently planned routes and schedules.' },
-          { Icon: Map,      title: 'Interactive Maps',      desc: 'Visualize your journey with integrated maps and navigation.' },
-          { Icon: Sparkles, title: 'Personalized For You',  desc: 'Every itinerary is unique, tailored specifically to your travel style.' },
-        ].map((item, i) => (
-          <motion.div key={i} variants={aiCardVariants} whileHover="hover" className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center cursor-pointer relative will-change-transform">
-            <motion.div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 ring-1 ring-gray-100" whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.8 }}>
-              <item.Icon className="w-8 h-8 text-primary-500" />
+    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-100px' }} variants={aiContainerVariants} className="bg-white py-16 md:py-24 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary-200 to-transparent" />
+      <div className="absolute -left-20 top-40 w-64 h-64 bg-primary-50 rounded-full blur-3xl opacity-50" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-16">
+          <span className="text-primary-600 font-bold text-sm uppercase tracking-widest mb-3 block">Future of Travel</span>
+          <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-6">Smart AI Trip Planner</h2>
+          <p className="text-gray-500 max-w-3xl mx-auto text-lg leading-relaxed">Leading AI technology that understands your preferences and creates the perfect itinerary according to your wishes and budget.</p>
+        </div>
+        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          {[
+            { Icon: Brain,    title: 'Smart Recommendations', desc: "AI learns your preferences to suggest hidden gems you'll love." },
+            { Icon: Clock,    title: 'Time Optimization',     desc: 'Maximize your holiday with efficiently planned routes and schedules.' },
+            { Icon: Map,      title: 'Interactive Maps',      desc: 'Visualize your journey with integrated maps and navigation.' },
+            { Icon: Sparkles, title: 'Personalized For You',  desc: 'Every itinerary is unique, tailored specifically to your travel style.' },
+          ].map((item, i) => (
+            <motion.div key={i} variants={aiCardVariants} whileHover="hover" className="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl hover:shadow-primary-100/50 transition-all duration-300 group text-center cursor-pointer relative will-change-transform">
+              <motion.div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 ring-1 ring-gray-100" whileHover={{ rotate: 360, scale: 1.1 }} transition={{ duration: 0.8 }}>
+                <item.Icon className="w-8 h-8 text-primary-500" />
+              </motion.div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
             </motion.div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
-            <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
-          </motion.div>
-        ))}
-      </motion.div>
-      <div className="text-center">
-        <Link to={langPath('/ai-planner')} className="inline-flex items-center px-8 py-4 bg-primary-600 text-white rounded-full font-bold text-lg shadow-xl shadow-primary-600/30 hover:bg-primary-700 transition-all hover:-translate-y-1 hover:shadow-2xl group active:scale-95">
-          <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" /> Try AI Planner Free
-        </Link>
+          ))}
+        </motion.div>
+        <div className="text-center">
+          {/* ✅ Sudah benar — langPath sudah dipakai */}
+          <Link to={langPath('/ai-planner')} className="inline-flex items-center px-8 py-4 bg-primary-600 text-white rounded-full font-bold text-lg shadow-xl shadow-primary-600/30 hover:bg-primary-700 transition-all hover:-translate-y-1 hover:shadow-2xl group active:scale-95">
+            <Sparkles className="w-5 h-5 mr-2 group-hover:animate-spin" /> Try AI Planner Free
+          </Link>
+        </div>
       </div>
-    </div>
-  </motion.div>
+    </motion.div>
   );
 };
 
@@ -69,6 +69,7 @@ export const DestinationsSection = () => {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <h2 className="text-xl md:text-3xl font-serif font-bold text-gray-900 tracking-tight">Popular Destinations</h2>
+          {/* ✅ Sudah benar */}
           <Link to={langPath('/explore')} className="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center">View All <ArrowRight className="w-4 h-4 ml-1" /></Link>
         </div>
         <motion.div variants={destContainerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} className="flex items-center justify-start md:justify-center gap-4 sm:gap-6 lg:gap-8 overflow-x-auto md:overflow-visible py-4 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar md:flex-nowrap">
@@ -95,66 +96,78 @@ export const DestinationsSection = () => {
 
 interface ItinerarySectionProps { onReferralOpen: () => void; }
 
-export const ItinerarySection = ({ onReferralOpen }: ItinerarySectionProps) => (
-  <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-100px' }} variants={fadeUpVariants} className="bg-gray-50 py-16 md:py-24 relative overflow-hidden">
-    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(224,88,69,0.05),_transparent_60%)]" />
-    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(251,191,36,0.06),_transparent_60%)]" />
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-      <div className="mb-10">
-        <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 leading-tight">Inspiration for Your<br className="hidden md:block" /> Itinerary</h2>
-      </div>
+export const ItinerarySection = ({ onReferralOpen }: ItinerarySectionProps) => {
+  // ✅ FIX: langPath dibutuhkan untuk link di itinerary cards & promo cards
+  const { langPath } = useLangNavigate();
 
-      {/* Itinerary slider */}
-      <div className="relative group mb-12">
-        <button onClick={() => document.getElementById('itinerary-slider')?.scrollBy({ left: -250, behavior: 'smooth' })} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 z-20 w-12 h-12 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-900 hover:text-white transition-all shadow-xl opacity-0 group-hover:opacity-100 hidden md:flex">
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <button onClick={() => document.getElementById('itinerary-slider')?.scrollBy({ left: 250, behavior: 'smooth' })} className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 z-20 w-12 h-12 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-900 hover:text-white transition-all shadow-xl opacity-0 group-hover:opacity-100 hidden md:flex">
-          <ChevronRight className="w-6 h-6" />
-        </button>
-        <div id="itinerary-slider" className="flex gap-4 overflow-x-auto no-scrollbar pb-6 -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
-          {ITINERARY_CARDS.map((item) => (
-            <div key={item.id} className="min-w-[300px] md:min-w-[380px] flex-shrink-0 relative rounded-2xl overflow-hidden cursor-pointer group h-[160px] md:h-[180px]">
-              <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(224,88,69,0.90) 0%, rgba(224,88,69,0.75) 35%, rgba(224,88,69,0.10) 50%, transparent 75%)' }} />
-              <div className="relative z-10 h-full flex flex-col justify-between p-5">
-                <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full w-fit ${item.tagColor}`}>{item.tag}</span>
-                <div>
-                  <h3 className="text-white font-bold text-lg md:text-xl leading-snug mb-1 drop-shadow-sm">{item.title}</h3>
-                  <p className="text-white/70 text-xs leading-relaxed">{item.duration} · {item.pax}</p>
+  return (
+    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-100px' }} variants={fadeUpVariants} className="bg-gray-50 py-16 md:py-24 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(224,88,69,0.05),_transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(251,191,36,0.06),_transparent_60%)]" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="mb-10">
+          <h2 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 leading-tight">Inspiration for Your<br className="hidden md:block" /> Itinerary</h2>
+        </div>
+
+        {/* Itinerary slider */}
+        <div className="relative group mb-12">
+          <button onClick={() => document.getElementById('itinerary-slider')?.scrollBy({ left: -250, behavior: 'smooth' })} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 z-20 w-12 h-12 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-900 hover:text-white transition-all shadow-xl opacity-0 group-hover:opacity-100 hidden md:flex">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button onClick={() => document.getElementById('itinerary-slider')?.scrollBy({ left: 250, behavior: 'smooth' })} className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 z-20 w-12 h-12 rounded-full border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-900 hover:text-white transition-all shadow-xl opacity-0 group-hover:opacity-100 hidden md:flex">
+            <ChevronRight className="w-6 h-6" />
+          </button>
+          <div id="itinerary-slider" className="flex gap-4 overflow-x-auto no-scrollbar pb-6 -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
+            {ITINERARY_CARDS.map((item) => (
+              <div key={item.id} className="min-w-[300px] md:min-w-[380px] flex-shrink-0 relative rounded-2xl overflow-hidden cursor-pointer group h-[160px] md:h-[180px]">
+                <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(224,88,69,0.90) 0%, rgba(224,88,69,0.75) 35%, rgba(224,88,69,0.10) 50%, transparent 75%)' }} />
+                <div className="relative z-10 h-full flex flex-col justify-between p-5">
+                  <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full w-fit ${item.tagColor}`}>{item.tag}</span>
+                  <div>
+                    <h3 className="text-white font-bold text-lg md:text-xl leading-snug mb-1 drop-shadow-sm">{item.title}</h3>
+                    <p className="text-white/70 text-xs leading-relaxed">{item.duration} · {item.pax}</p>
+                  </div>
+                  {/* ✅ FIX: langPath untuk link explore di itinerary cards */}
+                  <Link
+                    to={langPath(`/explore?search=${encodeURIComponent(item.destination)}&category_id=1&from=itinerary`)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg w-fit hover:bg-primary-50 transition-colors shadow-md"
+                  >
+                    See Activities
+                  </Link>
                 </div>
-                <Link to={`/explore?search=${encodeURIComponent(item.destination)}&category_id=1&from=itinerary`} onClick={(e) => e.stopPropagation()} className="bg-white text-gray-900 text-xs font-bold px-4 py-2 rounded-lg w-fit hover:bg-primary-50 transition-colors shadow-md">
-                  See Activities
-                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Promo cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {PROMO_CARDS.map((card) => (
+            <div key={card.id} className={`relative rounded-3xl overflow-hidden border ${card.border} bg-gradient-to-br ${card.bg} group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center`}>
+              <div className={`h-1.5 w-full ${card.accent}`} />
+              <div className="p-8 flex flex-col flex-1 relative z-10 items-center w-full">
+                <div className="w-full flex justify-center mb-6 h-28 items-center">
+                  <img src={card.promoImage} alt={card.title} className="h-full w-auto object-contain group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                <span className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${card.iconColor}`}>{card.id}</span>
+                <h3 className="font-serif font-bold text-2xl text-gray-900 leading-tight mb-4">{card.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed mb-8 flex-1 max-w-[280px]">{card.description}</p>
+                {card.id === 'referral'
+                  ? <button onClick={onReferralOpen} className={`inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 group/btn w-full md:w-auto ${card.buttonStyle}`}>{card.buttonLabel} <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" /></button>
+                  // ✅ FIX: card.buttonLink diasumsikan sudah berisi path relatif seperti "/explore",
+                  // wrap dengan langPath agar otomatis dapat locale prefix
+                  : <Link to={langPath(card.buttonLink)} className={`inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 group/btn w-full md:w-auto ${card.buttonStyle}`}>{card.buttonLabel} <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" /></Link>
+                }
               </div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Promo cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {PROMO_CARDS.map((card) => (
-          <div key={card.id} className={`relative rounded-3xl overflow-hidden border ${card.border} bg-gradient-to-br ${card.bg} group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center`}>
-            <div className={`h-1.5 w-full ${card.accent}`} />
-            <div className="p-8 flex flex-col flex-1 relative z-10 items-center w-full">
-              <div className="w-full flex justify-center mb-6 h-28 items-center">
-                <img src={card.promoImage} alt={card.title} className="h-full w-auto object-contain group-hover:scale-110 transition-transform duration-500" />
-              </div>
-              <span className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${card.iconColor}`}>{card.id}</span>
-              <h3 className="font-serif font-bold text-2xl text-gray-900 leading-tight mb-4">{card.title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed mb-8 flex-1 max-w-[280px]">{card.description}</p>
-              {card.id === 'referral'
-                ? <button onClick={onReferralOpen} className={`inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 group/btn w-full md:w-auto ${card.buttonStyle}`}>{card.buttonLabel} <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" /></button>
-                : <Link to={card.buttonLink} className={`inline-flex items-center justify-center gap-2 py-3.5 px-8 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 group/btn w-full md:w-auto ${card.buttonStyle}`}>{card.buttonLabel} <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" /></Link>
-              }
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 // ── Why Choose Us ─────────────────────────────────────────────────────────────
 
@@ -267,5 +280,3 @@ export const AppCtaSection = () => (
     </div>
   </motion.div>
 );
-
-

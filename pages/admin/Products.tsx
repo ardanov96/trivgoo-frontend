@@ -29,6 +29,8 @@ import {
   FlashSaleRequest,
 } from "../../services/adminService";
 import { AgentProduct } from "../../types";
+// ✅ Import hook locale
+import { useLangNavigate } from "../../src/hooks/useLangNavigate";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,21 +63,12 @@ interface CampaignWithProducts extends Campaign {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Sanitize image URL: jika URL mengandung localhost (terjadi saat data
- * disimpan dari environment lokal), ambil pathname-nya saja agar gambar
- * tetap bisa ditampilkan di production.
- *
- * Contoh:
- *   "http://localhost:3001/car-rental/InnovaReborn.png"
- *   → "/car-rental/InnovaReborn.png"
- */
 const resolveImageUrl = (url: string | null | undefined): string => {
   if (!url) return "";
   if (url.includes("localhost")) {
     try {
       const parsed = new URL(url);
-      return parsed.pathname; // "/car-rental/InnovaReborn.png"
+      return parsed.pathname;
     } catch {
       return url;
     }
@@ -86,15 +79,15 @@ const resolveImageUrl = (url: string | null | undefined): string => {
 // ── Confirm Dialog ────────────────────────────────────────────────────────────
 
 interface ConfirmDialogProps {
-  open:       boolean;
-  action:     "approve" | "reject";
-  type:       "campaign" | "flash";
+  open:        boolean;
+  action:      "approve" | "reject";
+  type:        "campaign" | "flash";
   productName: string;
-  context:    string;   // campaign name or "Flash Sale"
-  image:      string | null;
-  onConfirm:  () => void;
-  onCancel:   () => void;
-  isLoading?: boolean;
+  context:     string;
+  image:       string | null;
+  onConfirm:   () => void;
+  onCancel:    () => void;
+  isLoading?:  boolean;
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -102,7 +95,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 }) => {
   const isApprove = action === "approve";
 
-  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
@@ -132,7 +124,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Top accent */}
             <div
               className="h-1 w-full"
               style={{
@@ -143,7 +134,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             />
 
             <div className="p-6">
-              {/* Icon */}
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
                 style={{
@@ -157,7 +147,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 }
               </div>
 
-              {/* Title */}
               <h3 className="text-base font-bold text-gray-900 mb-1">
                 {isApprove ? "Setujui pengajuan ini?" : "Tolak pengajuan ini?"}
               </h3>
@@ -165,7 +154,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 {type === "campaign" ? "Campaign submission" : "Flash sale request"}
               </p>
 
-              {/* Product preview */}
               <div
                 className="flex items-center gap-3 rounded-xl p-3 mb-5"
                 style={{ background: "#FAFAF9", border: "0.5px solid #ECEAE6" }}
@@ -191,7 +179,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 </div>
               </div>
 
-              {/* Warning text for reject */}
               {!isApprove && (
                 <div
                   className="flex items-start gap-2 rounded-xl px-3 py-2.5 mb-5 text-xs"
@@ -202,7 +189,6 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex gap-2.5">
                 <button
                   onClick={onCancel}
@@ -215,9 +201,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                   onClick={onConfirm}
                   disabled={isLoading}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-                  style={{
-                    background: isApprove ? "#16a34a" : "#dc2626",
-                  }}
+                  style={{ background: isApprove ? "#16a34a" : "#dc2626" }}
                 >
                   {isLoading && (
                     <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -322,25 +306,25 @@ interface PendingAction {
   productName: string;
   context:     string;
   image:       string | null;
-  // campaign-specific
   campaignId?: number;
   joinId?:     number;
-  // flash-specific
-  flashId?:   number;
+  flashId?:    number;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const AdminProducts: React.FC = () => {
   const { showToast } = useToast();
+  // ✅ Ambil langPath dari hook — satu sumber kebenaran untuk semua link
+  const { langPath } = useLangNavigate();
 
   const [products,      setProducts]      = useState<AgentProduct[]>([]);
   const [campaigns,     setCampaigns]     = useState<CampaignWithProducts[]>([]);
   const [flashRequests, setFlashRequests] = useState<FlashSaleRequest[]>([]);
 
-  const [activeTab,    setActiveTab]    = useState<"all" | "flash_sale" | "campaigns">("all");
-  const [searchQuery,  setSearchQuery]  = useState("");
-  const [isLoading,    setIsLoading]    = useState(true);
+  const [activeTab,   setActiveTab]   = useState<"all" | "flash_sale" | "campaigns">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading,   setIsLoading]   = useState(true);
 
   const [page,       setPage]       = useState(1);
   const [limit]                     = useState(10);
@@ -355,8 +339,7 @@ const AdminProducts: React.FC = () => {
 
   const [ownerId] = useState<number | undefined>(undefined);
 
-  // ── Confirm dialog state ──────────────────────────────────────────────────
-  const [pendingAction,   setPendingAction]   = useState<PendingAction | null>(null);
+  const [pendingAction,    setPendingAction]    = useState<PendingAction | null>(null);
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
@@ -385,8 +368,8 @@ const AdminProducts: React.FC = () => {
     setIsLoading(true);
     try {
       const res = await adminService.listCampaigns({
-        q:     opts?.qOverride ?? searchQuery,
-        page:  opts?.pageOverride ?? campaignPage,
+        q:    opts?.qOverride ?? searchQuery,
+        page: opts?.pageOverride ?? campaignPage,
         limit,
       });
       const payload = res.data as any;
@@ -395,12 +378,12 @@ const AdminProducts: React.FC = () => {
 
       setCampaigns(data.map((c) => ({
         ...c,
-        is_expanded:         false,
-        joined_products:     undefined,
-        join_page:           1,
-        join_total_pages:    1,
-        join_total:          c.product_count ?? 0,
-        pending_count:       (c as any).pending_count ?? 0,
+        is_expanded:      false,
+        joined_products:  undefined,
+        join_page:        1,
+        join_total_pages: 1,
+        join_total:       c.product_count ?? 0,
+        pending_count:    (c as any).pending_count ?? 0,
       })));
       setCampaignTotalPages(total_pages);
     } catch (e: any) {
@@ -519,10 +502,7 @@ const AdminProducts: React.FC = () => {
     });
   };
 
-  const promptFlashAction = (
-    req: FlashSaleRequest,
-    action: "approve" | "reject"
-  ) => {
+  const promptFlashAction = (req: FlashSaleRequest, action: "approve" | "reject") => {
     setPendingAction({
       kind: "flash", action,
       productName: req.product_name,
@@ -584,7 +564,6 @@ const AdminProducts: React.FC = () => {
   return (
     <div className="space-y-6">
 
-      {/* Confirm Dialog */}
       <ConfirmDialog
         open={!!pendingAction}
         action={pendingAction?.action ?? "approve"}
@@ -616,8 +595,9 @@ const AdminProducts: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            {/* ✅ FIX: langPath menggantikan window.location.pathname.split(...) */}
             <Link
-              to={window.location.pathname.split('/').slice(0,2).join('/') + '/admin/promo/campaigns'}
+              to={langPath("/admin/promo/campaigns")}
               className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg font-bold shadow-md hover:bg-gray-800 transition-colors gap-2"
             >
               <ExternalLink className="w-4 h-4" /> Manage Campaigns
@@ -664,7 +644,8 @@ const AdminProducts: React.FC = () => {
               ) : campaigns.length === 0 ? (
                 <div className="py-12 text-center text-gray-500">
                   No campaigns found.{" "}
-                  <Link to={window.location.pathname.split('/').slice(0,2).join('/') + '/admin/promo/campaigns'} className="text-primary-600 font-bold hover:underline">Create one here.</Link>
+                  {/* ✅ FIX: langPath */}
+                  <Link to={langPath("/admin/promo/campaigns")} className="text-primary-600 font-bold hover:underline">Create one here.</Link>
                 </div>
               ) : (
                 campaigns.map((c) => {
@@ -675,7 +656,6 @@ const AdminProducts: React.FC = () => {
 
                   return (
                     <div key={c.id} className="overflow-hidden">
-                      {/* Campaign header */}
                       <button
                         onClick={() => handleToggleCampaign(c.id)}
                         className="w-full text-left px-6 py-5 hover:bg-gray-50 transition-colors flex items-start gap-4"
@@ -722,7 +702,6 @@ const AdminProducts: React.FC = () => {
                         </div>
                       </button>
 
-                      {/* Expanded: product table */}
                       {c.is_expanded && (
                         <div className="bg-gray-50 border-t border-gray-100 px-6 pb-5">
                           {c.is_loading_products ? (
@@ -790,8 +769,9 @@ const AdminProducts: React.FC = () => {
                                         </td>
                                         <td className="px-4 py-3 text-right">
                                           <div className="flex justify-end items-center gap-1">
+                                            {/* ✅ FIX: langPath untuk view produk di campaign table */}
                                             <Link
-                                              to={`/product/${encodeId(p.product_id)}/${generateSlug(p.product_name)}`}
+                                              to={langPath(`/product/${encodeId(p.product_id)}/${generateSlug(p.product_name)}`)}
                                               target="_blank" rel="noopener noreferrer"
                                               className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                                               title="Lihat Produk"
@@ -909,7 +889,13 @@ const AdminProducts: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end items-center gap-1.5">
-                          <Link to={`/product/${encodeId(req.product_id)}/${generateSlug(req.product_name)}`} target="_blank" rel="noopener noreferrer" className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="View Product">
+                          {/* ✅ FIX: langPath untuk view produk di flash sale table */}
+                          <Link
+                            to={langPath(`/product/${encodeId(req.product_id)}/${generateSlug(req.product_name)}`)}
+                            target="_blank" rel="noopener noreferrer"
+                            className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                            title="View Product"
+                          >
                             <Eye className="w-5 h-5" />
                           </Link>
                           <button
@@ -982,7 +968,12 @@ const AdminProducts: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-gray-900">{(product as any).currency} {(product as any).price}</td>
                       <td className="px-6 py-4 text-right">
-                        <Link to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-gray-100 rounded transition-colors inline-block" title="View">
+                        {/* ✅ FIX: langPath untuk view produk di all listings table */}
+                        <Link
+                          to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)}
+                          className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-gray-100 rounded transition-colors inline-block"
+                          title="View"
+                        >
                           <Eye className="w-5 h-5" />
                         </Link>
                       </td>

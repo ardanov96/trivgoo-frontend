@@ -693,6 +693,7 @@ const AgentAddProduct: React.FC = () => {
             if (Array.isArray((product as any).vouchers)) {
               setSelectedVoucherIds(
                 (product as any).vouchers
+                  .filter((v: any) => v.scope_owner === 'agent')
                   .map((v: any) => Number(v.id))
                   .filter(Boolean)
               );
@@ -1779,7 +1780,7 @@ const AgentAddProduct: React.FC = () => {
             {selectedVoucherIds.length > 0 && (
               <p className="mt-3 text-xs text-green-600 font-semibold flex items-center gap-1">
                 <Tag className="w-3 h-3" />
-                {selectedVoucherIds.length} voucher aktif untuk produk ini
+                {selectedVoucherIds.length} voucher eksklusif Anda aktif untuk produk ini
               </p>
             )}
           </div>

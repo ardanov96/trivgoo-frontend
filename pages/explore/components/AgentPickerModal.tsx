@@ -95,7 +95,11 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <p className="font-bold text-gray-900 text-sm truncate">{(agent as any).owner?.name || 'Penyedia Rental'}</p>
+                      <p className="font-bold text-gray-900 text-sm truncate">
+                        {(agent as any).owner?.company_name 
+                          || (agent as any).owner?.name 
+                          || 'Penyedia Rental'}
+                      </p>
                       <div className="flex items-center gap-1 shrink-0">
                         <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                         <span className="text-xs font-bold text-gray-800">{agent.rating ? `${agent.rating}/10.0` : '7.5/10.0'}</span>

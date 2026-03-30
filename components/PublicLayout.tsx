@@ -90,7 +90,7 @@ const PublicLayout: React.FC = () => {
         title="Change language"
       >
         <span className="text-base leading-none">{currentLangMeta.flag}</span>
-        <span className="text-xs font-bold uppercase hidden lg:block">{lang}</span>
+        <span className="text-xs font-bold hidden lg:block">{currentLangMeta.label}</span>
         <ChevronDown className={`w-3 h-3 transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`} />
       </button>
 

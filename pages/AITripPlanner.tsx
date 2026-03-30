@@ -19,6 +19,7 @@ const SUGGESTIONS = [
 
 const AITripPlanner: React.FC = () => {
   const { t } = useTranslation();
+  // ✅ langPath digunakan untuk semua <Link to>
   const { langPath } = useLangNavigate();
   const [userStory, setUserStory] = useState('');
   const [itinerary, setItinerary] = useState<string>('');
@@ -40,12 +41,10 @@ const AITripPlanner: React.FC = () => {
     setItinerary('');
     setRecommendedProducts([]);
 
-    // Call Gemini Service with product context
     const result = await generateTripPlan(userStory, allProducts);
 
     setItinerary(result.itinerary);
 
-    // Filter full product objects based on IDs returned by AI
     if (result.recommendedProductIds.length > 0) {
       const matches = allProducts.filter((p) => result.recommendedProductIds.includes(p.id));
       setRecommendedProducts(matches);
@@ -173,9 +172,10 @@ const AITripPlanner: React.FC = () => {
                 ) : recommendedProducts.length > 0 ? (
                   <div className="space-y-4">
                     {recommendedProducts.map((product) => (
+                      // ✅ FIX: langPath menggantikan hardcoded /product/...
                       <Link
                         key={product.id}
-                        to={`/product/${encodeId(product.id)}/${generateSlug(product.name)}`}
+                        to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)}
                         className="block mt-4 text-center text-sm font-semibold text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 py-2 rounded-lg transition-colors border border-primary-200"
                       >
                         <div className="flex gap-4">
@@ -217,6 +217,7 @@ const AITripPlanner: React.FC = () => {
                       {t('ai_planner.no_match', 'No specific packages matched your request, but you can explore more')}
                       {t('ai_planner.options', 'options.')}
                     </p>
+                    {/* ✅ Sudah benar — langPath sudah ada sebelumnya */}
                     <Link
                       to={langPath('/explore')}
                       className="inline-block mt-4 text-primary-600 font-bold text-sm hover:underline"
