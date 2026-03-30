@@ -1,3 +1,9 @@
+// Perubahan utama:
+//   1. useVoucher() sekarang return appliedPair + totalDiscountFor()
+//   2. VoucherPicker menerima appliedPair, onApply(v), onRemove(owner)
+//   3. finalTotal dihitung dengan totalDiscountFor(baseTotal)
+//   4. Kirim KEDUA voucher ke backend jika keduanya terpakai
+
 import React, { useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -31,12 +37,10 @@ const CheckoutSummary: React.FC = () => {
 
   const bookingData = location.state;
 
-  // ── Guard 1: missing booking data ──────────────────────────────────────
   React.useEffect(() => {
     if (!bookingData || !bookingData.productName) langNavigate('/explore', { replace: true });
   }, [bookingData]);
 
-  // ── Guard 2: must be logged in ─────────────────────────────────────────
   React.useEffect(() => {
     if (!user) {
       langNavigate('/login', {
@@ -92,16 +96,18 @@ const CheckoutSummary: React.FC = () => {
   const contact = useContactForm(user.email || '');
   const voucher = useVoucher();
 
-  const baseTotal  = Number(totalPrice);
-  const finalTotal = Math.max(0, baseTotal - voucher.appliedDiscount) + ADMIN_FEE;
+  const baseTotal = Number(totalPrice);
 
-  // Blokir pembayaran jika masih ada biaya antar/jemput yang menunggu konfirmasi agen
-  const hasPendingManualQuote = isCarBooking && (needsManualPickupConfirmation || needsManualDropoffConfirmation);
+  // ── Total diskon dari kedua voucher ────────────────────────────────────
+  const totalDiscount = voucher.totalDiscountFor(baseTotal);
+  const finalTotal    = Math.max(0, baseTotal - totalDiscount) + ADMIN_FEE;
+
+  const hasPendingManualQuote = isCarBooking &&
+    (needsManualPickupConfirmation || needsManualDropoffConfirmation);
 
   const normalizedQuantity = isCarBooking ? 1 : (pax || 1);
   const normalizedDuration = Math.max(1, Number(duration || 1));
 
-  // ── Resolved add-ons (single source of truth) ─────────────────────────
   const resolvedAddOns = {
     withDriver:       Boolean(addOns?.withDriver       ?? withDriver ?? false),
     premiumInsurance: Boolean(addOns?.premiumInsurance ?? false),
@@ -118,10 +124,8 @@ const CheckoutSummary: React.FC = () => {
     if (hasPendingManualQuote) {
       Swal.fire(
         t('checkout.manual_quote_title', 'Menunggu Konfirmasi Biaya'),
-        t(
-          'checkout.manual_quote_desc',
-          'Biaya antar atau pengembalian untuk rental mobil ini masih menunggu konfirmasi agen. Mohon tunggu harga final sebelum melanjutkan pembayaran.'
-        ),
+        t('checkout.manual_quote_desc',
+          'Biaya antar atau pengembalian untuk rental mobil ini masih menunggu konfirmasi agen.'),
         'info'
       );
       return;
@@ -145,7 +149,6 @@ const CheckoutSummary: React.FC = () => {
         ? date.includes(' - ') ? date.split(' - ')[0] : date
         : new Date().toISOString().split('T')[0];
 
-      // ✅ pricing_context sebagai JSON STRING — wajib untuk safeJsonParse() di backend
       const pricingContextStr = JSON.stringify({
         vehicleType:  vehicleType || null,
         duration:     normalizedDuration,
@@ -153,11 +156,12 @@ const CheckoutSummary: React.FC = () => {
         pickupFee:    Number(pickupFee  || 0),
         dropoffFee:   Number(dropoffFee || 0),
         addOns:       resolvedAddOns,
-        voucherCode:  voucher.appliedVoucher?.code || null,
+        // Kirim kode kedua voucher (untuk audit di backend)
+        voucherCode:      voucher.appliedPair.admin?.code || null,
+        agentVoucherCode: voucher.appliedPair.agent?.code || null,
       });
 
       const res = await http.post('/payment/create-payment', {
-        // ── Core fields ───────────────────────────────────────────────
         id:           orderId,
         amount:       finalTotal,
         name:         contact.form.name,
@@ -171,12 +175,8 @@ const CheckoutSummary: React.FC = () => {
         start_time:   startTime || null,
         end_time:     endTime   || null,
 
-        // ── pricing_context sebagai JSON string ───────────────────────
-        // backend: safeJsonParse() membaca ini, normalizePricingContext() memprosesnya
         pricing_context: pricingContextStr,
 
-        // ── Top-level car extras — dibutuhkan hasExplicitCarExtras ────
-        // backend mengecek KEDUA sumber: rawContext DAN payload top-level
         pickup_fee:       Number(pickupFee  || 0),
         dropoff_fee:      Number(dropoffFee || 0),
         pickupFee:        Number(pickupFee  || 0),
@@ -187,19 +187,35 @@ const CheckoutSummary: React.FC = () => {
         vehicle_type:     vehicleType || null,
         duration:         normalizedDuration,
 
-        // ── Voucher fields ────────────────────────────────────────────
-        original_amount: baseTotal,
-        ...(voucher.appliedVoucher ? {
-          voucher_code:    voucher.appliedVoucher.code,
-          voucher_id:      voucher.appliedVoucher.id,
-          discount_amount: voucher.appliedDiscount,
+        original_amount:  baseTotal,
+        discount_amount:  totalDiscount,
+
+        // Voucher admin (platform)
+        ...(voucher.appliedPair.admin ? {
+          voucher_code:    voucher.appliedPair.admin.code,
+          voucher_id:      voucher.appliedPair.admin.id,
+        } : {}),
+
+        // Voucher agent — field terpisah agar backend bisa record keduanya
+        ...(voucher.appliedPair.agent ? {
+          agent_voucher_code:    voucher.appliedPair.agent.code,
+          agent_voucher_id:      voucher.appliedPair.agent.id,
+          agent_discount_amount: voucher.totalDiscountFor(
+            Math.max(0, baseTotal - (voucher.appliedPair.admin
+              ? Math.min(
+                  voucher.appliedPair.admin.type === 'percent'
+                    ? Math.floor(baseTotal * voucher.appliedPair.admin.value / 100)
+                    : voucher.appliedPair.admin.value,
+                  baseTotal
+                )
+              : 0))
+          ),
         } : {}),
       });
 
       const { payment_url } = res.data?.data || {};
       if (!payment_url) throw new Error(t('checkout.no_payment_url', 'Payment URL not detected.'));
 
-      // ✅ Bersihkan cart setelah payment URL didapat
       if (productId) {
         removeFromCart(productId);
         try {
@@ -229,7 +245,7 @@ const CheckoutSummary: React.FC = () => {
       Swal.fire({
         title:             isCapacityError ? t('checkout.full_title', 'Fully Booked!') : t('common.error', 'Error'),
         text:              isCapacityError
-          ? t('checkout.full_desc', 'Sorry, tickets/units for this date just ran out. Please choose another date.')
+          ? t('checkout.full_desc', 'Sorry, tickets/units for this date just ran out.')
           : msg,
         icon:              isCapacityError ? 'warning' : 'error',
         confirmButtonText: t('common.ok', 'OK'),
@@ -240,8 +256,6 @@ const CheckoutSummary: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
-
-      {/* Sticky header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2">
@@ -282,12 +296,13 @@ const CheckoutSummary: React.FC = () => {
           setField={contact.setField}
         />
 
+        {/* ── Multi-Voucher Picker ── */}
         <VoucherPicker
           availableVouchers={availableVouchers}
           amount={baseTotal}
-          appliedVoucher={voucher.appliedVoucher}
-          onApply={(v, amount) => voucher.apply(v, amount)}
-          onRemove={voucher.remove}
+          appliedPair={voucher.appliedPair}
+          onApply={(v) => voucher.apply(v, baseTotal)}
+          onRemove={(owner) => voucher.remove(owner)}
         />
 
         <PriceSummary
@@ -300,8 +315,10 @@ const CheckoutSummary: React.FC = () => {
           unitLabel={unitLabel}
           priceUnitLabel={priceUnitLabel}
           baseTotal={baseTotal}
-          appliedVoucher={voucher.appliedVoucher}
-          appliedDiscount={voucher.appliedDiscount}
+          // Kirim kedua voucher ke PriceSummary agar bisa tampilkan baris diskon terpisah
+          appliedVoucher={voucher.appliedPair.admin}
+          appliedAgentVoucher={voucher.appliedPair.agent}
+          appliedDiscount={totalDiscount}
           finalTotal={finalTotal}
           addOns={addOns}
           pickupFee={pickupFee}
@@ -312,7 +329,6 @@ const CheckoutSummary: React.FC = () => {
 
         {isCarBooking && <RentalInfoBanner />}
 
-        {/* Banner peringatan jika biaya antar/jemput belum dikonfirmasi */}
         {hasPendingManualQuote && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
             <span className="text-amber-500 mt-0.5">⚠️</span>
@@ -326,7 +342,7 @@ const CheckoutSummary: React.FC = () => {
         <PayButton
           loading={loading}
           disabled={hasPendingManualQuote}
-          appliedDiscount={voucher.appliedDiscount}
+          appliedDiscount={totalDiscount}
           onClick={handlePayment}
         />
       </div>

@@ -72,6 +72,7 @@ import AgentLoyalty            from './pages/agent/AgentLoyalty';
 import AgentAPI                from './pages/agent/AgentAPI';
 import AgentSupport            from './pages/agent/AgentSupport';
 import AgentRating             from './pages/agent/AgentRating';
+import AgentVouchers           from './pages/agent/AgentVouchers'; // ← tambah
 
 // ── Customer Pages ─────────────────────────────────────────────────────────
 import CustomerBookings        from './pages/customer/Bookings';
@@ -162,7 +163,6 @@ const AppGates: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-// LangBootstrap — sync i18n & html dir setiap kali :lang berubah
 const LangBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { lang }  = useParams<{ lang: string }>();
   const { i18n }  = useTranslation();
@@ -178,24 +178,20 @@ const LangBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   return <>{children}</>;
 };
 
-// ✅ RootRedirect — pakai useNavigate biasa, BUKAN useLangNavigate
-// Karena komponen ini ada di route "/" yang belum punya /:lang context
 const RootRedirect: React.FC = () => {
-  const navigate = useNavigate(); // ✅ langsung useNavigate
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Cek preferensi tersimpan
     const saved = localStorage.getItem('trivgoo_lang');
     if (saved && SUPPORTED_LANGS.includes(saved as any)) {
-      navigate(`/${saved}`, { replace: true }); // ✅ path absolut lengkap
+      navigate(`/${saved}`, { replace: true });
       return;
     }
 
-    // Hit backend untuk geo-detect
     fetch('/api/v1/locale/detect')
       .then(r => r.json())
-      .then(d => navigate(`/${d.lang ?? 'id'}`, { replace: true })) // ✅
-      .catch(() => navigate('/id', { replace: true })); // ✅ fallback
+      .then(d => navigate(`/${d.lang ?? 'id'}`, { replace: true }))
+      .catch(() => navigate('/id', { replace: true }));
   }, []);
 
   return null;
@@ -246,17 +242,17 @@ const AppRoutes: React.FC = () => (
         <Route path="reset-password"  element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
 
         {/* Customer protected */}
-        <Route path="payment"           element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><Payment /></ProtectedRoute>} />
-        <Route path="my-bookings"       element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerBookings /></ProtectedRoute>} />
-        <Route path="my-account"        element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerProfileSettings /></ProtectedRoute>} />
-        <Route path="loyalty"           element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><LoyaltyPage /></ProtectedRoute>} />
-        <Route path="loyalty/redeem"    element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><RedeemPointPage /></ProtectedRoute>} />
+        <Route path="payment"            element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><Payment /></ProtectedRoute>} />
+        <Route path="my-bookings"        element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerBookings /></ProtectedRoute>} />
+        <Route path="my-account"         element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerProfileSettings /></ProtectedRoute>} />
+        <Route path="loyalty"            element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><LoyaltyPage /></ProtectedRoute>} />
+        <Route path="loyalty/redeem"     element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><RedeemPointPage /></ProtectedRoute>} />
         <Route path="loyalty/membership" element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><MembershipPage /></ProtectedRoute>} />
-        <Route path="my-cards"          element={<MyCards />} />
-        <Route path="my-refunds"        element={<MyRefunds />} />
-        <Route path="my-price-alerts"   element={<MyPriceAlerts />} />
-        <Route path="my-passengers"     element={<MyPassengers />} />
-        <Route path="my-notifications"  element={<MyNotifications />} />
+        <Route path="my-cards"           element={<MyCards />} />
+        <Route path="my-refunds"         element={<MyRefunds />} />
+        <Route path="my-price-alerts"    element={<MyPriceAlerts />} />
+        <Route path="my-passengers"      element={<MyPassengers />} />
+        <Route path="my-notifications"   element={<MyNotifications />} />
 
         <Route path="*" element={<NotFound />} />
       </Route>
@@ -289,6 +285,7 @@ const AppRoutes: React.FC = () => (
         <Route path="verification"        element={<AgentVerification />} />
         <Route path="profile/settings"    element={<ProfileSetting />} />
         <Route path="marketing"           element={<AgentMarketing />} />
+        <Route path="vouchers"            element={<AgentVouchers />} /> {/* ← tambah */}
         <Route path="loyalty"             element={<AgentLoyalty />} />
         <Route path="api"                 element={<AgentAPI />} />
         <Route path="support"             element={<AgentSupport />} />

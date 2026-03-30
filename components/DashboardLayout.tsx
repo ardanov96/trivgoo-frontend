@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Star,
+  Tag,
   UserCheck,
   Users,
   X,
@@ -40,23 +41,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // ✅ Gunakan useLangNavigate — satu-satunya sumber kebenaran untuk path & navigate
   const { langPath, langNavigate } = useLangNavigate();
 
   const didFetchMeRef = useRef(false);
 
-  // ✅ Redirect ke /:lang/login setelah logout
   const handleLogout = () => {
     logout();
     langNavigate('/login');
   };
 
-  // ✅ isActive kini bandingkan dengan langPath
   const isActive = (path: string) => location.pathname === langPath(path);
 
   const NavItem = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => (
     <Link
-      to={langPath(to)} // ✅ semua NavItem link pakai langPath
+      to={langPath(to)}
       onClick={() => setIsMobileMenuOpen(false)}
       className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
         isActive(to)
@@ -116,7 +114,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
       >
         {/* Logo */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-gray-100">
-          {/* ✅ Logo → /:lang */}
           <Link to={langPath('/')} className="flex items-center">
             <img src="/inline_trp.png" alt="Trivgoo Logo" className="h-10 w-auto" />
           </Link>
@@ -177,6 +174,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
 
               <NavSectionLabel label="Grow & Quality" />
               <NavItem to={langPath('/agent/marketing')} icon={Megaphone} label="Marketing Tools" />
+              {/* ── Voucher Saya ── */}
+              <NavItem to={langPath('/agent/vouchers')}  icon={Tag}       label="My Vouchers" />
               <NavItem to={langPath('/agent/loyalty')}   icon={Award}     label="Loyalty & Member" />
               <NavItem to={langPath('/agent/rating')}    icon={Star}      label="Rating & Review" />
 
@@ -226,7 +225,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
             </h1>
           </div>
           <div className="flex items-center space-x-4">
-            {/* ✅ View Live Site → /:lang */}
             <Link to={langPath('/')} className="text-xs lg:text-sm text-primary-600 hover:underline">
               View Live Site
             </Link>
