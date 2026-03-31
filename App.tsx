@@ -104,6 +104,7 @@ import BookingFailed   from './pages/BookingFailed';
 import BookingPending  from './pages/BookingPending';
 import ForgotPassword  from './pages/ForgotPassword';
 import ResetPassword   from './pages/ResetPassword';
+import Sitemap         from './pages/SiteMap';
 
 // ── Push Notifications ─────────────────────────────────────────────────────
 import { usePushNotifications } from './hooks/usePushNotifications';
@@ -248,6 +249,7 @@ const AppRoutes: React.FC = () => (
         <Route path="terms-and-service"    element={<TermAndService />} />
         <Route path="privacy-policy"       element={<PrivacyPolicy />} />
         <Route path="contact-us"           element={<ContactUs />} />
+        <Route path="sitemap"              element={<Sitemap />} />
 
         <Route path="register/agent"  element={<PublicOnlyRoute><RegisterAgent /></PublicOnlyRoute>} />
         <Route path="forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />

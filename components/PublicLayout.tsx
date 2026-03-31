@@ -317,6 +317,7 @@ const PublicLayout: React.FC = () => {
                 <li><Link to={langPath('/terms-and-service')} className="hover:text-primary-400 transition-colors">{t('footer.terms', 'Terms of Service')}</Link></li>
                 <li><Link to={langPath('/privacy-policy')} className="hover:text-primary-400 transition-colors">{t('footer.privacy', 'Privacy Policy')}</Link></li>
                 <li><Link to={langPath('/contact-us')} className="hover:text-primary-400 transition-colors">{t('footer.contact', 'Contact Us')}</Link></li>
+                <li><Link to={langPath('/sitemap')} className="hover:text-primary-400 transition-colors">{t('footer.sitemap', 'Sitemap')}</Link></li>
               </ul>
             </div>
             <div>
