@@ -59,16 +59,16 @@ const Login: React.FC = () => {
       try {
         const result = await login(email, password);
         if (!result.success) {
-          const msg = result.message || t('auth.invalid_credentials', 'Invalid credentials.');
+          const msg = result.message || t('auth.invalid_credentials');
           setError(msg);
           showToast(msg, 'error');
           return;
         }
         await syncVerificationStatusIfAny();
-        showToast(t('auth.welcome_back', 'Welcome back!'), 'success');
+        showToast(t('auth.welcome_back'), 'success');
         handleRedirectByRole(result.user?.role as UserRole | undefined);
       } catch (err: any) {
-        const msg = err?.response?.data?.message || err?.message || t('auth.invalid_credentials', 'Invalid credentials.');
+        const msg = err?.response?.data?.message || err?.message || t('auth.invalid_credentials');
         setError(msg);
         showToast(msg, 'error');
       } finally {
@@ -92,10 +92,10 @@ const Login: React.FC = () => {
           <span className="text-3xl font-serif font-bold tracking-tighter mt-8" />
           <div>
             <h2 className="text-4xl font-serif font-bold text-white mb-6">
-              {t('auth.login_visual_title', 'Turn your travel dreams into reality.')}
+              {t('auth.login_visual_title')}
             </h2>
             <p className="text-lg text-primary-100 max-w-md">
-              {t('auth.login_visual_desc', 'Join thousands of travelers who have found their perfect getaway with Trivgoo.')}
+              {t('auth.login_visual_desc')}
             </p>
           </div>
           <div className="text-primary-200 text-sm" />
@@ -107,27 +107,27 @@ const Login: React.FC = () => {
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="mb-10">
             <Link to={langPath('/')} className="text-gray-400 hover:text-gray-600 flex items-center mb-6 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back', 'Back to Home')}
+              <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back')}
             </Link>
             <h2 className="text-3xl font-serif font-bold text-gray-900">
-              {t('auth.login_title', 'Welcome back')}
+              {t('auth.login_title')}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              {t('auth.login_subtitle', 'Please enter your details to sign in.')}
+              {t('auth.login_subtitle')}
             </p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                {t('auth.email', 'Email address')}
+                {t('auth.email')}
               </label>
               <div className="mt-1">
                 <input
                   id="email" name="email" type="email" required
                   value={email} onChange={(e) => setEmail(e.target.value)}
                   className={inputClass}
-                  placeholder={t('auth.email_placeholder', 'you@example.com')}
+                  placeholder={t('auth.email_placeholder')}
                   autoComplete="email"
                 />
               </div>
@@ -136,10 +136,10 @@ const Login: React.FC = () => {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  {t('auth.password', 'Password')}
+                  {t('auth.password')}
                 </label>
                 <Link to={langPath('/forgot-password')} className="text-sm font-medium text-primary-600 hover:text-primary-500">
-                  {t('auth.forgot_password', 'Forgot password?')}
+                  {t('auth.forgot_password')}
                 </Link>
               </div>
               <div className="mt-1 relative">
@@ -149,14 +149,14 @@ const Login: React.FC = () => {
                   required
                   value={password} onChange={(e) => setPassword(e.target.value)}
                   className={passwordInputClass}
-                  placeholder={t('auth.password_placeholder', 'Enter your password')}
+                  placeholder={t('auth.password_placeholder')}
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('common.close') : t('common.view')}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -167,7 +167,7 @@ const Login: React.FC = () => {
               <div className="rounded-lg bg-red-50 p-4">
                 <div className="flex">
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">{t('common.error', 'Error')}</h3>
+                    <h3 className="text-sm font-medium text-red-800">{t('common.error')}</h3>
                     <div className="mt-2 text-sm text-red-700">{error}</div>
                   </div>
                 </div>
@@ -179,16 +179,16 @@ const Login: React.FC = () => {
                 type="submit" disabled={loading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-primary-500/30 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {loading ? t('auth.signing_in', 'Signing in...') : t('auth.login_button', 'Sign in')}
+                {loading ? t('auth.signing_in') : t('auth.login_button')}
               </button>
             </div>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              {t('auth.no_account', "Don't have an account?")}{' '}
+              {t('auth.no_account')}{' '}
               <Link to={langPath('/register')} className="font-bold text-primary-600 hover:text-primary-500 transition-colors">
-                {t('auth.sign_up', 'Sign up')}
+                {t('auth.sign_up')}
               </Link>
             </p>
           </div>

@@ -40,11 +40,15 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between gap-4 shrink-0">
           <div>
-            <h3 className="text-xl font-extrabold text-gray-900 leading-tight">Pilih Penyedia Rental</h3>
+            <h3 className="text-xl font-extrabold text-gray-900 leading-tight">
+              {t('agent_picker.title')}
+            </h3>
             <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-primary-500" />
               {group.representativeProduct.location?.split(',').slice(-2).join(',').trim()} ·{' '}
-              <span className="font-semibold text-gray-700">{group.agents.length} penyedia tersedia</span>
+              <span className="font-semibold text-gray-700">
+                {t('agent_picker.providers_available', { count: group.agents.length })}
+              </span>
             </p>
           </div>
           <button
@@ -93,13 +97,13 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
                         ))}
                         {activeVouchers.length > 2 && (
                           <span className="text-[10px] text-orange-500 font-bold">
-                            +{activeVouchers.length - 2} promo
+                            +{activeVouchers.length - 2} {t('common.more')}
                           </span>
                         )}
                       </>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-green-500 text-white">
-                        <ShieldCheck className="w-3 h-3" /> Terverifikasi
+                        <ShieldCheck className="w-3 h-3" /> {t('agent_picker.verified')}
                       </span>
                     )}
                   </div>
@@ -121,7 +125,7 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
                         <p className="font-bold text-gray-900 text-sm truncate">
                           {(agent as any).owner?.company_name
                             || (agent as any).owner?.name
-                            || 'Penyedia Rental'}
+                            || t('agent_picker.title')}
                         </p>
                         <div className="flex items-center gap-1 shrink-0">
                           <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
@@ -131,7 +135,6 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
                         </div>
                       </div>
 
-                      {/* Lokasi agen */}
                       {agent.location && (
                         <p className="flex items-center gap-1 text-[11px] text-gray-400 mb-1.5">
                           <MapPin className="w-3 h-3 text-primary-400 shrink-0" />
@@ -152,14 +155,14 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
 
                       <div className="flex flex-wrap gap-1.5">
                         <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                          {details?.transmission === 'Automatic' ? 'Matic' : 'Manual'}
+                          {details?.transmission === 'Automatic' ? t('explore.automatic') : t('explore.manual')}
                         </span>
                         <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                          {details?.seats || 4} Penumpang
+                          {details?.seats || 4} {t('common.passengers')}
                         </span>
                         {details?.driver && (
                           <span className="bg-primary-50 text-primary-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                            + Driver
+                            + {t('explore.with_driver')}
                           </span>
                         )}
                       </div>
@@ -169,25 +172,31 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
                     <div className="text-right shrink-0 flex flex-col items-end gap-2">
                       <div>
                         <p className="text-xs text-gray-500 font-medium">
-                          {agent.currency} {Number(agent.price).toLocaleString('id-ID')}/hari
+                          {agent.currency} {Number(agent.price).toLocaleString('id-ID')}{t('agent_picker.per_day')}
                         </p>
                         {hasPromo ? (
                           <>
-                            <p className="text-xs text-gray-400 line-through">{formatRp(baseTotal)} est.</p>
+                            <p className="text-xs text-gray-400 line-through">
+                              {formatRp(baseTotal)} {t('agent_picker.estimate_suffix')}
+                            </p>
                             <p className="text-base font-extrabold text-green-600 leading-tight">
                               {formatRp(finalTotal)}
-                              <span className="text-[10px] font-bold text-green-500 ml-0.5">est.</span>
+                              <span className="text-[10px] font-bold text-green-500 ml-0.5">
+                                {t('agent_picker.estimate_suffix')}
+                              </span>
                             </p>
                             {bestVoucher && (
                               <p className="text-[10px] text-orange-500 font-bold mt-0.5">
-                                Hemat {formatRp(bestDiscount)}
+                                {t('agent_picker.save', { amount: formatRp(bestDiscount) })}
                               </p>
                             )}
                           </>
                         ) : (
                           <p className="text-base font-extrabold text-primary-600 leading-tight">
                             {formatRp(baseTotal)}
-                            <span className="text-[10px] font-bold text-primary-500 ml-0.5">est.</span>
+                            <span className="text-[10px] font-bold text-primary-500 ml-0.5">
+                              {t('agent_picker.estimate_suffix')}
+                            </span>
                           </p>
                         )}
                       </div>
@@ -196,7 +205,7 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
                         onClick={onClose}
                         className="inline-flex items-center justify-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-primary-600/25 transition-all active:scale-95 whitespace-nowrap"
                       >
-                        Choose <ArrowRight className="w-3.5 h-3.5 group-hover/item:translate-x-0.5 transition-transform" />
+                        {t('agent_picker.choose')} <ArrowRight className="w-3.5 h-3.5 group-hover/item:translate-x-0.5 transition-transform" />
                       </Link>
                     </div>
                   </div>
@@ -208,7 +217,7 @@ export const AgentPickerModal = ({ group, onClose }: Props) => {
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 shrink-0">
           <p className="text-xs text-gray-400 text-center">
-            Estimasi {PREVIEW_DAYS} hari sewa · Harga sudah termasuk promo terbaik jika tersedia
+            {t('agent_picker.footer_note', { days: PREVIEW_DAYS })}
           </p>
         </div>
       </motion.div>

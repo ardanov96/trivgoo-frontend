@@ -10,16 +10,8 @@ import { Product } from '../types';
 import { encodeId } from '../utils/hashids';
 import { generateSlug } from '../utils/slugify';
 
-const SUGGESTIONS = [
-  'I want a romantic 3-day honeymoon in Bali with a private pool villa, budget around $500.',
-  'Planning a family trip to Japan for 5 days. We need kid-friendly tours and easy transport.',
-  'Backpacker looking for hidden gems in Yogyakarta, cheap eats, and cultural experiences.',
-  'Luxury weekend getaway in Paris. I want the best views and fine dining.',
-];
-
 const AITripPlanner: React.FC = () => {
   const { t } = useTranslation();
-  // ✅ langPath digunakan untuk semua <Link to>
   const { langPath } = useLangNavigate();
   const [userStory, setUserStory] = useState('');
   const [itinerary, setItinerary] = useState<string>('');
@@ -27,6 +19,14 @@ const AITripPlanner: React.FC = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Suggestions diambil dari translation agar ikut bahasa aktif
+  const SUGGESTIONS = [
+    t('ai_planner.suggestion_1'),
+    t('ai_planner.suggestion_2'),
+    t('ai_planner.suggestion_3'),
+    t('ai_planner.suggestion_4'),
+  ];
 
   useEffect(() => {
     // mockService.getProducts().then(setAllProducts);
@@ -66,11 +66,11 @@ const AITripPlanner: React.FC = () => {
             <Sparkles className="w-6 h-6 text-primary-600" />
           </div>
           <h1 className="text-3xl md:text-5xl font-serif font-bold text-gray-900 mb-4 leading-tight">
-            {t('ai_planner.title', 'Plan Your Trip Within Your Budget!')}
+            {t('ai_planner.title')}
           </h1>
           <p className="text-base md:text-lg text-gray-500 max-w-2xl mx-auto px-4">
-            {t('ai_planner.desc1', 'Tell us your story, budget, and dreams. Our AI will craft a personalized itinerary and')}
-            {t('ai_planner.desc2', 'match you with the perfect Trivgoo services.')}
+            {t('ai_planner.desc1')}
+            {t('ai_planner.desc2')}
           </p>
         </div>
 
@@ -82,7 +82,7 @@ const AITripPlanner: React.FC = () => {
               <div className="relative">
                 <textarea
                   className="w-full h-40 p-5 pr-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none text-base md:text-lg text-gray-700 bg-gray-50 focus:bg-white transition-all shadow-inner"
-                  placeholder={t('ai_planner.placeholder', "Example: I want to visit Bali for 3 days. I'm confused about where to go and stay. My budget is only $300. I love nature and spicy food...")}
+                  placeholder={t('ai_planner.placeholder')}
                   value={userStory}
                   onChange={(e) => setUserStory(e.target.value)}
                 ></textarea>
@@ -95,11 +95,11 @@ const AITripPlanner: React.FC = () => {
                     {isLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        {t('ai_planner.thinking', 'Thinking...')}
+                        {t('ai_planner.thinking')}
                       </>
                     ) : (
                       <>
-                        {t('ai_planner.generate', 'Generate Plan')} <Send className="w-4 h-4 ml-2" />
+                        {t('ai_planner.generate')} <Send className="w-4 h-4 ml-2" />
                       </>
                     )}
                   </button>
@@ -111,7 +111,7 @@ const AITripPlanner: React.FC = () => {
             {!hasSearched && (
               <div className="mt-6">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center">
-                  <Lightbulb className="w-4 h-4 mr-2" /> {t('ai_planner.try_prompts', 'Try these prompts')}
+                  <Lightbulb className="w-4 h-4 mr-2" /> {t('ai_planner.try_prompts')}
                 </p>
                 <div className="flex flex-wrap gap-2 md:gap-3">
                   {SUGGESTIONS.map((suggestion, idx) => (
@@ -136,7 +136,7 @@ const AITripPlanner: React.FC = () => {
             <div className={`lg:col-span-2 ${isLoading ? 'opacity-50' : ''}`}>
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8 h-full">
                 <h3 className="text-2xl font-serif font-bold text-gray-900 mb-6 flex items-center">
-                  <Map className="w-6 h-6 mr-3 text-primary-500" /> {t('ai_planner.your_itinerary', 'Your Personal Itinerary')}
+                  <Map className="w-6 h-6 mr-3 text-primary-500" /> {t('ai_planner.your_itinerary')}
                 </h3>
                 {isLoading ? (
                   <div className="space-y-4">
@@ -157,7 +157,7 @@ const AITripPlanner: React.FC = () => {
             <div className="lg:col-span-1">
               <div className="sticky top-24">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Star className="w-5 h-5 mr-2 text-orange-500 fill-current" /> {t('ai_planner.recommended', 'Recommended For You')}
+                  <Star className="w-5 h-5 mr-2 text-orange-500 fill-current" /> {t('ai_planner.recommended')}
                 </h3>
 
                 {isLoading ? (
@@ -172,7 +172,6 @@ const AITripPlanner: React.FC = () => {
                 ) : recommendedProducts.length > 0 ? (
                   <div className="space-y-4">
                     {recommendedProducts.map((product) => (
-                      // ✅ FIX: langPath menggantikan hardcoded /product/...
                       <Link
                         key={product.id}
                         to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)}
@@ -214,15 +213,14 @@ const AITripPlanner: React.FC = () => {
                 ) : (
                   <div className="bg-gray-50 rounded-2xl p-6 text-center border border-dashed border-gray-200">
                     <p className="text-gray-500 text-sm">
-                      {t('ai_planner.no_match', 'No specific packages matched your request, but you can explore more')}
-                      {t('ai_planner.options', 'options.')}
+                      {t('ai_planner.no_match')}
+                      {t('ai_planner.options')}
                     </p>
-                    {/* ✅ Sudah benar — langPath sudah ada sebelumnya */}
                     <Link
                       to={langPath('/explore')}
                       className="inline-block mt-4 text-primary-600 font-bold text-sm hover:underline"
                     >
-                      {t('common.see_all', 'Browse All')}
+                      {t('common.see_all')}
                     </Link>
                   </div>
                 )}

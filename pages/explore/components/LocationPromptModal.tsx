@@ -3,6 +3,7 @@
 import { MapPin, Search, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onConfirm: (location: string) => void;
@@ -16,6 +17,7 @@ const QUICK_LOCATIONS = [
 
 export const LocationPromptModal = ({ onConfirm, onClose }: Props) => {
   const [input, setInput] = useState('');
+  const { t } = useTranslation();
 
   const handleConfirm = () => {
     const val = input.trim();
@@ -45,10 +47,10 @@ export const LocationPromptModal = ({ onConfirm, onClose }: Props) => {
             </div>
             <div>
               <h3 className="text-base font-extrabold text-gray-900 leading-tight">
-                Masukkan Lokasi Kamu
+                {t('location_prompt.title')}
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Kami akan menampilkan agen rental terdekat
+                {t('location_prompt.subtitle')}
               </p>
             </div>
           </div>
@@ -69,7 +71,7 @@ export const LocationPromptModal = ({ onConfirm, onClose }: Props) => {
             <input
               autoFocus
               type="text"
-              placeholder="Cth: Kuta, Seminyak, Ubud..."
+              placeholder={t('location_prompt.placeholder')}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
@@ -80,7 +82,7 @@ export const LocationPromptModal = ({ onConfirm, onClose }: Props) => {
           {/* Quick picks */}
           <div>
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">
-              Lokasi Populer
+              {t('location_prompt.popular_locations')}
             </p>
             <div className="flex flex-wrap gap-2">
               {QUICK_LOCATIONS.map((loc) => (
@@ -108,7 +110,7 @@ export const LocationPromptModal = ({ onConfirm, onClose }: Props) => {
             className="w-full py-3.5 rounded-2xl bg-primary-600 hover:bg-primary-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2"
           >
             <MapPin className="w-4 h-4" />
-            Tampilkan Agen di Lokasi Ini
+            {t('location_prompt.confirm_button')}
           </button>
         </div>
       </motion.div>

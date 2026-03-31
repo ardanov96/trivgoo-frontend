@@ -28,8 +28,8 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
   const baseTotal      = Number(product.price) * PREVIEW_DAYS;
   const bestDiscount   = calcBestDiscount(activeVouchers, baseTotal);
   const finalTotal     = baseTotal - bestDiscount;
-  const { langPath } = useLangNavigate();
-  const { t } = useTranslation();
+  const { langPath }   = useLangNavigate();
+  const { t }          = useTranslation();
 
   return (
     <div className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:-translate-y-1 flex flex-col md:flex-row relative w-full">
@@ -51,13 +51,13 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
 
         {activeVouchers.length > 0 && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-orange-500 text-white px-2.5 py-1 rounded-full text-[10px] font-extrabold shadow-md z-10">
-            <Sparkles className="w-3 h-3" />{activeVouchers.length} Promo
+            <Sparkles className="w-3 h-3" />{activeVouchers.length} {t('common.popular')}
           </div>
         )}
 
         {agentCount > 1 && (
           <div className="absolute bottom-3 left-3 bg-primary-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md z-10 flex items-center gap-1">
-            <Users className="w-3 h-3" />{agentCount} Agent
+            <Users className="w-3 h-3" />{agentCount} {t('rental.select_agent', { count: agentCount }).split('(')[0].trim()}
           </div>
         )}
       </div>
@@ -72,14 +72,16 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-500 mb-0.5">{agentCount > 1 ? 'Mulai dari' : 'Price'}</p>
+            <p className="text-sm text-gray-500 mb-0.5">
+              {agentCount > 1 ? t('rental.starting_from') : t('rental.price_label')}
+            </p>
             <p className="text-2xl font-bold text-gray-900">
               {product.currency} {Number(product.price).toLocaleString('id-ID')}
-              <span className="text-sm font-medium text-gray-500 ml-1">/hari</span>
+              <span className="text-sm font-medium text-gray-500 ml-1">{t('rental.per_day')}</span>
             </p>
             {bestDiscount > 0 && (
               <p className="text-xs text-green-600 font-semibold mt-0.5">
-                Est. {PREVIEW_DAYS}h: <span className="line-through text-gray-400">{formatRp(baseTotal)}</span>{' '}
+                {t('rental.estimated_days', { days: PREVIEW_DAYS })}: <span className="line-through text-gray-400">{formatRp(baseTotal)}</span>{' '}
                 <span className="text-green-700 font-extrabold">{formatRp(finalTotal)}</span>
               </p>
             )}
@@ -92,10 +94,10 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
         {/* Specs grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
           {[
-            { icon: Gauge,   label: 'Transmission', value: details?.transmission === 'Automatic' ? 'Matic' : 'Manual' },
-            { icon: Users,   label: 'Seats',        value: `${details?.seats} Passengers` },
-            { icon: Award,   label: 'Year',         value: details?.year || '-' },
-            { icon: Droplet, label: 'Fuel Policy',  value: details?.fuelPolicy || 'Standard' },
+            { icon: Gauge,   label: t('explore.transmission'), value: details?.transmission === 'Automatic' ? t('explore.automatic') : t('explore.manual') },
+            { icon: Users,   label: t('rental.seats'),         value: `${details?.seats} ${t('common.passengers')}` },
+            { icon: Award,   label: 'Year',                    value: details?.year || '-' },
+            { icon: Droplet, label: 'Fuel Policy',             value: details?.fuelPolicy || 'Standard' },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
               <Icon className="w-5 h-5 text-primary-600 mx-auto mb-2" />
@@ -110,13 +112,13 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
           {details?.luggage && (
             <div className="flex items-center gap-1 bg-gray-50 px-3 py-1.5 rounded-full">
               <Briefcase className="w-4 h-4 text-primary-600" />
-              <span className="text-xs font-medium">{details.luggage} Luggage</span>
+              <span className="text-xs font-medium">{details.luggage} {t('rental.luggage')}</span>
             </div>
           )}
           {details?.driver && (
             <div className="flex items-center gap-1 bg-gray-50 px-3 py-1.5 rounded-full">
               <UserCog className="w-4 h-4 text-primary-600" />
-              <span className="text-xs font-medium">With Driver</span>
+              <span className="text-xs font-medium">{t('rental.with_driver')}</span>
             </div>
           )}
           {details?.transportCategory && (
@@ -131,16 +133,17 @@ export const RentalCarCard = ({ product, agentCount = 1, isLoggedIn, isSaved, is
         <div className="flex items-center gap-3 mt-auto pt-4 border-t border-gray-100">
           {agentCount > 1 ? (
             <button onClick={(e) => e.stopPropagation()} className="flex-1 border-2 border-primary-600 text-primary-600 py-3 rounded-xl text-sm font-semibold hover:bg-primary-50 transition-all text-center flex items-center justify-center gap-2">
-              <Users className="w-4 h-4" />Pilih Agent ({agentCount})
+              <Users className="w-4 h-4" />
+              {t('rental.select_agent', { count: agentCount })}
             </button>
           ) : (
             <Link to={langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`)} onClick={(e) => e.stopPropagation()} className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl text-sm font-semibold hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-all text-center">
-              See Details
+              {t('explore.view_details')}
             </Link>
           )}
           <button onClick={(e) => { e.stopPropagation(); onAddToCart(e); }} disabled={isInCart} className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 border-2 transform active:scale-[0.98] ${isInCart ? 'border-green-500 text-green-600 bg-green-50 cursor-default' : 'border-gray-900 bg-gray-900 text-white hover:bg-primary-600 hover:border-primary-600 shadow-md'}`}>
             <ShoppingCart className={`w-4 h-4 ${isInCart ? 'stroke-green-600' : ''}`} />
-            {isInCart ? 'Added to Cart' : 'Add to Cart'}
+            {isInCart ? t('product.added_to_cart') : t('product.add_to_cart')}
           </button>
         </div>
       </div>
