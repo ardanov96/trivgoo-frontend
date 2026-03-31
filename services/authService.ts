@@ -67,4 +67,9 @@ export const authService = {
     return res.data.message || 'Verification email resent successfully';
   },
 
+  async resendUnverified(email: string): Promise<string> {
+    const res = await http.post<ApiEnvelope<null>>('/auth/resend-unverified', { email });
+    return res.data.message || 'Verification email resent successfully';
+  },
+
 };

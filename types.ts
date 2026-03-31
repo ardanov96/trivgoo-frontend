@@ -238,6 +238,7 @@ export type LoginResult = {
   success: boolean;
   user?: AuthUser;
   message?: string;
+  is_unverified?: boolean;
 };
 
 export interface AuthContextValue {

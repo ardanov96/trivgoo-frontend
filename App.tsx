@@ -25,6 +25,7 @@ import NotFound       from './pages/NotFound';
 import Forbidden403   from './pages/Forbidden403';
 import ServerError500 from './pages/ServerError500';
 import OfflinePage    from './pages/OfflinePage';
+import LegacyRedirect from './components/LegacyRedirect';
 
 // ── i18n ───────────────────────────────────────────────────────────────────
 import './src/i18n';
@@ -208,6 +209,16 @@ const AppRoutes: React.FC = () => (
     {/* ── Root redirect → geo-detect atau saved lang ── */}
     <Route path="/" element={<RootRedirect />} />
     <Route path="/payment/result" element={<PaymentResult />} />
+
+    {/* ── Legacy fallback: lang-less paths → auto-detect & redirect ── */}
+    <Route path="/verify-email"    element={<LegacyRedirect />} />
+    <Route path="/reset-password"  element={<LegacyRedirect />} />
+    <Route path="/login"           element={<LegacyRedirect />} />
+    <Route path="/register"        element={<LegacyRedirect />} />
+    <Route path="/forgot-password" element={<LegacyRedirect />} />
+    <Route path="/my-bookings"     element={<LegacyRedirect />} />
+    <Route path="/my-bookings/:id" element={<LegacyRedirect />} />
+    <Route path="/agent/bookings"  element={<LegacyRedirect />} />
 
     {/* ── Semua route dibungkus /:lang ── */}
     <Route path="/:lang" element={<LangBootstrap><Outlet /></LangBootstrap>}>
