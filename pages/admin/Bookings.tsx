@@ -58,13 +58,55 @@ const MobileBookingCard = ({ booking, getStatusConfig, requestStatusUpdate, setS
             Cancel
           </button>
         )}
-        <button onClick={() => setSelectedBooking(booking)}
+        <button onClick={() => setSelectedBooking(booking as any)}
           className="flex-1 py-1.5 bg-gray-50 text-gray-700 rounded-lg text-xs font-bold text-center border border-gray-200 active:scale-95 transition-transform">
           Detail
         </button>
       </div>
     </div>
   );
+};
+
+interface AdminBookingDetail extends Booking {
+  productLocation?: string;
+  pickupLocation?: string;
+  dropoffLocation?: string;
+  withDriver?: number;
+  vehicleType?: string;
+  duration?: string;
+  pickupFee?: string | number;
+  dropoffFee?: string | number;
+  adminFee?: string | number;
+  addOnsJson?: string;
+  specialRequest?: string;
+  agentName?: string;
+  agentCompany?: string;
+  agentEmail?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  paymentGateway?: string;
+  paymentMethod?: string;
+  paidAt?: string;
+  createdAt?: string;
+  productBasePrice?: number;
+}
+
+// Helper: parse datetime string from DB (format "2026-04-05T09:00:00") 
+// WITHOUT browser timezone conversion
+const parseLocalDateStr = (dtStr: string | null | undefined) => {
+  if (!dtStr) return null;
+  // Remove trailing Z if present to prevent UTC interpretation
+  const cleaned = dtStr.replace('Z', '');
+  // Extract parts: "2026-04-05T09:00:00" or "2026-04-05 09:00:00"
+  const match = cleaned.match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day, hour, minute] = match;
+  return {
+    date: `${day}/${month}/${year}`,
+    dateLong: new Date(Number(year), Number(month) - 1, Number(day))
+      .toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+    time: `${hour}:${minute}`,
+  };
 };
 
 const AdminBookings: React.FC = () => {
@@ -77,7 +119,23 @@ const AdminBookings: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [pendingAction, setPendingAction] = useState<{ id: number; status: BookingStatus } | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<AdminBookingDetail | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+  const handleViewDetails = async (booking: Booking) => {
+    setIsDetailLoading(true);
+    setSelectedBooking(booking as AdminBookingDetail);
+    try {
+      const response = await http.get(`/admin/bookings/${booking.id}`);
+      if (response.data && !response.data.error) {
+        setSelectedBooking(response.data.data as AdminBookingDetail);
+      }
+    } catch (error) {
+      console.error('Failed to fetch booking details', error);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
 
   const fetchBookings = async () => {
     setIsLoading(true);
@@ -243,7 +301,7 @@ const AdminBookings: React.FC = () => {
                 <p className="text-lg font-medium">No bookings found</p>
               </div>
             ) : currentItems.map((booking) => (
-              <MobileBookingCard key={booking.id} booking={booking} getStatusConfig={getStatusConfig} requestStatusUpdate={requestStatusUpdate} setSelectedBooking={setSelectedBooking} />
+              <MobileBookingCard key={booking.id} booking={booking} getStatusConfig={getStatusConfig} requestStatusUpdate={requestStatusUpdate} setSelectedBooking={handleViewDetails} />
             ))}
           </div>
 
@@ -320,7 +378,7 @@ const AdminBookings: React.FC = () => {
                                   </button>
                                 )}
                                 <div className="border-t border-gray-100 my-1"></div>
-                                <button onClick={() => setSelectedBooking(booking)}
+                                <button onClick={() => handleViewDetails(booking)}
                                   className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                                   <Eye className="w-4 h-4 mr-2" /> View Details
                                 </button>
@@ -413,107 +471,162 @@ const AdminBookings: React.FC = () => {
           <div className="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setSelectedBooking(null)}></div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-              <div className="bg-white px-6 pt-5 pb-6">
-                <div className="flex justify-between items-center mb-5 pb-4 border-b border-gray-100">
+            <div className="inline-block align-bottom bg-white rounded-xl text-left shadow-xl transform transition-all sm:my-8 sm:align-middle w-full max-w-4xl">
+              <div className="bg-white px-6 pt-5 pb-6 max-h-[85vh] overflow-y-auto w-full">
+                <div className="flex justify-between items-center mb-5 pb-4 border-b border-gray-100 sticky top-0 bg-white z-10 w-full">
                   <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                     <PackageCheck className="w-5 h-5 text-primary-600" />
-                    Booking Details
+                    Booking Details #{selectedBooking.externalId || selectedBooking.id}
                   </h3>
-                  <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-gray-500 rounded-full p-1 hover:bg-gray-100 transition-colors">
-                    <X className="w-5 h-5" />
-                  </button>
+                  <div className="flex gap-2 items-center">
+                    {isDetailLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>}
+                    <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-gray-500 rounded-full p-1 hover:bg-gray-100 transition-colors">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+                  {/* LEFT COLUMN: Transaction, User & Agent Info */}
                   <div className="space-y-4">
-                    <div>
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Transaction Information</h4>
-                      <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 text-sm">
-                        <div className="flex justify-between border-b border-gray-200 pb-1.5 break-all">
-                          <span className="text-gray-600 min-w-[50px]">ID</span>
-                          <span className="font-medium text-gray-900 text-right">{selectedBooking.externalId || selectedBooking.id}</span>
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                      <h4 className="flex items-center text-sm font-bold text-gray-900 border-b pb-2 mb-3">
+                        <CheckCircle className="w-4 h-4 mr-2 text-primary-600" /> Waktu Pemesanan
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Dibuat Pada</p>
+                          <p className="text-sm font-bold text-gray-900">{((selectedBooking as any).createdAt) ? new Date((selectedBooking as any).createdAt).toLocaleString('id-ID') : '-'}</p>
                         </div>
-                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
-                          <span className="text-gray-600">Date/Time</span>
-                          <span className="font-medium text-gray-900 text-right">
-                            {selectedBooking.startTime && selectedBooking.endTime 
-                              ? `${selectedBooking.date}, ${new Date(selectedBooking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(selectedBooking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}`
-                              : selectedBooking.date}
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">Status</p>
+                          <span className={`font-bold text-sm uppercase ${(selectedBooking.status||'').toLowerCase() === 'confirmed' ? 'text-green-600' : (selectedBooking.status||'').toLowerCase() === 'pending' ? 'text-yellow-600' : 'text-primary-600'}`}>
+                            {selectedBooking.status}
                           </span>
-                        </div>
-                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
-                          <span className="text-gray-600">Created At</span>
-                          <span className="font-medium text-gray-900 text-right">
-                            {((selectedBooking as any).createdAt) ? new Date((selectedBooking as any).createdAt).toLocaleString('id-ID') : '-'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Status</span>
-                          <span className={`font-bold uppercase ${(selectedBooking.status||'').toLowerCase() === 'confirmed' ? 'text-green-600' : (selectedBooking.status||'').toLowerCase() === 'pending' ? 'text-yellow-600' : 'text-primary-600'}`}>{selectedBooking.status}</span>
                         </div>
                       </div>
                     </div>
-                    
-                    <div>
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">User details</h4>
-                      <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 text-sm">
-                        <div className="flex justify-between pb-1.5 border-b border-gray-200">
-                          <span className="text-gray-600">Name</span>
-                          <span className="font-medium text-gray-900 text-right max-w-[200px] truncate" title={selectedBooking.userName}>{selectedBooking.userName}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Product</span>
-                          <span className="font-medium text-gray-900 text-right max-w-[200px] truncate" title={selectedBooking.productName}>{selectedBooking.productName}</span>
-                        </div>
+
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                      <h4 className="flex items-center text-sm font-bold text-gray-900 border-b pb-2 mb-3">
+                        <CheckCircle className="w-4 h-4 mr-2 text-primary-600" /> Kontak Customer
+                      </h4>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div className="flex justify-between"><span>Nama:</span><span className="font-medium text-gray-900 text-right">{selectedBooking.userName || '-'}</span></div>
+                        <div className="flex justify-between"><span>Email:</span><span className="font-medium text-gray-900 text-right break-all max-w-[200px]">{selectedBooking.customerEmail || '-'}</span></div>
+                        <div className="flex justify-between"><span>Nomor HP:</span><span className="font-medium text-gray-900 text-right">{selectedBooking.customerPhone || '-'}</span></div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                      <h4 className="flex items-center text-sm font-bold text-gray-900 border-b pb-2 mb-3">
+                        <CheckCircle className="w-4 h-4 mr-2 text-primary-600" /> Informasi Agen Utama
+                      </h4>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div className="flex justify-between"><span>Nama Agen:</span><span className="font-medium text-gray-900 text-right">{selectedBooking.agentName || '-'}</span></div>
+                        <div className="flex justify-between"><span>Perusahaan:</span><span className="font-medium text-gray-900 text-right">{selectedBooking.agentCompany || '-'}</span></div>
+                        <div className="flex justify-between"><span>Email:</span><span className="font-medium text-gray-900 text-right break-all max-w-[200px]">{selectedBooking.agentEmail || '-'}</span></div>
+                        <div className="flex justify-between mt-2 pt-2 border-t border-gray-200"><span>Nama Produk:</span><span className="font-bold text-primary-700 text-right max-w-[200px]">{selectedBooking.productName || '-'}</span></div>
                       </div>
                     </div>
                   </div>
                   
+                  {/* RIGHT COLUMN: Time, Logistics, and Pay Info */}
                   <div className="space-y-4">
-                    <div>
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pricing & Quantities</h4>
-                      <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 text-sm">
-                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
-                          <span className="text-gray-600">Quantity</span>
-                          <span className="font-medium text-gray-900">{selectedBooking.quantity}</span>
+                    <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 shadow-sm">
+                      <h4 className="flex items-center text-sm font-bold text-amber-900 border-b pb-2 mb-3 border-amber-200">
+                        <Calendar className="w-4 h-4 mr-2 text-amber-600" /> Layanan Sewa & Lokasi
+                      </h4>
+                      {(() => {
+                        const start = parseLocalDateStr(selectedBooking.startTime);
+                        const end = parseLocalDateStr(selectedBooking.endTime);
+                        if (start && end) return (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-[10px] text-amber-600 uppercase font-bold tracking-wider mb-1">Tgl Pengambilan</p>
+                              <p className="text-sm font-bold text-amber-900">
+                                {start.dateLong}
+                                <br/><span className="text-xs text-amber-700">{start.time}</span>
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-amber-600 uppercase font-bold tracking-wider mb-1">Tgl Pengembalian</p>
+                              <p className="text-sm font-bold text-amber-900">
+                                {end.dateLong}
+                                <br/><span className="text-xs text-amber-700">{end.time}</span>
+                              </p>
+                            </div>
+                          </div>
+                        );
+                        return (
+                          <div>
+                            <p className="text-[10px] text-amber-600 uppercase font-bold tracking-wider mb-1">Tanggal Layanan</p>
+                            <p className="text-sm font-bold text-amber-900">{selectedBooking.date}</p>
+                          </div>
+                        );
+                      })()}
+                      
+                      <div className="mt-4 space-y-2 text-xs text-amber-900">
+                        <div className="border-t border-amber-200/50 pt-2">
+                          <span className="font-bold block text-[10px] text-amber-600 uppercase tracking-widest mb-1">Titik Jemput (Pickup):</span>
+                          <span className="bg-white p-2 border border-amber-100 rounded block font-medium shadow-sm">
+                            {selectedBooking.pickupLocation 
+                              ? selectedBooking.pickupLocation 
+                              : <span className="text-amber-800">📍 Ambil di kantor agen{selectedBooking.productLocation ? ` — ${selectedBooking.productLocation}` : ''}</span>}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Total Price</span>
-                          <span className="font-bold text-gray-900 text-base">Rp {selectedBooking.totalPrice?.toLocaleString('id-ID') || 0}</span>
+                        <div>
+                          <span className="font-bold block text-[10px] text-amber-600 uppercase tracking-widest mb-1">Titik Kembali (Dropoff):</span>
+                          <span className="bg-white p-2 border border-amber-100 rounded block font-medium shadow-sm">
+                            {selectedBooking.dropoffLocation 
+                              ? selectedBooking.dropoffLocation 
+                              : <span className="text-amber-800">📍 Antar di kantor agen{selectedBooking.productLocation ? ` — ${selectedBooking.productLocation}` : ''}</span>}
+                          </span>
                         </div>
+                        {selectedBooking.specialRequest && (
+                          <div>
+                            <span className="font-bold block text-[10px] text-amber-600 uppercase tracking-widest mb-1 mt-2">Notes Konsumen:</span>
+                            <span className="bg-yellow-100/50 p-2 border border-yellow-200 rounded block italic text-amber-800">{selectedBooking.specialRequest}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    
-                    <div>
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Payment Info</h4>
-                      <div className="bg-gray-50 p-3 rounded-lg flex flex-col gap-2 text-sm">
-                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
-                          <span className="text-gray-600">Method</span>
-                          <span className="font-medium text-gray-900 text-right line-clamp-2">
-                            {((selectedBooking as any).paymentGateway ? `${(selectedBooking as any).paymentGateway} - ` : '') + ((selectedBooking as any).paymentMethod || '-')}
-                          </span>
+
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 shadow-sm">
+                      <h4 className="flex items-center text-sm font-bold text-blue-900 border-b pb-2 mb-3 border-blue-200">
+                        <CheckCircle className="w-4 h-4 mr-2 text-blue-600" /> Tagihan Transaksi
+                      </h4>
+                      <div className="space-y-2 text-xs text-blue-900">
+                        <div className="flex justify-between items-center"><span>Base Price / Unit:</span><span className="font-medium bg-white px-2 py-1 rounded border border-blue-100">{selectedBooking.quantity} item</span></div>
+                        <div className="flex justify-between items-center"><span>Biaya Jemput (Pickup):</span><span className="font-medium text-gray-900">Rp {Number(selectedBooking.pickupFee || 0).toLocaleString('id-ID')}</span></div>
+                        <div className="flex justify-between items-center"><span>Biaya Kembali (Drop):</span><span className="font-medium text-gray-900">Rp {Number(selectedBooking.dropoffFee || 0).toLocaleString('id-ID')}</span></div>
+                        <div className="flex justify-between items-center pb-3 border-b border-blue-200/50"><span>Biaya Admin Sistem:</span><span className="font-medium text-gray-900">Rp {Number(selectedBooking.adminFee || 0).toLocaleString('id-ID')}</span></div>
+                        
+                        <div className="flex justify-between pt-2 items-center">
+                          <span className="font-bold text-blue-800">Total Harga</span>
+                          <span className="font-black text-blue-700 text-xl border-b-2 border-blue-300 pb-0.5">Rp {selectedBooking.totalPrice?.toLocaleString('id-ID') || 0}</span>
                         </div>
-                        <div className="flex justify-between border-b border-gray-200 pb-1.5">
-                          <span className="text-gray-600">Paid At</span>
-                          <span className="font-medium text-gray-900 text-right">
-                            {((selectedBooking as any).paidAt) ? new Date((selectedBooking as any).paidAt).toLocaleString('id-ID') : '-'}
-                          </span>
+                      </div>
+                      <div className="mt-4 flex flex-col gap-2 pt-3 border-t border-blue-100">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-blue-700/70 uppercase tracking-wider font-bold text-[10px]">Gateway</span>
+                          <span className="font-bold text-gray-800 uppercase line-clamp-1 bg-white px-2 rounded-full border border-blue-100">{selectedBooking.paymentGateway || '-'} / {selectedBooking.paymentMethod || '-'}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Pay Status</span>
-                          <span className={`font-bold uppercase ${selectedBooking.paymentStatus === 'PAID' ? 'text-green-600' : 'text-yellow-600'}`}>
+                        <div className="flex justify-between text-xs mt-1">
+                          <span className="text-blue-700/70 uppercase tracking-wider font-bold text-[10px]">Status Bayar</span>
+                          <span className={`font-bold uppercase px-3 rounded-full py-0.5 text-[10px] ${selectedBooking.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                             {selectedBooking.paymentStatus || 'PENDING'}
                           </span>
                         </div>
                       </div>
                     </div>
+                    
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-6 py-4 flex justify-end border-t border-gray-100">
-                <button onClick={() => setSelectedBooking(null)} className="inline-flex justify-center rounded-lg border border-gray-200 shadow-sm px-6 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors font-bold">
-                  Tutup
+              <div className="bg-gray-50 px-6 py-4 flex justify-end border-t border-gray-100 rounded-b-xl">
+                <button onClick={() => setSelectedBooking(null)} className="inline-flex justify-center rounded-lg border border-gray-200 shadow-sm px-6 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
+                  Tutup Rincian
                 </button>
               </div>
             </div>
