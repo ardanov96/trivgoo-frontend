@@ -21,6 +21,8 @@ interface AgentBooking {
   quantity: number;
   totalPrice: number;
   date: string;
+  startTime?: string | null;
+  endTime?: string | null;
   status: string;
   externalId: string;
   paymentUrl: string | null;
@@ -35,6 +37,8 @@ interface AgentBooking {
   customerPhone: string | null;
   paymentExpiredAt: string | null;
   // detail-only fields
+  pickupLocation?: string | null;
+  dropoffLocation?: string | null;
   productLocation?: string | null;
   customerAddress?: string | null;
   paymentChannel?: string | null;
@@ -164,12 +168,12 @@ const BookingDetailModal: React.FC<{
                   </span>
                 </div>
                 <h3 className="text-xl font-extrabold text-gray-900 mt-1 line-clamp-2">{booking.productName}</h3>
-                
+
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-sm text-gray-500 font-mono bg-white px-2 py-0.5 rounded border border-gray-200">
                     {booking.externalId}
                   </span>
-                  <button onClick={() => copyToClipboard(booking.externalId, 'Invoice ID')} 
+                  <button onClick={() => copyToClipboard(booking.externalId, 'Invoice ID')}
                     className="text-primary-600 hover:text-primary-700 text-xs font-medium flex items-center gap-1">
                     <Copy className="w-3 h-3" /> Salin ID
                   </button>
@@ -179,7 +183,7 @@ const BookingDetailModal: React.FC<{
 
             {/* Body 2 Columns */}
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-              
+
               {/* Left Column: Customer & Order */}
               <div className="space-y-6">
                 <div>
@@ -190,7 +194,7 @@ const BookingDetailModal: React.FC<{
                     <div className="flex flex-col">
                       <span className="text-[11px] font-bold text-gray-400 pl-6 uppercase">Nama Lengkap</span>
                       <div className="flex items-center text-sm mt-0.5">
-                        <User className="w-4 h-4 mr-2 text-transparent" /> 
+                        <User className="w-4 h-4 mr-2 text-transparent" />
                         <span className="font-semibold text-gray-900">{booking.userName}</span>
                       </div>
                     </div>
@@ -229,14 +233,29 @@ const BookingDetailModal: React.FC<{
                     <Calendar className="w-4 h-4 mr-2 text-primary-600" /> Rincian Booking
                   </h4>
                   <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-[10px] text-amber-600/70 uppercase font-bold tracking-wider">Tanggal Layanan</p>
-                      <p className="text-sm font-bold text-amber-900 mt-1">{booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-amber-600/70 uppercase font-bold tracking-wider">Kuantitas</p>
-                      <p className="text-sm font-bold text-amber-900 mt-1">{booking.quantity} Paket/Orang</p>
-                    </div>
+                    {booking.startTime && booking.endTime ? (
+                      <>
+                        <div>
+                          <p className="text-[10px] text-amber-600/70 uppercase font-bold tracking-wider">Tanggal Pengambilan</p>
+                          <p className="text-sm font-bold text-amber-900 mt-1">
+                            {new Date(booking.startTime).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            <span className="text-xs text-amber-700/80 ml-1">{new Date(booking.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-amber-600/70 uppercase font-bold tracking-wider">Tanggal Pengembalian</p>
+                          <p className="text-sm font-bold text-amber-900 mt-1">
+                            {new Date(booking.endTime).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            <span className="text-xs text-amber-700/80 ml-1">{new Date(booking.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="col-span-2">
+                        <p className="text-[10px] text-amber-600/70 uppercase font-bold tracking-wider">Tanggal Booking</p>
+                        <p className="text-sm font-bold text-amber-900 mt-1">{booking.date || '-'}</p>
+                      </div>
+                    )}
                     <div className="col-span-2 pt-2 border-t border-amber-200/50">
                       <p className="text-[10px] text-amber-600/70 uppercase font-bold tracking-wider">Total Pembayaran</p>
                       <p className="text-xl font-black text-amber-600 mt-0.5">{formatCurrency(booking.totalPrice)}</p>
@@ -256,7 +275,7 @@ const BookingDetailModal: React.FC<{
                       <span className="text-gray-500">Status Pembayaran</span>
                       <span className={`px-2 py-0.5 text-xs font-bold rounded flex items-center ${pc.color}`}>{pc.label}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500">Payment Gateway</span>
                       <span className="font-semibold text-gray-900 uppercase">
@@ -282,7 +301,7 @@ const BookingDetailModal: React.FC<{
                       <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-200">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500">Link Invoice Pembayaran</span>
-                          <button onClick={() => copyToClipboard(booking.paymentUrl!, 'Link Pembayaran')} 
+                          <button onClick={() => copyToClipboard(booking.paymentUrl!, 'Link Pembayaran')}
                             className="text-primary-600 hover:text-primary-700 text-xs font-bold flex items-center gap-1 bg-primary-50 px-2 py-1 rounded">
                             <Copy className="w-3 h-3" /> Salin Link
                           </button>
@@ -297,7 +316,7 @@ const BookingDetailModal: React.FC<{
                       <div className="flex flex-col gap-1 pt-2 border-t border-gray-200">
                         <span className="text-gray-500">Batas Waktu Pembayaran</span>
                         <span className="font-medium text-red-600 flex items-center gap-1.5 bg-red-50 p-1.5 rounded text-xs border border-red-100">
-                          <Clock className="w-3.5 h-3.5" /> 
+                          <Clock className="w-3.5 h-3.5" />
                           {new Date(booking.paymentExpiredAt).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })}
                         </span>
                       </div>
@@ -312,16 +331,20 @@ const BookingDetailModal: React.FC<{
                   </div>
                 </div>
 
-                {/* Timestamps */}
+                {/* Lokasi Kendaraan */}
                 <div>
                   <h4 className="flex items-center text-sm font-bold text-gray-900 border-b pb-2 mb-3">
-                    <Clock className="w-4 h-4 mr-2 text-primary-600" /> Riwayat Sistem
+                    <MapPin className="w-4 h-4 mr-2 text-primary-600" /> Lokasi Kendaraan
                   </h4>
-                  <div className="text-xs text-gray-500 space-y-1.5 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="flex justify-between"><span>Dibuat pada:</span> <span className="font-medium text-gray-700">{new Date(booking.createdAt).toLocaleString('id-ID')}</span></p>
-                    {booking.updatedAt && (
-                      <p className="flex justify-between"><span>Terakhir diubah:</span> <span className="font-medium text-gray-700">{new Date(booking.updatedAt).toLocaleString('id-ID')}</span></p>
-                    )}
+                  <div className="text-xs text-gray-500 space-y-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div>
+                      <span className="font-bold text-gray-700 block mb-1">Pickup Location</span>
+                      <p className="leading-relaxed bg-white p-2 rounded border-gray-200 border">{booking.pickupLocation || <span className="italic text-gray-400">Sesuai rute / Belum ditentukan</span>}</p>
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-700 block mb-1">Dropoff Location</span>
+                      <p className="leading-relaxed bg-white p-2 rounded border-gray-200 border">{booking.dropoffLocation || <span className="italic text-gray-400">Sesuai rute / Belum ditentukan</span>}</p>
+                    </div>
                   </div>
                 </div>
 
@@ -364,9 +387,8 @@ const Pagination: React.FC<{
           }
           return (
             <button key={page} onClick={() => onPageChange(page)}
-              className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-                currentPage === page ? 'bg-primary-600 text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}>{page}</button>
+              className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${currentPage === page ? 'bg-primary-600 text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}>{page}</button>
           );
         })}
         <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages}
@@ -409,9 +431,17 @@ const MobileBookingCard: React.FC<{
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-xs mb-3 pb-3 border-b border-gray-50">
-        <div className="flex items-center text-gray-500">
-          <Calendar className="w-3 h-3 mr-1" /> {booking.startTime && booking.endTime ? `${booking.date}, ${new Date(booking.startTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})} - ${new Date(booking.endTime).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}` : booking.date}
+      <div className="flex items-start justify-between text-xs mb-3 pb-3 border-b border-gray-50">
+        <div className="flex items-start text-gray-500 leading-tight">
+          <Calendar className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+          <span>
+            {booking.startTime && booking.endTime ? (
+              <>
+                {new Date(booking.startTime).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })} {new Date(booking.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                <br /><span className="text-gray-400">s/d</span> {new Date(booking.endTime).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })} {new Date(booking.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+              </>
+            ) : booking.date}
+          </span>
         </div>
         <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${pc.color}`}>
           💳 {pc.label}
@@ -743,10 +773,20 @@ const CustomerBookings: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-sm text-gray-600 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <Calendar className="w-3.5 h-3.5 mr-1.5 text-gray-400" />{b.date}
+                          <div className="flex items-start">
+                            <Calendar className="w-3.5 h-3.5 mr-1.5 mt-0.5 text-gray-400 flex-shrink-0" />
+                            <div className="flex flex-col">
+                              {b.startTime && b.endTime ? (
+                                <>
+                                  <span>{new Date(b.startTime).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })} {new Date(b.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span className="text-xs text-gray-400">s/d {new Date(b.endTime).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })} {new Date(b.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                                </>
+                              ) : (
+                                <span>{b.date}</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-[10px] text-gray-400 mt-0.5">{b.quantity} Guest(s)</div>
+                          <div className="text-[10px] text-gray-400 mt-1 pl-5">{b.quantity} Guest(s)</div>
                         </td>
                         <td className="px-5 py-4">
                           <span className={`px-2.5 py-1 text-xs font-bold rounded-full border flex items-center w-fit ${sc.color}`}>
@@ -814,8 +854,8 @@ const CustomerBookings: React.FC = () => {
           confirmLabel={confirmAction.action}
           confirmColor={
             confirmAction.status === 'CANCELLED' ? 'bg-red-600 hover:bg-red-700' :
-            confirmAction.status === 'COMPLETED' ? 'bg-blue-600 hover:bg-blue-700' :
-            'bg-green-600 hover:bg-green-700'
+              confirmAction.status === 'COMPLETED' ? 'bg-blue-600 hover:bg-blue-700' :
+                'bg-green-600 hover:bg-green-700'
           }
           onConfirm={handleStatusUpdate}
           onClose={() => setConfirmAction(null)}
