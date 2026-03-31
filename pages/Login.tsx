@@ -6,6 +6,7 @@ import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { useAuth } from '../AuthContext';
 import { useToast } from '../components/ToastContext';
 import { agentService } from '../services/agentService';
+import { authService } from '../services/authService';
 import { UserRole, VerificationStatus } from '../types';
 
 const inputClass =
@@ -19,6 +20,8 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const { login, updateUser } = useAuth();
   const { showToast } = useToast();
@@ -51,16 +54,33 @@ const Login: React.FC = () => {
     } catch { /* silent */ }
   }, [updateUser]);
 
+  const handleResendVerification = async () => {
+    if (!email) return;
+    setResendLoading(true);
+    try {
+      const msg = await authService.resendUnverified(email);
+      showToast(msg, 'success');
+      setIsUnverified(false);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || t('auth.resend_failed', 'Gagal mengirim ulang email');
+      showToast(msg, 'error');
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       setError('');
+      setIsUnverified(false);
       setLoading(true);
       try {
         const result = await login(email, password);
         if (!result.success) {
           const msg = result.message || t('auth.invalid_credentials', 'Invalid credentials.');
           setError(msg);
+          setIsUnverified(result.is_unverified === true);
           showToast(msg, 'error');
           return;
         }
@@ -69,7 +89,9 @@ const Login: React.FC = () => {
         handleRedirectByRole(result.user?.role as UserRole | undefined);
       } catch (err: any) {
         const msg = err?.response?.data?.message || err?.message || t('auth.invalid_credentials', 'Invalid credentials.');
+        const isUnverifiedFlag = err?.response?.data?.data?.is_unverified === true;
         setError(msg);
+        setIsUnverified(isUnverifiedFlag);
         showToast(msg, 'error');
       } finally {
         setLoading(false);
@@ -169,6 +191,18 @@ const Login: React.FC = () => {
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">{t('common.error', 'Error')}</h3>
                     <div className="mt-2 text-sm text-red-700">{error}</div>
+                    {isUnverified && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={handleResendVerification}
+                          disabled={resendLoading}
+                          className="text-sm font-medium text-red-800 underline hover:text-red-900 transition-colors disabled:opacity-50"
+                        >
+                          {resendLoading ? t('auth.sending', 'Mengirim...') : t('auth.resend_verification', 'Kirim Ulang Email Verifikasi')}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
