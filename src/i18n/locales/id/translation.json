@@ -298,7 +298,23 @@
     "team": "Tim Kami",
     "values": "Nilai Kami",
     "contact_us": "Hubungi Kami",
-    "explore_now": "Jelajahi Sekarang"
+    "explore_now": "Jelajahi Sekarang",
+    "about_title": "Lebih dari Sekadar Platform Perjalanan",
+    "about_desc_1": "PT Trivgoo Global Nusantara hadir sebagai mitra perjalanan terpercaya yang mengintegrasikan kemudahan teknologi dengan sentuhan Artificial Intelligence. Berkomitmen untuk menyederhanakan setiap perjalanan, baik untuk urusan personal, bisnis, rekreasi, dan ibadah, kami menghadirkan solusi lengkap.",
+    "personal_travel_experience": "personal travel experience",
+    "about_desc_2_start": "Trivgoo adalah platform travel berbasis AI yang tidak hanya menjual tiket dan hotel, tetapi menjadi ",
+    "about_desc_2_end": ". Berbeda dengan kompetitor yang berfokus pada transaksi, Trivgoo berfokus pada pengalaman perjalanan yang dipersonalisasi secara mendalam berdasarkan kepribadian, minat, dan kebutuhan pengguna.",
+    "badge_0": "24/7 Customer Support",
+    "badge_1": "Best Price Guarantee",
+    "badge_2": "Secure Payment",
+    "badge_3": "AI-Powered Personalization",
+    "travel_experience_image_alt": "Pengalaman Perjalanan",
+    "countries_count": "8 Negara",
+    "countries_region": "Asia Tenggara & Timur Tengah",
+    "stat_0": "Destinasi Populer",
+    "stat_1": "Pelanggan Bahagia",
+    "stat_2": "Kemitraan",
+    "stat_3": "Tahun Pengalaman"
   },
   "contact": {
     "title": "Hubungi Kami",
@@ -345,6 +361,7 @@
     "today": "Hari Ini",
     "trusted_by": "Dipercaya oleh 50.000+ traveler di seluruh dunia"
   },
+  
   "total_paid": "Total Dibayar",
   "status_code": "Kode",
   "try_again": "Coba Lagi",

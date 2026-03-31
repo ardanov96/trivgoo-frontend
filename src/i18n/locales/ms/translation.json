@@ -69,6 +69,8 @@
     "nights": "malam",
     "day": "hari",
     "days": "hari",
+    "day_short": "hr",
+    "days_short": "hr",
     "person": "orang",
     "persons": "orang",
     "guest": "tetamu",
@@ -86,9 +88,7 @@
     "support_24_7": "Sokongan 24/7",
     "more": "lagi",
     "passengers": "Penumpang",
-    "of": "daripada",
-    "day_short": "hr",
-    "days_short": "hr"
+    "of": "daripada"
   },
   "footer": {
     "company": "Syarikat",
@@ -121,6 +121,7 @@
     "sort_rating": "Penilaian Tertinggi",
     "no_results": "Tiada keputusan dijumpai",
     "no_results_desc": "Cuba laraskan penapis atau terma carian anda",
+    "showing_results": "Menunjukkan {{count}} keputusan",
     "all_categories": "Semua",
     "tours": "Lawatan & Aktiviti",
     "hotels": "Hotel & Vila",
@@ -144,7 +145,10 @@
     "activities_in": "Aktiviti Kegemaran Di",
     "clear_filters": "Kosongkan Semua Penapis",
     "seo_title": "Jelajah - Trivgoo",
-    "seo_desc": "Temui pakej pelancongan, sewaan, dan pengalaman terbaik untuk perjalanan anda."
+    "seo_desc": "Temui pakej pelancongan, sewaan, dan pengalaman terbaik untuk perjalanan anda.",
+    "per_night": "/ malam",
+    "per_day": "/ hari",
+    "per_person": "/ orang"
   },
   "product": {
     "book_now": "Tempah Sekarang",
@@ -182,6 +186,7 @@
     "terms": "Terma & Syarat",
     "pickup_location": "Lokasi Pengambilan",
     "dropoff_location": "Lokasi Pemulangan",
+    "select_date": "Pilih Tarikh",
     "select_date_placeholder": "Pilih Tarikh",
     "participants": "Peserta",
     "stay_dates": "Tarikh Penginapan",
@@ -191,7 +196,9 @@
     "add_ons": "Tambahan",
     "with_driver": "Dengan Pemandu",
     "premium_insurance": "Insurans Premium",
+    "full_protection": "Perlindungan penuh",
     "child_seat": "Tempat Duduk Kanak-kanak",
+    "child_seat_desc": "Tempat duduk selamat untuk kanak-kanak",
     "rental_office": "Pejabat Sewaan",
     "other_location": "Lokasi Lain",
     "gallery": "Galeri",
@@ -217,7 +224,20 @@
     "pickup_fee": "Bayaran Pengambilan",
     "dropoff_fee": "Bayaran Pemulangan",
     "calc_fee": "Mengira",
-    "fee": "bayaran"
+    "fee": "bayaran",
+    "not_found": "Produk tidak dijumpai.",
+    "load_error": "Gagal memuatkan produk. Sila cuba lagi.",
+    "try_again_desc": "Sila cuba lagi atau kembali untuk meneroka.",
+    "per_person_label": "orang",
+    "per_night_label": "malam",
+    "starting_from": "Bermula dari",
+    "select_guests": "Pilih Tetamu",
+    "check_in": "Daftar Masuk",
+    "check_out": "Daftar Keluar",
+    "total": "Jumlah",
+    "back": "Kembali",
+    "car_rental": "Sewaan Kereta",
+    "added_to_cart_msg": "ditambahkan ke troli!"
   },
   "auth": {
     "login_title": "Selamat Kembali",
@@ -566,6 +586,23 @@
     "thinking": "Berfikir...",
     "your_itinerary": "Itinerari Peribadi Anda",
     "recommended": "Disyorkan Untuk Anda"
+  },
+  "hero": {
+    "hello": "Hello Triverse, Jom",
+    "find_your": "Temui",
+    "destination": "Destinasi Anda",
+    "pickup_location": "Lokasi Pengambilan",
+    "from_to": "Dari/Ke",
+    "guests": "Tetamu",
+    "passengers": "Penumpang",
+    "add_guests": "Tambah tetamu",
+    "add_passengers": "Tambah penumpang",
+    "date": "Tarikh",
+    "add_dates": "Tambah tarikh",
+    "suggestions": "Cadangan",
+    "popular_destinations": "Destinasi Popular",
+    "today": "Hari ini",
+    "trusted_by": "Dipercayai lebih 50,000 pelancong di seluruh dunia"
   },
   "total_paid": "Jumlah Dibayar",
   "status_code": "Kod",

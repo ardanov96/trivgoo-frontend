@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -91,9 +90,7 @@ const CheckoutSummary: React.FC = () => {
   const contact = useContactForm(user.email || '', user.name || '', user.phone_number || '');
   const voucher = useVoucher();
 
-  const baseTotal = Number(totalPrice);
-
-  // ── Total diskon dari kedua voucher ────────────────────────────────────
+  const baseTotal     = Number(totalPrice);
   const totalDiscount = voucher.totalDiscountFor(baseTotal);
   const finalTotal    = Math.max(0, baseTotal - totalDiscount) + ADMIN_FEE;
 
@@ -145,13 +142,12 @@ const CheckoutSummary: React.FC = () => {
         : new Date().toISOString().split('T')[0];
 
       const pricingContextStr = JSON.stringify({
-        vehicleType:  vehicleType || null,
-        duration:     normalizedDuration,
-        pax:          normalizedQuantity,
-        pickupFee:    Number(pickupFee  || 0),
-        dropoffFee:   Number(dropoffFee || 0),
-        addOns:       resolvedAddOns,
-        // Kirim kode kedua voucher (untuk audit di backend)
+        vehicleType:      vehicleType || null,
+        duration:         normalizedDuration,
+        pax:              normalizedQuantity,
+        pickupFee:        Number(pickupFee  || 0),
+        dropoffFee:       Number(dropoffFee || 0),
+        addOns:           resolvedAddOns,
         voucherCode:      voucher.appliedPair.admin?.code || null,
         agentVoucherCode: voucher.appliedPair.agent?.code || null,
       });
@@ -187,13 +183,11 @@ const CheckoutSummary: React.FC = () => {
         original_amount:  baseTotal,
         discount_amount:  totalDiscount,
 
-        // Voucher admin (platform)
         ...(voucher.appliedPair.admin ? {
-          voucher_code:    voucher.appliedPair.admin.code,
-          voucher_id:      voucher.appliedPair.admin.id,
+          voucher_code: voucher.appliedPair.admin.code,
+          voucher_id:   voucher.appliedPair.admin.id,
         } : {}),
 
-        // Voucher agent — field terpisah agar backend bisa record keduanya
         ...(voucher.appliedPair.agent ? {
           agent_voucher_code:    voucher.appliedPair.agent.code,
           agent_voucher_id:      voucher.appliedPair.agent.id,
@@ -240,12 +234,12 @@ const CheckoutSummary: React.FC = () => {
       const isCapacityError = msg.includes('Kapasitas Penuh') || msg.includes('stok item');
 
       Swal.fire({
-        title:             isCapacityError ? t('checkout.full_title', 'Fully Booked!') : t('common.error', 'Error'),
-        text:              isCapacityError
+        title:              isCapacityError ? t('checkout.full_title', 'Fully Booked!') : t('common.error', 'Error'),
+        text:               isCapacityError
           ? t('checkout.full_desc', 'Sorry, tickets/units for this date just ran out.')
           : msg,
-        icon:              isCapacityError ? 'warning' : 'error',
-        confirmButtonText: t('common.ok', 'OK'),
+        icon:               isCapacityError ? 'warning' : 'error',
+        confirmButtonText:  t('common.ok', 'OK'),
         confirmButtonColor: isCapacityError ? '#f97316' : '#ef4444',
       });
     }
@@ -253,6 +247,7 @@ const CheckoutSummary: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
+      {/* ── Topbar ── */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2">
@@ -266,6 +261,8 @@ const CheckoutSummary: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 mt-6 space-y-4">
+
+        {/* 1. Detail produk */}
         <ProductCard
           productName={productName}
           productLocation={productLocation}
@@ -287,21 +284,34 @@ const CheckoutSummary: React.FC = () => {
           returnTime={returnTime}
         />
 
-        <ContactFormSection
-          form={contact.form}
-          errors={contact.errors}
-          setField={contact.setField}
-        />
-
-        {/* ── Multi-Voucher Picker ── */}
+        {/* 2. Voucher Agen — DI ATAS form kontak */}
         <VoucherPicker
           availableVouchers={availableVouchers}
           amount={baseTotal}
           appliedPair={voucher.appliedPair}
           onApply={(v) => voucher.apply(v, baseTotal)}
           onRemove={(owner) => voucher.remove(owner)}
+          ownerFilter="agent"
         />
 
+        {/* 3. Detail kontak */}
+        <ContactFormSection
+          form={contact.form}
+          errors={contact.errors}
+          setField={contact.setField}
+        />
+
+        {/* 4. Voucher Platform — DI BAWAH form kontak */}
+        <VoucherPicker
+          availableVouchers={availableVouchers}
+          amount={baseTotal}
+          appliedPair={voucher.appliedPair}
+          onApply={(v) => voucher.apply(v, baseTotal)}
+          onRemove={(owner) => voucher.remove(owner)}
+          ownerFilter="admin"
+        />
+
+        {/* 5. Ringkasan harga */}
         <PriceSummary
           isCarBooking={isCarBooking}
           basePricePerPax={basePricePerPax}
@@ -312,7 +322,6 @@ const CheckoutSummary: React.FC = () => {
           unitLabel={unitLabel}
           priceUnitLabel={priceUnitLabel}
           baseTotal={baseTotal}
-          // Kirim kedua voucher ke PriceSummary agar bisa tampilkan baris diskon terpisah
           appliedVoucher={voucher.appliedPair.admin}
           appliedAgentVoucher={voucher.appliedPair.agent}
           appliedDiscount={totalDiscount}
@@ -336,12 +345,14 @@ const CheckoutSummary: React.FC = () => {
           </div>
         )}
 
+        {/* 6. Tombol bayar */}
         <PayButton
           loading={loading}
           disabled={hasPendingManualQuote}
           appliedDiscount={totalDiscount}
           onClick={handlePayment}
         />
+
       </div>
     </div>
   );
