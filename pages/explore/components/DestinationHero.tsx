@@ -26,13 +26,13 @@ export const DestinationHero = ({ image, query, subtitle }: DestinationHeroProps
         initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
         className="absolute top-20 left-6 md:left-10 flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors group">
         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-        {t('common.back', 'Back')}
+        {t('common.back')}
       </motion.button>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pb-4">
         <motion.p initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
           className="text-white/70 text-[11px] md:text-sm font-semibold uppercase tracking-[0.2em] mb-2">
-          {t('explore.activities_in', 'All Time Favourite Activities In')}
+          {t('explore.activities_in')}
         </motion.p>
         <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
           className="text-4xl md:text-6xl font-serif font-bold text-white drop-shadow-lg mb-3 leading-tight">
@@ -65,13 +65,15 @@ export const EmptyState = ({ isCarCategory, onClear }: EmptyStateProps) => {
         <Search className="w-10 h-10 text-gray-300" />
       </div>
       <h3 className="text-2xl font-serif font-bold text-gray-900 mb-3">
-        {t('explore.no_results', 'No results found')}
+        {t('explore.no_results')}
       </h3>
       <p className="text-gray-500 mb-8 max-w-md mx-auto text-lg">
-        {t('explore.no_results_desc', "We couldn't find any")} {isCarCategory ? t('explore.rental_cars', 'rental cars') : t('explore.items', 'items')} {t('explore.matching', 'matching your search.')}
+        {t('explore.no_results_desc')}{' '}
+        {isCarCategory ? t('explore.rental_cars') : t('explore.items')}{' '}
+        {t('explore.matching')}
       </p>
       <button onClick={onClear} className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20">
-        {t('explore.clear_filters', 'Clear All Filters')}
+        {t('explore.clear_filters')}
       </button>
     </motion.div>
   );

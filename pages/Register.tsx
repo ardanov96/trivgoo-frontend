@@ -1,8 +1,8 @@
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
-import { useLangNavigate } from '../src/hooks/useLangNavigate'; // ✅ fix missing import
+import { Link } from 'react-router-dom';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { useAuth } from '../AuthContext';
 import { useToast } from '../components/ToastContext';
 import { authService } from '../services/authService';
@@ -12,7 +12,7 @@ const inputClass = 'appearance-none block w-full px-4 py-3 border border-gray-30
 
 const Register: React.FC = () => {
   const { t } = useTranslation();
-  const { langNavigate, langPath } = useLangNavigate(); // ✅ fix missing hook
+  const { langNavigate, langPath } = useLangNavigate();
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -44,11 +44,11 @@ const Register: React.FC = () => {
       await authService.register(payload);
       localStorage.removeItem('trivgoo_ref_code');
       setIsSuccess(true);
-      showToast(t('auth.account_created', 'Account created! Please verify your email.'), 'success');
+      showToast(t('auth.account_created'), 'success');
     } catch (err: any) {
-      let msg = t('auth.register_failed', 'Registration failed. Please try again.');
+      let msg = t('auth.register_failed');
       if (err?.response?.status === 409) {
-        msg = t('auth.email_taken', 'Email already registered. Please use another email or Login.');
+        msg = t('auth.email_taken');
       } else if (err?.response?.data?.message) {
         msg = err.response.data.message;
       }
@@ -72,19 +72,19 @@ const Register: React.FC = () => {
             </div>
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            {t('auth.check_email_title', 'Check Your Email!')}
+            {t('auth.check_email_title')}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            {t('auth.check_email_desc', 'We sent a verification link to')}{' '}
+            {t('auth.check_email_desc')}{' '}
             <strong className="text-gray-900">{form.email}</strong>.{' '}
-            {t('auth.check_email_desc2', 'Please check your inbox (or spam folder) to activate your account.')}
+            {t('auth.check_email_desc2')}
           </p>
           <div className="mt-6">
             <button
-              onClick={() => langNavigate('/login')} // ✅ fixed
+              onClick={() => langNavigate('/login')}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
             >
-              {t('auth.go_to_login', 'Go to Login')}
+              {t('auth.go_to_login')}
             </button>
           </div>
         </div>
@@ -108,10 +108,10 @@ const Register: React.FC = () => {
           </span>
           <div>
             <h2 className="text-4xl font-serif font-bold mb-6">
-              {t('auth.register_visual_title', 'Start your journey today.')}
+              {t('auth.register_visual_title')}
             </h2>
             <p className="text-lg text-primary-100 max-w-md">
-              {t('auth.register_visual_desc', 'Join thousands of travelers who have found their perfect getaway with Trivgoo.')}
+              {t('auth.register_visual_desc')}
             </p>
           </div>
           <div className="text-primary-200 text-sm" />
@@ -123,23 +123,23 @@ const Register: React.FC = () => {
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="mb-10">
             <Link to={langPath('/login')} className="text-gray-400 hover:text-gray-600 flex items-center mb-6 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back', 'Back')}
+              <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back')}
             </Link>
             <h2 className="text-3xl font-serif font-bold text-gray-900">
-              {t('auth.register_title', 'Create Account')}
+              {t('auth.register_title')}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              {t('auth.register_subtitle', 'Enter your details to get started as a Traveler.')}
+              {t('auth.register_subtitle')}
             </p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                {t('auth.full_name', 'Full Name')}
+                {t('auth.full_name')}
               </label>
               <input
-                placeholder={t('auth.name_placeholder', 'John Doe')}
+                placeholder={t('auth.name_placeholder')}
                 className={inputClass} required
                 value={form.name} onChange={e => setField('name', e.target.value)}
               />
@@ -147,10 +147,10 @@ const Register: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                {t('auth.email', 'Email address')}
+                {t('auth.email')}
               </label>
               <input
-                placeholder={t('auth.email_placeholder', 'you@example.com')}
+                placeholder={t('auth.email_placeholder')}
                 type="email" className={inputClass} required
                 value={form.email} onChange={e => setField('email', e.target.value)}
               />
@@ -158,7 +158,7 @@ const Register: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                {t('profile.phone', 'Phone Number')}
+                {t('profile.phone')}
               </label>
               <input
                 placeholder="e.g. 081234567890"
@@ -169,12 +169,12 @@ const Register: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('auth.password', 'Password')}
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder={t('auth.create_password', 'Create a password')}
+                  placeholder={t('auth.create_password')}
                   className={`${inputClass} pr-12`} required
                   value={form.password} onChange={e => setField('password', e.target.value)}
                 />
@@ -194,14 +194,14 @@ const Register: React.FC = () => {
             <button type="submit" disabled={loading}
               className="w-full py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-primary-500/30 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 transition-all transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? t('auth.signing_up', 'Signing up...') : t('auth.register_button', 'Sign Up')}
+              {loading ? t('auth.signing_up') : t('auth.register_button')}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            {t('auth.have_account', 'Already have an account?')}{' '}
+            {t('auth.have_account')}{' '}
             <Link to={langPath('/login')} className="font-bold text-primary-600 hover:text-primary-500">
-              {t('auth.sign_in', 'Sign in')}
+              {t('auth.sign_in')}
             </Link>
           </p>
         </div>

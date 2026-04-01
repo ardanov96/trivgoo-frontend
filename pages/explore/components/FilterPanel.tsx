@@ -45,8 +45,8 @@ export const FilterPanel = ({
             <input
               type="text"
               placeholder={isCarCategory
-                ? t('explore.search_car_placeholder', 'Search rental location...')
-                : t('explore.search_placeholder', 'Search destination or package...')
+                ? t('explore.search_car_placeholder')
+                : t('explore.search_placeholder')
               }
               value={searchQuery}
               onChange={(e) => onSearch(e.target.value)}
@@ -63,10 +63,10 @@ export const FilterPanel = ({
             <div className="relative w-full lg:w-56">
               <select value={selectedSubCategory || ''} onChange={(e) => onSubCategorySelect(e.target.value || null)}
                 className="w-full appearance-none px-4 py-3.5 pr-10 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer">
-                <option value="">{t('explore.trip_type', 'Trip Type')}</option>
-                <option value="Open Trip">{t('explore.open_trip', 'Open Trip')}</option>
-                <option value="Private Trip">{t('explore.private_trip', 'Private Trip')}</option>
-                <option value="Group Trip">{t('explore.group_trip', 'Group Trip')}</option>
+                <option value="">{t('explore.trip_type')}</option>
+                <option value="Open Trip">{t('explore.open_trip')}</option>
+                <option value="Private Trip">{t('explore.private_trip')}</option>
+                <option value="Group Trip">{t('explore.group_trip')}</option>
               </select>
               <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -75,7 +75,7 @@ export const FilterPanel = ({
           <div className="relative w-full lg:w-56">
             <select value={sortBy || ''} onChange={(e) => onSortChange(e.target.value || null)}
               className="w-full appearance-none px-4 py-3.5 pr-10 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer">
-              <option value="">{t('explore.sort', 'Sort by')}</option>
+              <option value="">{t('explore.sort')}</option>
               {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -90,9 +90,9 @@ export const FilterPanel = ({
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Gauge className="h-5 w-5 text-gray-400" /></div>
               <select value={rentalFilters.transmission} onChange={(e) => onRentalFilterChange('transmission', e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer appearance-none">
-                <option value="">{t('explore.transmission', 'Transmission Type')}</option>
-                <option value="Automatic">{t('explore.automatic', 'Automatic')}</option>
-                <option value="Manual">{t('explore.manual', 'Manual')}</option>
+                <option value="">{t('explore.transmission')}</option>
+                <option value="Automatic">{t('explore.automatic')}</option>
+                <option value="Manual">{t('explore.manual')}</option>
               </select>
               <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -100,11 +100,11 @@ export const FilterPanel = ({
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Users className="h-5 w-5 text-gray-400" /></div>
               <select value={rentalFilters.passengerCapacity} onChange={(e) => onRentalFilterChange('passengerCapacity', e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer appearance-none">
-                <option value="">{t('explore.passenger_capacity', 'Passenger Capacity')}</option>
-                <option value="2">2 {t('common.passengers', 'Passengers')}</option>
-                <option value="4">4 {t('common.passengers', 'Passengers')}</option>
-                <option value="6">6 {t('common.passengers', 'Passengers')}</option>
-                <option value="8">8+ {t('common.passengers', 'Passengers')}</option>
+                <option value="">{t('explore.passenger_capacity')}</option>
+                <option value="2">2 {t('common.passengers')}</option>
+                <option value="4">4 {t('common.passengers')}</option>
+                <option value="6">6 {t('common.passengers')}</option>
+                <option value="8">8+ {t('common.passengers')}</option>
               </select>
               <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -112,20 +112,20 @@ export const FilterPanel = ({
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><UserCog className="h-5 w-5 text-gray-400" /></div>
               <select value={rentalFilters.driverType} onChange={(e) => onRentalFilterChange('driverType', e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer appearance-none">
-                <option value="">{t('explore.all_driver_types', 'All Driver Types')}</option>
-                <option value="with_driver">{t('explore.with_driver', 'With Driver')}</option>
-                <option value="without_driver">{t('explore.without_driver', 'Self Drive')}</option>
+                <option value="">{t('explore.all_driver_types')}</option>
+                <option value="with_driver">{t('explore.with_driver')}</option>
+                <option value="without_driver">{t('explore.without_driver')}</option>
               </select>
               <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><span className="text-gray-400 font-medium">Rp</span></div>
-              <input type="number" placeholder={t('explore.min_price', 'Min Price')} value={rentalFilters.minPrice} onChange={(e) => onRentalFilterChange('minPrice', e.target.value)} min="0"
+              <input type="number" placeholder={t('explore.min_price')} value={rentalFilters.minPrice} onChange={(e) => onRentalFilterChange('minPrice', e.target.value)} min="0"
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500" />
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><span className="text-gray-400 font-medium">Rp</span></div>
-              <input type="number" placeholder={t('explore.max_price', 'Max Price')} value={rentalFilters.maxPrice} onChange={(e) => onRentalFilterChange('maxPrice', e.target.value)} min="0"
+              <input type="number" placeholder={t('explore.max_price')} value={rentalFilters.maxPrice} onChange={(e) => onRentalFilterChange('maxPrice', e.target.value)} min="0"
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500" />
             </div>
           </motion.div>
@@ -136,7 +136,7 @@ export const FilterPanel = ({
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }} className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
             <button onClick={() => onSubCategorySelect(null)}
               className={`px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedSubCategory === null ? 'bg-primary-600 text-white border-primary-600 shadow-md' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-primary-600 hover:text-white hover:border-primary-600'}`}>
-              {t('explore.all_categories', 'All')}
+              {t('explore.all_categories')}
             </button>
             {(selectedCategory === 1 ? TOUR_TAGS : STAY_TAGS).map((tag) => (
               <button key={tag} onClick={() => onSubCategorySelect(tag)}

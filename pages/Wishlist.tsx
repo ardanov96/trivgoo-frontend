@@ -5,11 +5,11 @@ import { Link } from 'react-router-dom';
 import { Heart, MapPin, ArrowRight, Star, Trash2 } from 'lucide-react';
 import { encodeId } from '../utils/hashids';
 import { generateSlug } from '../utils/slugify';
-import { useLangNavigate } from '../src/hooks/useLangNavigate'; // ✅ fix missing import
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 
 const Wishlist: React.FC = () => {
   const { t } = useTranslation();
-  const { langPath } = useLangNavigate(); // ✅ fix missing hook
+  const { langPath } = useLangNavigate();
   const { wishlist, removeFromWishlist } = useWishlist();
 
   return (
@@ -20,10 +20,10 @@ const Wishlist: React.FC = () => {
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-3 flex items-center justify-center gap-3">
             <Heart className="w-8 h-8 text-red-500 fill-current" />
-            {t('wishlist.title', 'My Wishlist')}
+            {t('wishlist.title')}
           </h1>
           <p className="text-gray-500">
-            {t('wishlist.subtitle', 'Your curated list of dream destinations.')}
+            {t('wishlist.subtitle')}
           </p>
         </div>
 
@@ -34,16 +34,16 @@ const Wishlist: React.FC = () => {
               <Heart className="w-10 h-10" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {t('wishlist.empty', 'Your wishlist is empty')}
+              {t('wishlist.empty')}
             </h3>
             <p className="text-gray-500 mb-8">
-              {t('wishlist.empty_desc', 'Start exploring and save your favorite trips here.')}
+              {t('wishlist.empty_desc')}
             </p>
             <Link
               to={langPath('/explore')}
               className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg"
             >
-              {t('wishlist.explore_now', 'Explore Now')}
+              {t('wishlist.explore_now')}
             </Link>
           </div>
         ) : (
@@ -62,7 +62,7 @@ const Wishlist: React.FC = () => {
                   <button
                     onClick={() => removeFromWishlist(product.id)}
                     className="absolute top-4 left-4 bg-white/95 backdrop-blur-md p-2 rounded-full shadow-sm z-10 hover:bg-red-50 transition-colors group/btn"
-                    title={t('wishlist.remove', 'Remove')}
+                    title={t('wishlist.remove')}
                   >
                     <Trash2 className="w-4 h-4 text-gray-400 group-hover/btn:text-red-500" />
                   </button>
@@ -86,7 +86,7 @@ const Wishlist: React.FC = () => {
                   <div className="mt-auto pt-4 flex items-end justify-between border-t border-gray-50">
                     <div>
                       <span className="text-[10px] text-gray-400 uppercase font-bold">
-                        {t('explore.from', 'From')}
+                        {t('explore.from')}
                       </span>
                       <p className="text-xl font-bold text-gray-900">{product.currency} {product.price}</p>
                     </div>

@@ -1,5 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Product } from '../types';
 import { useToast } from './ToastContext';
 
@@ -16,6 +16,7 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   // Load from LocalStorage on mount
   useEffect(() => {
@@ -24,7 +25,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         setWishlist(JSON.parse(stored));
       } catch (e) {
-        console.error("Failed to parse wishlist", e);
+        console.error('Failed to parse wishlist', e);
       }
     }
   }, []);
@@ -36,12 +37,12 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addToWishlist = (product: Product) => {
     setWishlist((prev) => [...prev, product]);
-    showToast(`${product.name} added to wishlist!`, 'success');
+    showToast(`${product.name} ${t('wishlist.added')}`, 'success');
   };
 
   const removeFromWishlist = (productId: number) => {
     setWishlist((prev) => prev.filter((p) => p.id !== productId));
-    showToast('Removed from wishlist', 'info');
+    showToast(t('wishlist.removed'), 'info');
   };
 
   const isInWishlist = (productId: number) => {
