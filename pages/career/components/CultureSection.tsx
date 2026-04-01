@@ -7,42 +7,62 @@ import { useReveal } from '../hooks';
 interface Props { inView: boolean; }
 
 export const CultureSection = React.forwardRef<HTMLDivElement, Props>(({ inView }, ref) => {
+  const { t } = useTranslation();
   const perksReveal = useReveal();
 
-  const { t } = useTranslation();
   return (
     <div id="culture" className="bg-white py-20 md:py-28" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
         <motion.div className="text-center mb-16" variants={fadeUp} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
-          <span className="text-primary-600 font-bold text-sm uppercase tracking-widest mb-3 block">Kehidupan di Trivgoo</span>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-6">Lebih dari Sekadar Pekerjaan</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto text-lg">Kami percaya bahwa bekerja harus penuh makna, mendorong pertumbuhan, dan tentu saja — menyenangkan.</p>
+          <span className="text-primary-600 font-bold text-sm uppercase tracking-widest mb-3 block">
+            {t('career.culture_badge', 'Life at Trivgoo')}
+          </span>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-6">
+            {t('career.culture_title', 'More Than Just a Job')}
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+            {t('career.culture_subtitle', 'We believe work should be meaningful, drive growth, and of course — be enjoyable.')}
+          </p>
         </motion.div>
 
         {/* Culture cards */}
         <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16" variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
           {TEAM_CULTURE.map((culture, index) => {
-            const Icon      = culture.icon;
+            const Icon = culture.icon;
             const [textCls, bgCls] = culture.color.split(' ');
             return (
               <motion.div key={index} variants={scaleIn} custom={index} whileHover={{ y: -8, boxShadow: '0 20px 48px rgba(0,0,0,0.1)' }} className="bg-gray-50 rounded-3xl p-8 border border-gray-100 cursor-default">
                 <div className={`w-14 h-14 rounded-2xl ${bgCls} flex items-center justify-center mb-6`}>
                   <Icon className={`w-7 h-7 ${textCls}`} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{culture.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{culture.description}</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  {t(`career.culture_${index}_title`, culture.title)}
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {t(`career.culture_${index}_desc`, culture.description)}
+                </p>
               </motion.div>
             );
           })}
         </motion.div>
 
         {/* Perks */}
-        <motion.div className="bg-gradient-to-br from-gray-50 to-primary-50 rounded-3xl p-8 md:p-12" ref={perksReveal.ref} variants={fadeUp} initial="hidden" animate={perksReveal.inView ? 'visible' : 'hidden'}>
+        <motion.div
+          className="bg-gradient-to-br from-gray-50 to-primary-50 rounded-3xl p-8 md:p-12"
+          ref={perksReveal.ref}
+          variants={fadeUp}
+          initial="hidden"
+          animate={perksReveal.inView ? 'visible' : 'hidden'}
+        >
           <div className="text-center mb-12">
-            <h3 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-4">Keuntungan & Tunjangan</h3>
-            <p className="text-gray-600 max-w-2xl mx-auto">Kami berinvestasi dalam kebahagiaan, pertumbuhan, dan kesejahteraan seluruh tim.</p>
+            <h3 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-4">
+              {t('career.perks_title', 'Benefits & Perks')}
+            </h3>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              {t('career.perks_subtitle', 'We invest in the happiness, growth, and well-being of every team member.')}
+            </p>
           </div>
           <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={stagger} initial="hidden" animate={perksReveal.inView ? 'visible' : 'hidden'}>
             {PERKS.map((perk, index) => {
@@ -53,8 +73,12 @@ export const CultureSection = React.forwardRef<HTMLDivElement, Props>(({ inView 
                     <Icon className="w-6 h-6" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 mb-1">{perk.title}</h4>
-                    <p className="text-sm text-gray-600">{perk.description}</p>
+                    <h4 className="font-bold text-gray-900 mb-1">
+                      {t(`career.perk_${index}_title`, perk.title)}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {t(`career.perk_${index}_desc`, perk.description)}
+                    </p>
                   </div>
                 </motion.div>
               );

@@ -10,23 +10,35 @@ interface Props {
 }
 
 export const GallerySection = React.forwardRef<HTMLDivElement, Props>(({ inView, activeGallery, onTabChange }, ref) => {
+  const { t } = useTranslation();
   const current = GALLERY_TABS[activeGallery];
 
-  const { t } = useTranslation();
   return (
     <div className="bg-white py-20 md:py-28" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <motion.div className="text-center mb-12" variants={fadeUp} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-6">GALERI</h2>
+        <motion.div
+          className="text-center mb-12"
+          variants={fadeUp}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+        >
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-6">
+            {t('about.gallery_title', 'GALLERY')}
+          </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Sekilas pandang pengalaman nyata dari setiap paket layanan Trivgoo.
+            {t('about.gallery_subtitle', 'A glimpse of real experiences from each Trivgoo service package.')}
           </p>
         </motion.div>
 
         {/* Tab buttons */}
-        <motion.div className="flex flex-wrap justify-center gap-3 mb-10" variants={staggerContainer} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
+        <motion.div
+          className="flex flex-wrap justify-center gap-3 mb-10"
+          variants={staggerContainer}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+        >
           {GALLERY_TABS.map((tab, i) => {
             const TabIcon = tab.icon;
             return (
@@ -43,13 +55,13 @@ export const GallerySection = React.forwardRef<HTMLDivElement, Props>(({ inView,
                 }`}
               >
                 <TabIcon className="w-4 h-4" />
-                {tab.label}
+                {t(`about.gallery_tab_${i}`, tab.label)}
               </motion.button>
             );
           })}
         </motion.div>
 
-        {/* Image grid — animates on tab change */}
+        {/* Image grid */}
         <motion.div
           key={activeGallery}
           className="grid grid-cols-2 md:grid-cols-3 gap-4"
@@ -67,10 +79,16 @@ export const GallerySection = React.forwardRef<HTMLDivElement, Props>(({ inView,
               transition={{ duration: 0.4, delay: i * 0.06, ease: EASE }}
               whileHover={{ scale: 1.02, zIndex: 10 }}
             >
-              <img src={img.src} alt={img.caption} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              <img
+                src={img.src}
+                alt={t(`about.gallery_${activeGallery}_cap_${i}`, img.caption)}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute bottom-0 left-0 right-0 p-4 text-white translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <p className="font-semibold text-sm drop-shadow">{img.caption}</p>
+                <p className="font-semibold text-sm drop-shadow">
+                  {t(`about.gallery_${activeGallery}_cap_${i}`, img.caption)}
+                </p>
               </div>
             </motion.div>
           ))}
