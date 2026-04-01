@@ -1,15 +1,10 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { BLOG_POSTS } from './blog/constants';
 import { useReveal, useBlogFilter } from './blog/hooks';
-
-import { HeroSection }      from './blog/components/HeroSection';
+import { HeroSection } from './blog/components/HeroSection';
 import { FeaturedSection, TrendingSection, GridSection } from './blog/components/Sections';
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 const TravelBlog: React.FC = () => {
-  const { t } = useTranslation();
   const { searchQuery, setSearchQuery, currentPosts, currentPage, totalPages, handlePageChange, clearFilters } = useBlogFilter();
 
   const featuredPosts = BLOG_POSTS.filter((p) => p.isFeatured);
@@ -21,23 +16,9 @@ const TravelBlog: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <HeroSection
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
-
-      <FeaturedSection
-        ref={featuredReveal.ref}
-        inView={featuredReveal.inView}
-        posts={featuredPosts}
-      />
-
-      <TrendingSection
-        ref={trendingReveal.ref}
-        inView={trendingReveal.inView}
-        posts={trendingPosts}
-      />
-
+      <HeroSection searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+      <FeaturedSection ref={featuredReveal.ref} inView={featuredReveal.inView} posts={featuredPosts} />
+      <TrendingSection ref={trendingReveal.ref} inView={trendingReveal.inView} posts={trendingPosts} />
       <GridSection
         ref={gridReveal.ref}
         inView={gridReveal.inView}

@@ -334,7 +334,7 @@ const BookingDetailModal: React.FC<{
                 {/* Lokasi Kendaraan */}
                 <div>
                   <h4 className="flex items-center text-sm font-bold text-gray-900 border-b pb-2 mb-3">
-                    <MapPin className="w-4 h-4 mr-2 text-primary-600" /> Lokasi Kendaraan
+                    <MapPin className="w-4 h-4 mr-2 text-primary-600" /> Lokasi
                   </h4>
                   <div className="text-xs text-gray-500 space-y-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <div>

@@ -351,8 +351,9 @@ const PublicLayout: React.FC = () => {
                 <img src="/payment_service/alfamart.png" alt="Alfamart" className="h-7 w-auto object-contain" />
                 <img src="/payment_service/indomaret.png" alt="Indomaret" className="h-7 w-auto object-contain" />
                 <div className="w-px h-6 bg-gray-200 mx-1" />
-                <img src="/payment_service/doku.png" alt="DOKU" className="h-7 w-auto object-contain" />
-                <span className="text-xs text-gray-400 font-medium">{t('footer.secured_by', 'Secured by DOKU')}</span>
+                <img src="/payment_service/qris.png" alt="Qris" className="h-7 w-auto object-contain" />
+                <div className="w-px h-6 bg-gray-200 mx-1" />
+                <img src="/payment_service/xendit.png" alt="Qris" className="h-7 w-auto object-contain" />
               </div>
             </div>
           </div>

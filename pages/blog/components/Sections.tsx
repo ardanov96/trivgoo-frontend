@@ -2,7 +2,6 @@ import { ArrowRight, ChevronLeft, ChevronRight, Search, TrendingUp } from 'lucid
 import { motion } from 'framer-motion';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import type { BlogPost } from '../types';
 import { fadeUp, fadeLeft, fadeRight, stagger } from '../constants';
@@ -12,8 +11,7 @@ import { FeaturedCard, TrendingCard, GridCard } from './BlogCard';
 interface FeaturedProps { posts: BlogPost[]; inView: boolean; }
 
 export const FeaturedSection = React.forwardRef<HTMLDivElement, FeaturedProps>(({ posts, inView }, ref) => {
-  const navigate = useNavigate();
-  const { langNavigate, langPath } = useLangNavigate();
+  const { langNavigate } = useLangNavigate();
   const { t } = useTranslation();
   if (!posts.length) return null;
   return (
@@ -21,12 +19,19 @@ export const FeaturedSection = React.forwardRef<HTMLDivElement, FeaturedProps>((
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-10">
           <motion.div variants={fadeLeft} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
-            <span className="text-primary-600 font-bold text-sm uppercase tracking-widest mb-2 block">Artikel Unggulan</span>
-            <h2 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-1">Pilihan Editor</h2>
-            <p className="text-gray-600">Cerita pilihan yang dikurasi oleh tim redaksi kami</p>
+            <span className="text-primary-600 font-bold text-sm uppercase tracking-widest mb-2 block">
+              {t('blog.featured_label', 'Featured Articles')}
+            </span>
+            <h2 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-1">
+              {t('blog.featured_title', "Editor's Picks")}
+            </h2>
+            <p className="text-gray-600">{t('blog.featured_subtitle', 'Handpicked stories curated by our editorial team')}</p>
           </motion.div>
-          <motion.div className="hidden md:flex items-center text-primary-600 font-bold hover:text-primary-700 transition-colors cursor-pointer" variants={fadeRight} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
-            Lihat Semua Unggulan <ArrowRight className="w-4 h-4 ml-2" />
+          <motion.div
+            className="hidden md:flex items-center text-primary-600 font-bold hover:text-primary-700 transition-colors cursor-pointer"
+            variants={fadeRight} initial="hidden" animate={inView ? 'visible' : 'hidden'}
+          >
+            {t('blog.featured_see_all', 'See All Featured')} <ArrowRight className="w-4 h-4 ml-2" />
           </motion.div>
         </div>
         <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-8" variants={stagger} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
@@ -44,8 +49,8 @@ FeaturedSection.displayName = 'FeaturedSection';
 interface TrendingProps { posts: BlogPost[]; inView: boolean; }
 
 export const TrendingSection = React.forwardRef<HTMLDivElement, TrendingProps>(({ posts, inView }, ref) => {
-  const navigate = useNavigate();
-  const { langNavigate, langPath } = useLangNavigate();
+  const { langNavigate } = useLangNavigate();
+  const { t } = useTranslation();
   if (!posts.length) return null;
   return (
     <div className="bg-white py-16 md:py-20" ref={ref}>
@@ -54,8 +59,10 @@ export const TrendingSection = React.forwardRef<HTMLDivElement, TrendingProps>((
           <div className="flex items-center">
             <TrendingUp className="w-6 h-6 text-orange-500 mr-3" />
             <div>
-              <h2 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-1">Sedang Trending</h2>
-              <p className="text-gray-600">Artikel paling banyak dibaca minggu ini</p>
+              <h2 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-1">
+                {t('blog.trending_title', 'Trending Now')}
+              </h2>
+              <p className="text-gray-600">{t('blog.trending_subtitle', 'Most-read articles this week')}</p>
             </div>
           </div>
         </motion.div>
@@ -81,14 +88,16 @@ interface GridProps {
 }
 
 export const GridSection = React.forwardRef<HTMLDivElement, GridProps>(({ posts, inView, currentPage, totalPages, onPageChange, onClearFilters }, ref) => {
-  const navigate = useNavigate();
-  const { langNavigate, langPath } = useLangNavigate();
+  const { langNavigate } = useLangNavigate();
+  const { t } = useTranslation();
   return (
     <div className="bg-gray-50 py-16 md:py-20" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div className="mb-10" variants={fadeLeft} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
-          <h2 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-1">Artikel Terbaru</h2>
-          <p className="text-gray-600">Jelajahi semua artikel dan panduan perjalanan kami</p>
+          <h2 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-1">
+            {t('blog.grid_title', 'Latest Articles')}
+          </h2>
+          <p className="text-gray-600">{t('blog.grid_subtitle', 'Explore all our articles and travel guides')}</p>
         </motion.div>
 
         {posts.length > 0 ? (
@@ -129,10 +138,16 @@ export const GridSection = React.forwardRef<HTMLDivElement, GridProps>(({ posts,
             <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               <Search className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Artikel tidak ditemukan</h3>
-            <p className="text-gray-600">Coba sesuaikan kata kunci pencarian Anda</p>
-            <motion.button onClick={onClearFilters} className="mt-6 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors" whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-              Hapus Filter
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {t('blog.no_results_title', 'No articles found')}
+            </h3>
+            <p className="text-gray-600">{t('blog.no_results_desc', 'Try adjusting your search keywords')}</p>
+            <motion.button
+              onClick={onClearFilters}
+              className="mt-6 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors"
+              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+            >
+              {t('blog.clear_filters', 'Clear Filters')}
             </motion.button>
           </motion.div>
         )}

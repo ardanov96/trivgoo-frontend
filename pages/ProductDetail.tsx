@@ -110,7 +110,7 @@ async function calcDeliveryFee(
     const geocode = async (q: string): Promise<[number, number]> => {
       const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
       const data = await r.json();
-      if (!data.length) throw new Error('Alamat tidak ditemukan: ' + q);
+      if (!data.length) throw new Error('Address not found: ' + q);
       return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
     };
     const [lat1, lon1] = await geocode(originAddress);
@@ -125,17 +125,18 @@ async function calcDeliveryFee(
   const kmRounded = Math.round(km * 10) / 10;
   const fee = calcFeeFromConfig(kmRounded, config);
   const zone = config.zones.find(z => kmRounded <= z.maxKm);
-  const label = fee === 0 ? `Gratis (< ${config.freeRadiusKm} km)` : zone?.label ?? 'Konfirmasi';
+  const label = fee === 0 ? `Free (< ${config.freeRadiusKm} km)` : zone?.label ?? 'Confirm';
   return { km: kmRounded, fee, label };
 }
 
 // ─── Delivery Fee Badge ────────────────────────────────────────────────────
 interface DeliveryFeeBadgeProps { info: DeliveryInfo; type: 'pickup' | 'dropoff'; }
 const DeliveryFeeBadge: React.FC<DeliveryFeeBadgeProps> = ({ info, type }) => {
+  const { t } = useTranslation();
   if (info.loading) return (
     <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-      <span>Menghitung biaya {type === 'pickup' ? 'penjemputan' : 'pengantaran'}…</span>
+      <span>{type === 'pickup' ? t('delivery.calculating_pickup') : t('delivery.calculating_dropoff')}</span>
     </div>
   );
   if (info.error) return (
@@ -158,16 +159,16 @@ const DeliveryFeeBadge: React.FC<DeliveryFeeBadgeProps> = ({ info, type }) => {
       <div className="flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className={`font-bold ${isManual ? 'text-amber-700' : isFree ? 'text-green-700' : 'text-blue-700'}`}>
-            Biaya {type === 'pickup' ? 'Penjemputan' : 'Pengantaran'}
+            {type === 'pickup' ? t('delivery.pickup_fee_label') : t('delivery.dropoff_fee_label')}
           </span>
           <span className={`font-extrabold ${isManual ? 'text-amber-600' : isFree ? 'text-green-600' : 'text-blue-700'}`}>
-            {isManual ? 'Hubungi Agen' : isFree ? 'GRATIS' : formatRp(info.fee)}
+            {isManual ? t('delivery.agent_confirm') : isFree ? t('delivery.free') : formatRp(info.fee)}
           </span>
         </div>
         <p className={`mt-0.5 ${isManual ? 'text-amber-600' : isFree ? 'text-green-600' : 'text-blue-600'}`}>
-          {info.km} km dari kantor
-          {isManual && ' — Lokasi di luar jangkauan standar. Agen akan konfirmasi biaya setelah booking.'}
-          {isFree && ' — Dalam radius layanan gratis kami.'}
+          {info.km} {t('delivery.km_from_office')}
+          {isManual && ` — ${t('delivery.out_of_range')}`}
+          {isFree && ` — ${t('delivery.free_radius')}`}
         </p>
       </div>
     </div>
@@ -177,6 +178,7 @@ const DeliveryFeeBadge: React.FC<DeliveryFeeBadgeProps> = ({ info, type }) => {
 // ─── Voucher Banner ────────────────────────────────────────────────────────
 interface ProductVoucherBannerProps { vouchers: any[]; }
 const ProductVoucherBanner: React.FC<ProductVoucherBannerProps> = ({ vouchers }) => {
+  const { t } = useTranslation();
   const [expandedAdmin, setExpandedAdmin] = useState(false);
   const [expandedAgent, setExpandedAgent] = useState(false);
   if (!vouchers || vouchers.length === 0) return null;
@@ -199,16 +201,24 @@ const ProductVoucherBanner: React.FC<ProductVoucherBannerProps> = ({ vouchers })
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-extrabold text-xs text-gray-900 font-mono tracking-widest">{v.code}</span>
-          {v.expires_at && (<span className="text-[10px] text-orange-500 font-semibold">s/d {new Date(v.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>)}
+          {v.expires_at && (
+            <span className="text-[10px] text-orange-500 font-semibold">
+              {t('voucher.valid_until')} {new Date(v.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+            </span>
+          )}
         </div>
         {v.description && <p className="text-[11px] text-gray-500 truncate mt-0.5">{v.description}</p>}
-        {v.min_transaction > 0 && (<p className="text-[10px] text-gray-400 mt-0.5">Min. transaksi {formatRp(v.min_transaction)}</p>)}
+        {v.min_transaction > 0 && (
+          <p className="text-[10px] text-gray-400 mt-0.5">{t('voucher.min_transaction')} {formatRp(v.min_transaction)}</p>
+        )}
       </div>
       <div className="shrink-0 text-right">
         <span className={`inline-block px-2.5 py-1 rounded-xl text-xs font-extrabold ${v.type === 'percent' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'}`}>
-          {v.type === 'percent' ? `${v.value}% OFF` : `${formatRp(v.value)} OFF`}
+          {v.type === 'percent' ? `${v.value}% ${t('voucher.off')}` : `${formatRp(v.value)} ${t('voucher.off')}`}
         </span>
-        {v.type === 'percent' && v.max_discount && (<p className="text-[10px] text-gray-400 mt-0.5 text-right">maks. {formatRp(v.max_discount)}</p>)}
+        {v.type === 'percent' && v.max_discount && (
+          <p className="text-[10px] text-gray-400 mt-0.5 text-right">{t('voucher.max_discount')} {formatRp(v.max_discount)}</p>
+        )}
       </div>
     </div>
   );
@@ -218,14 +228,16 @@ const ProductVoucherBanner: React.FC<ProductVoucherBannerProps> = ({ vouchers })
         <div className="rounded-2xl overflow-hidden border border-blue-200 shadow-sm">
           <div className="bg-gradient-to-r from-blue-500 to-primary-500 px-4 py-2.5 flex items-center gap-2">
             <Shield className="w-4 h-4 text-white" />
-            <p className="text-white text-xs font-extrabold uppercase tracking-wider">{adminVouchers.length} Voucher Platform</p>
-            <span className="ml-auto text-[10px] text-blue-100 font-semibold">Berlaku semua produk</span>
+            <p className="text-white text-xs font-extrabold uppercase tracking-wider">{adminVouchers.length} {t('voucher.platform_vouchers')}</p>
+            <span className="ml-auto text-[10px] text-blue-100 font-semibold">{t('voucher.valid_all_products')}</span>
           </div>
           <div className="bg-gradient-to-b from-blue-50 to-white divide-y divide-blue-100">
             {(expandedAdmin ? adminVouchers : adminVouchers.slice(0, PREVIEW_COUNT)).map((v: any) => (<VoucherRow key={v.id} v={v} />))}
             {adminVouchers.length > PREVIEW_COUNT && (
               <button type="button" onClick={() => setExpandedAdmin(p => !p)} className="w-full py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-1">
-                {expandedAdmin ? <><ChevronUp className="w-3.5 h-3.5" /> Sembunyikan</> : <><ChevronDown className="w-3.5 h-3.5" /> +{adminVouchers.length - PREVIEW_COUNT} voucher lainnya</>}
+                {expandedAdmin
+                  ? <><ChevronUp className="w-3.5 h-3.5" /> {t('voucher.show_less')}</>
+                  : <><ChevronDown className="w-3.5 h-3.5" /> +{adminVouchers.length - PREVIEW_COUNT} {t('voucher.more_vouchers')}</>}
               </button>
             )}
           </div>
@@ -235,14 +247,16 @@ const ProductVoucherBanner: React.FC<ProductVoucherBannerProps> = ({ vouchers })
         <div className="rounded-2xl overflow-hidden border border-orange-200 shadow-sm">
           <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-white" />
-            <p className="text-white text-xs font-extrabold uppercase tracking-wider">{agentVouchers.length} Promo Eksklusif Agen</p>
-            <span className="ml-auto text-[10px] text-orange-100 font-semibold">Khusus produk ini</span>
+            <p className="text-white text-xs font-extrabold uppercase tracking-wider">{agentVouchers.length} {t('voucher.agent_exclusive')}</p>
+            <span className="ml-auto text-[10px] text-orange-100 font-semibold">{t('voucher.exclusive_this_product')}</span>
           </div>
           <div className="bg-gradient-to-b from-orange-50 to-amber-50 divide-y divide-orange-100">
             {(expandedAgent ? agentVouchers : agentVouchers.slice(0, PREVIEW_COUNT)).map((v: any) => (<VoucherRow key={v.id} v={v} />))}
             {agentVouchers.length > PREVIEW_COUNT && (
               <button type="button" onClick={() => setExpandedAgent(p => !p)} className="w-full py-2.5 text-xs font-bold text-orange-600 hover:bg-orange-100 transition-colors flex items-center justify-center gap-1">
-                {expandedAgent ? <><ChevronUp className="w-3.5 h-3.5" /> Sembunyikan</> : <><ChevronDown className="w-3.5 h-3.5" /> +{agentVouchers.length - PREVIEW_COUNT} promo lainnya</>}
+                {expandedAgent
+                  ? <><ChevronUp className="w-3.5 h-3.5" /> {t('voucher.show_less')}</>
+                  : <><ChevronDown className="w-3.5 h-3.5" /> +{agentVouchers.length - PREVIEW_COUNT} {t('voucher.more_promos')}</>}
               </button>
             )}
           </div>
@@ -250,7 +264,7 @@ const ProductVoucherBanner: React.FC<ProductVoucherBannerProps> = ({ vouchers })
       )}
       <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 flex items-center gap-1.5">
         <Tag className="w-3 h-3 text-gray-400 shrink-0" />
-        <p className="text-[10px] text-gray-500 font-semibold">Pilih voucher di halaman checkout untuk mendapat diskon</p>
+        <p className="text-[10px] text-gray-500 font-semibold">{t('voucher.checkout_info')}</p>
       </div>
     </div>
   );
@@ -258,12 +272,12 @@ const ProductVoucherBanner: React.FC<ProductVoucherBannerProps> = ({ vouchers })
 
 // ─── Availability Calendar ─────────────────────────────────────────────────
 const AvailabilityCalendar: React.FC<{ blockedDates: string[] }> = ({ blockedDates }) => {
+  const { t } = useTranslation();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
   const handlePrevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
   const buildDays = () => {
     let days = [];
     for (let i = 0; i < firstDay; i++) days.push(null);
@@ -276,16 +290,27 @@ const AvailabilityCalendar: React.FC<{ blockedDates: string[] }> = ({ blockedDat
     const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
     return blockedDates.includes(dateStr);
   };
+  const dayKeys = ['sun','mon','tue','wed','thu','fri','sat'] as const;
   return (
     <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-      <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary-600" /> Cek Ketersediaan</h2>
+      <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <CalendarDays className="w-5 h-5 text-primary-600" /> {t('tour.check_availability')}
+      </h2>
       <div className="flex items-center justify-between mb-4">
-        <button onClick={handlePrevMonth} className="p-2 hover:bg-primary-50 hover:text-primary-600 rounded-full transition-colors border border-gray-100"><ChevronLeft className="w-4 h-4 text-gray-600" /></button>
-        <span className="font-bold text-gray-800 text-sm">{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</span>
-        <button onClick={handleNextMonth} className="p-2 hover:bg-primary-50 hover:text-primary-600 rounded-full transition-colors border border-gray-100"><ChevronRight className="w-4 h-4 text-gray-600" /></button>
+        <button onClick={handlePrevMonth} className="p-2 hover:bg-primary-50 hover:text-primary-600 rounded-full transition-colors border border-gray-100">
+          <ChevronLeft className="w-4 h-4 text-gray-600" />
+        </button>
+        <span className="font-bold text-gray-800 text-sm">
+          {t(`calendar.months.${currentMonth.getMonth()}`)} {currentMonth.getFullYear()}
+        </span>
+        <button onClick={handleNextMonth} className="p-2 hover:bg-primary-50 hover:text-primary-600 rounded-full transition-colors border border-gray-100">
+          <ChevronRight className="w-4 h-4 text-gray-600" />
+        </button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
-        {['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map((day) => (<div key={day} className="text-xs font-bold text-gray-400 py-1">{day}</div>))}
+        {dayKeys.map((key) => (
+          <div key={key} className="text-xs font-bold text-gray-400 py-1">{t(`calendar.days_short.${key}`)}</div>
+        ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
         {buildDays().map((date, idx) => {
@@ -303,8 +328,14 @@ const AvailabilityCalendar: React.FC<{ blockedDates: string[] }> = ({ blockedDat
         })}
       </div>
       <div className="mt-5 flex flex-wrap gap-4 text-xs font-semibold text-gray-500 justify-center">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white shadow-sm border border-gray-200"></div> Tersedia</div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-gray-100 border border-gray-200 line-through decoration-gray-400"></div> Tidak Tersedia</div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-white shadow-sm border border-gray-200"></div>
+          {t('tour.availability_available')}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-gray-100 border border-gray-200 line-through decoration-gray-400"></div>
+          {t('tour.availability_unavailable')}
+        </div>
       </div>
     </div>
   );
@@ -381,6 +412,7 @@ const LocationAutocomplete: React.FC<{
 // ─── Share Buttons ─────────────────────────────────────────────────────────
 interface ShareButtonsProps { productName: string; productImage: string; productUrl: string; }
 const ShareButtons: React.FC<ShareButtonsProps> = ({ productName, productImage, productUrl }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = React.useState(false);
   const [showDropdown, setShowDropdown] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -427,15 +459,15 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({ productName, productImage, 
     <div className="relative" ref={dropdownRef}>
       <button onClick={() => setShowDropdown(o => !o)}
         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-600 transition-colors group"
-        title="Bagikan produk ini">
+        title={t('share.share_label')}>
         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
         </svg>
-        <span className="text-sm font-medium">Bagikan</span>
+        <span className="text-sm font-medium">{t('share.share_label')}</span>
       </button>
       {showDropdown && (
         <div className="absolute left-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-3 z-50 w-52 animate-in fade-in slide-in-from-top-2 duration-200">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Bagikan ke</p>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">{t('share.share_to')}</p>
           <div className="space-y-1">
             {shareLinks.map(link => (
               <a key={link.name} href={link.url} target="_blank" rel="noopener noreferrer"
@@ -449,7 +481,7 @@ const ShareButtons: React.FC<ShareButtonsProps> = ({ productName, productImage, 
               {copied
                 ? (<svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2 text-green-500"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>)
                 : (<svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>)}
-              {copied ? 'Link disalin!' : 'Salin Link'}
+              {copied ? t('share.link_copied') : t('share.copy_link')}
             </button>
           </div>
         </div>
@@ -507,15 +539,15 @@ const ProductDetail: React.FC = () => {
     setter: React.Dispatch<React.SetStateAction<DeliveryInfo>>,
   ) => {
     if (!address.trim() || address.trim().length < 8) { setter(INITIAL_DELIVERY); return; }
-    if (!config.enabled) { setter({ km: null, fee: 0, label: '', loading: false, error: 'Layanan antar-jemput tidak tersedia untuk produk ini.' }); return; }
+    if (!config.enabled) { setter({ km: null, fee: 0, label: '', loading: false, error: t('delivery.service_unavailable') }); return; }
     setter(prev => ({ ...prev, loading: true, error: null }));
     try {
       const result = await calcDeliveryFee(productLocation, address, config);
       setter({ ...result, loading: false, error: null });
     } catch (e: any) {
-      setter({ km: null, fee: 0, label: '', loading: false, error: 'Alamat tidak ditemukan. Periksa kembali.' });
+      setter({ km: null, fee: 0, label: '', loading: false, error: t('delivery.address_not_found') });
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (pickupType !== 'lokasi_lain' || !product) { setPickupDelivery(INITIAL_DELIVERY); return; }
@@ -543,9 +575,9 @@ const ProductDetail: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      if (!id) { setProduct(null); setReviews([]); setError('Product ID is missing.'); setIsLoading(false); return; }
+      if (!id) { setProduct(null); setReviews([]); setError(t('product.not_found')); setIsLoading(false); return; }
       const numericId = decodeId(id);
-      if (numericId === null) { setProduct(null); setReviews([]); setError('Product not found or invalid URL.'); setIsLoading(false); return; }
+      if (numericId === null) { setProduct(null); setReviews([]); setError(t('product.not_found')); setIsLoading(false); return; }
       setIsLoading(true); setError(null); setProduct(null); setReviews([]);
       try {
         const data = await agentProductService.getProductById(numericId);
@@ -560,11 +592,11 @@ const ProductDetail: React.FC = () => {
       } catch (e: any) {
         console.error('Failed to load product detail', e);
         setProduct(null); setReviews([]);
-        setError(e?.response?.status === 404 ? t('product.not_found', 'Product not found.') : t('product.load_error', 'Failed to load product. Please try again.'));
+        setError(e?.response?.status === 404 ? t('product.not_found') : t('product.load_error'));
       } finally { setIsLoading(false); }
     };
     load();
-  }, [id]);
+  }, [id, t]);
 
   const effectivePickupFee = pickupType === 'lokasi_lain' && pickupDelivery.fee >= 0 ? pickupDelivery.fee : 0;
   const effectiveDropoffFee = dropoffType === 'lokasi_lain' && dropoffDelivery.fee >= 0 ? dropoffDelivery.fee : 0;
@@ -603,34 +635,34 @@ const ProductDetail: React.FC = () => {
       if (isTourProduct) {
         const _tripType = (product.details as any)?.tripType || 'Open Trip';
         const _minPax = _tripType === 'Private Trip' ? 1 : _tripType === 'Group Trip' ? 6 : 2;
-        if (!tourDate) errors.tourDate = 'Pilih tanggal tour terlebih dahulu';
-        if (tourPax < _minPax) errors.tourPax = `Minimum ${_minPax} peserta untuk ${_tripType}`;
+        if (!tourDate) errors.tourDate = t('validation.select_tour_date');
+        if (tourPax < _minPax) errors.tourPax = t('validation.min_participants', { min: _minPax, type: _tripType });
       } else {
-        if (!checkInDate) errors.checkIn = 'Pilih tanggal check-in';
-        if (!checkOutDate) errors.checkOut = 'Pilih tanggal check-out';
-        if (checkInDate && checkOutDate && checkInDate >= checkOutDate) errors.checkOut = 'Check-out harus setelah check-in';
-        if (stayGuests < 1) errors.stayGuests = 'Minimal 1 tamu';
+        if (!checkInDate) errors.checkIn = t('validation.select_checkin');
+        if (!checkOutDate) errors.checkOut = t('validation.select_checkout');
+        if (checkInDate && checkOutDate && checkInDate >= checkOutDate) errors.checkOut = t('validation.checkout_after_checkin');
+        if (stayGuests < 1) errors.stayGuests = t('validation.min_1_guest');
       }
     } else {
-      if (!carPickupDate) errors.carPickupDate = 'Pilih tanggal pengambilan';
-      if (!carDropoffDate) errors.carDropoffDate = 'Pilih tanggal pengembalian';
+      if (!carPickupDate) errors.carPickupDate = t('validation.select_pickup_date');
+      if (!carDropoffDate) errors.carDropoffDate = t('validation.select_return_date');
       if (carPickupDate && carDropoffDate) {
         const start = new Date(`${carPickupDate}T${carPickupTime}`);
         const end = new Date(`${carDropoffDate}T${carDropoffTime}`);
         if (start >= end) {
-          errors.carDropoffDate = 'Waktu pengembalian tidak valid';
+          errors.carDropoffDate = t('validation.invalid_return_time');
         } else {
           const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-          if (days < 2) errors.carDropoffDate = 'Minimum sewa 2 hari';
+          if (days < 2) errors.carDropoffDate = t('validation.min_2_days');
         }
       }
-      if (pickupType === 'lokasi_lain' && !pickupAddress.trim()) errors.pickupAddress = 'Masukkan alamat penjemputan';
-      if (dropoffType === 'lokasi_lain' && !dropoffAddress.trim()) errors.dropoffAddress = 'Masukkan alamat pengantaran';
-      if (pickupDelivery.loading || dropoffDelivery.loading) errors.deliveryCalc = 'Tunggu perhitungan biaya selesai';
+      if (pickupType === 'lokasi_lain' && !pickupAddress.trim()) errors.pickupAddress = t('validation.enter_pickup_address');
+      if (dropoffType === 'lokasi_lain' && !dropoffAddress.trim()) errors.dropoffAddress = t('validation.enter_dropoff_address');
+      if (pickupDelivery.loading || dropoffDelivery.loading) errors.deliveryCalc = t('validation.wait_fee_calc');
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      Swal.fire({ icon: 'warning', title: 'Lengkapi Detail Pemesanan', text: Object.values(errors)[0], confirmButtonColor: '#0ea5e9' });
+      Swal.fire({ icon: 'warning', title: t('booking.complete_details'), text: Object.values(errors)[0], confirmButtonColor: '#0ea5e9' });
       return null;
     }
     setFieldErrors({});
@@ -653,7 +685,8 @@ const ProductDetail: React.FC = () => {
         selectedTier: isTourProduct ? getGroupTiers()[selectedTierIdx] : null,
         childPricing: isTourProduct ? getChildPricing() : null,
         date: isTourProduct ? tourDate : `${checkInDate} - ${checkOutDate}`,
-        unitLabel: isTourProduct ? 'Tiket' : 'Malam', priceUnitLabel: isTourProduct ? 'orang' : 'malam',
+        unitLabel: isTourProduct ? t('tour.check_availability') : t('stay.nights_label'),
+        priceUnitLabel: isTourProduct ? 'person' : 'night',
         vehicleType: isTourProduct ? 'tour' : 'stay', availableVouchers: productVouchers,
       };
     } else {
@@ -673,7 +706,7 @@ const ProductDetail: React.FC = () => {
         totalPrice: totalPerDay * calculatedDays + deliveryTotal,
         date: `${carPickupDate} - ${carDropoffDate}`,
         startTime: `${carPickupDate} ${carPickupTime}:00`, endTime: `${carDropoffDate} ${carDropoffTime}:00`,
-        unitLabel: 'Hari', priceUnitLabel: 'hari', vehicleType: 'car',
+        unitLabel: t('common.days'), priceUnitLabel: 'day', vehicleType: 'car',
         transmission: (product.details as CarDetails)?.transmission, seats: (product.details as CarDetails)?.seats,
         luggage: (product.details as CarDetails)?.luggage, year: (product.details as CarDetails)?.year,
         fuelPolicy: (product.details as CarDetails)?.fuelPolicy, withDriver: addOns.withDriver, addOns,
@@ -694,7 +727,7 @@ const ProductDetail: React.FC = () => {
     const payload = generateCheckoutPayload(type);
     if (!payload) return;
     addToCart(product, payload.duration, payload);
-    showToast(`${product.name} ditambahkan ke keranjang!`, 'success');
+    showToast(`${product.name} added to cart!`, 'success');
   };
 
   const calcNights = () =>
@@ -735,10 +768,10 @@ const ProductDetail: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         <h2 className="text-2xl font-bold text-gray-900 mb-3">{error}</h2>
-        <p className="text-gray-600 mb-6">{t('product.try_again_desc', 'Please try again or go back to explore.')}</p>
+        <p className="text-gray-600 mb-6">{t('product.try_again_desc')}</p>
         <div className="flex items-center justify-center gap-3">
-          <button type="button" onClick={() => window.location.reload()} className="px-4 py-2 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors">Coba Lagi</button>
-          <Link to={langPath('/explore')} className="text-primary-600 font-semibold hover:underline">Kembali ke Explore</Link>
+          <button type="button" onClick={() => window.location.reload()} className="px-4 py-2 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors">{t('common.save')}</button>
+          <Link to={langPath('/explore')} className="text-primary-600 font-semibold hover:underline">{t('product.back_to_explore')}</Link>
         </div>
       </div>
     </div>
@@ -748,8 +781,8 @@ const ProductDetail: React.FC = () => {
   if (!product) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('product.not_found', 'Product not found')}</h2>
-        <Link to={langPath('/explore')} className="text-primary-600 font-semibold hover:underline">← {t('product.back_to_explore', 'Back to Explore')}</Link>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('product.not_found')}</h2>
+        <Link to={langPath('/explore')} className="text-primary-600 font-semibold hover:underline">← {t('product.back_to_explore')}</Link>
       </div>
     </div>
   );
@@ -761,7 +794,6 @@ const ProductDetail: React.FC = () => {
   const stayDetails = isStay(product.details) ? (product.details as StayDetails) : null;
   const productVouchers = (product as any).vouchers || [];
 
-  // ── Share URL: gunakan URL halaman saat ini ───────────────────────────────
   const shareUrl = window.location.href;
 
   const parseDateStr = (dStr: string) => dStr ? new Date(dStr) : null;
@@ -772,32 +804,32 @@ const ProductDetail: React.FC = () => {
   // ════════════════════════════════════════════════════════
   if (!isCarProduct) {
     const isTourProduct = !!tourDetails;
-    const categoryLabel = isTourProduct ? 'Tour & Activity' : 'Hotel & Villa';
+    const categoryLabel = isTourProduct ? t('tour.category_label') : t('stay.category_label');
     const categoryLink = isTourProduct ? '/explore?category_id=1' : '/explore?category_id=2';
     const tripType = (tourDetails as any)?.tripType || 'Open Trip';
     const minPaxFromTripType = tripType === 'Private Trip' ? 1 : tripType === 'Group Trip' ? 6 : 2;
     const minPax = (tourDetails as any)?.minPax ?? minPaxFromTripType;
     const highlights = isTourProduct ? [
-      { icon: Clock, label: 'Durasi', value: (tourDetails as any)?.duration || 'Full Day' },
-      { icon: Users, label: 'Min. Peserta', value: `${minPax} orang` },
-      { icon: Award, label: 'Tipe Trip', value: tripType },
-      { icon: CheckCircle2, label: 'Kategori', value: (tourDetails as any)?.tourCategory || 'Wisata' },
+      { icon: Clock,        label: t('highlights.duration'),        value: (tourDetails as any)?.duration || 'Full Day' },
+      { icon: Users,        label: t('highlights.min_participants'), value: `${minPax} ${t('common.guests')}` },
+      { icon: Award,        label: t('highlights.trip_type'),       value: tripType },
+      { icon: CheckCircle2, label: t('highlights.category'),        value: (tourDetails as any)?.tourCategory || 'Wisata' },
     ] : [
-      { icon: CalendarDays, label: 'Min. Menginap', value: `${(stayDetails as any)?.minNight || 1} malam` },
-      { icon: Users, label: 'Tamu', value: `${(stayDetails as any)?.maxGuest || 2} tamu` },
-      { icon: Award, label: 'Tipe', value: (stayDetails as any)?.stayCategory || 'Hotel' },
-      { icon: BadgeCheck, label: 'Check-in', value: (stayDetails as any)?.checkIn || '14:00' },
+      { icon: CalendarDays, label: t('highlights.min_stay'),  value: `${(stayDetails as any)?.minNight || 1} ${t('stay.nights_label')}` },
+      { icon: Users,        label: t('highlights.guests'),    value: `${(stayDetails as any)?.maxGuest || 2} ${t('common.guests')}` },
+      { icon: Award,        label: t('highlights.type'),      value: (stayDetails as any)?.stayCategory || 'Hotel' },
+      { icon: BadgeCheck,   label: t('highlights.check_in'),  value: (stayDetails as any)?.checkIn || '14:00' },
     ];
-    const inclusions: string[] = (isTourProduct ? (tourDetails as any)?.inclusions : (stayDetails as any)?.inclusions)?.filter(Boolean) || (isTourProduct ? ['Transportasi AC', 'Pemandu wisata', 'Tiket masuk', 'Makan siang'] : ['Sarapan', 'Kolam renang', 'WiFi gratis', 'Parkir gratis']);
-    const exclusions: string[] = (isTourProduct ? (tourDetails as any)?.exclusions : (stayDetails as any)?.exclusions)?.filter(Boolean) || (isTourProduct ? ['Pengeluaran pribadi', 'Tips pemandu', 'Foto/video profesional'] : ['Airport transfer', 'Laundry', 'Minibar']);
+    const inclusions: string[] = (isTourProduct ? (tourDetails as any)?.inclusions : (stayDetails as any)?.inclusions)?.filter(Boolean) || [];
+    const exclusions: string[] = (isTourProduct ? (tourDetails as any)?.exclusions : (stayDetails as any)?.exclusions)?.filter(Boolean) || [];
     const reviewCount = reviews.length;
     const avgRatingStr = reviewCount > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / reviewCount).toFixed(1) : (product.rating || '0.0');
     const getPct = (filterFn: (r: any) => boolean) => reviewCount === 0 ? 0 : Math.round((reviews.filter(filterFn).length / reviewCount) * 100);
     const reviewDistribution = [
-      [t('product.excellent','Excellent'), getPct(r => Number(r.rating) === 5)],
-      [t('product.good','Good'), getPct(r => Number(r.rating) === 4)],
-      [t('product.average','Average'), getPct(r => Number(r.rating) === 3)],
-      [t('product.poor','Poor'), getPct(r => Number(r.rating) <= 2)],
+      [t('product.excellent'), getPct(r => Number(r.rating) === 5)],
+      [t('product.good'),      getPct(r => Number(r.rating) === 4)],
+      [t('product.average'),   getPct(r => Number(r.rating) === 3)],
+      [t('product.poor'),      getPct(r => Number(r.rating) <= 2)],
     ];
     const itinerary = (isTourProduct && tourDetails?.itinerary) || [];
     const nights = calcNights();
@@ -816,33 +848,61 @@ const ProductDetail: React.FC = () => {
             image={(product as any).seo_og_image || product.image_url || product.image || FALLBACK_IMAGE}
           />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
+            {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-              <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 font-medium text-gray-500"><ChevronLeft className="w-3.5 h-3.5" /> {t('common.back','Back')}</button>
-              <span>/</span><Link to={langPath('/')} className="hover:text-primary-600">{t('product.breadcrumb_home','Home')}</Link>
-              <span>/</span><Link to={categoryLink} className="hover:text-primary-600">{categoryLabel}</Link>
-              <span>/</span><span className="text-gray-600 truncate max-w-[200px]">{product.name}</span>
+              <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 font-medium text-gray-500">
+                <ChevronLeft className="w-3.5 h-3.5" /> {t('common.back')}
+              </button>
+              <span>/</span>
+              <Link to={langPath('/')} className="hover:text-primary-600">{t('product.breadcrumb_home')}</Link>
+              <span>/</span>
+              <Link to={categoryLink} className="hover:text-primary-600">{categoryLabel}</Link>
+              <span>/</span>
+              <span className="text-gray-600 truncate max-w-[200px]">{product.name}</span>
             </div>
+
+            {/* Title + Meta */}
             <div className="mb-4">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">{product.name}</h1>
               <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-1"><span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded"><Star className="w-3 h-3 inline mr-0.5" />{avgRatingStr}</span><span className="text-sm font-semibold text-gray-700 ml-1">{reviewCount} ulasan</span></div>
+                <div className="flex items-center gap-1">
+                  <span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                    <Star className="w-3 h-3 inline mr-0.5" />{avgRatingStr}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-700 ml-1">{reviewCount} {t('reviews_section.reviews_label')}</span>
+                </div>
                 <span className="text-gray-300">·</span>
-                <span className="text-gray-500 text-sm flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-primary-500" />{formatLocation(product.location || '')}</span>
-                {productVouchers.filter((v: any) => v.is_active).length > 0 && (<><span className="text-gray-300">·</span><span className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full"><Tag className="w-3 h-3" />{productVouchers.filter((v: any) => v.is_active).length} Promo</span></>)}
-                {isLoggedIn && (<><span className="text-gray-300">·</span><button onClick={() => toggleWishlist(product)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 transition-colors"><Heart className={`w-4 h-4 ${isSaved ? 'text-red-500 fill-red-500' : ''}`} />{isSaved ? 'Tersimpan' : 'Simpan ke wishlist'}</button></>)}
+                <span className="text-gray-500 text-sm flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-primary-500" />{formatLocation(product.location || '')}
+                </span>
+                {productVouchers.filter((v: any) => v.is_active).length > 0 && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <span className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full">
+                      <Tag className="w-3 h-3" />{productVouchers.filter((v: any) => v.is_active).length} Promo
+                    </span>
+                  </>
+                )}
+                {isLoggedIn && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <button onClick={() => toggleWishlist(product)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 transition-colors">
+                      <Heart className={`w-4 h-4 ${isSaved ? 'text-red-500 fill-red-500' : ''}`} />
+                      {isSaved ? t('wishlist.saved') : t('wishlist.save')}
+                    </button>
+                  </>
+                )}
                 <span className="text-gray-300">·</span>
-                <ShareButtons
-                  productName={product.name}
-                  productImage={allImages[0] || product.image_url || product.image || ''}
-                  productUrl={shareUrl}
-                />
+                <ShareButtons productName={product.name} productImage={allImages[0] || product.image_url || product.image || ''} productUrl={shareUrl} />
               </div>
             </div>
 
             {/* Gallery Grid */}
             <div className="relative rounded-2xl overflow-hidden mb-8" style={{ height: '400px' }}>
               <div className="grid gap-1.5 h-full" style={{ gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr' }}>
-                <div className="row-span-2 relative overflow-hidden bg-gray-200"><img src={allImages[0]} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => openGallery(0)} onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} /></div>
+                <div className="row-span-2 relative overflow-hidden bg-gray-200">
+                  <img src={allImages[0]} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => openGallery(0)} onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
+                </div>
                 {[0,1,2,3].map((i) => {
                   const src = allImages[i+1] || allImages[0];
                   const hasMore = allImages.length > 5;
@@ -852,7 +912,11 @@ const ProductDetail: React.FC = () => {
                       <img src={src} alt={`${product.name} ${i+2}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => openGallery(i+1)} onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
                       {i === 3 && (
                         <div onClick={() => openGallery(4)} className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors">
-                          <div className="bg-white rounded-lg px-4 py-2"><p className="text-gray-900 font-bold text-sm">{hasMore ? `+${remainingCount} Foto` : t('product.gallery','Gallery')}</p></div>
+                          <div className="bg-white rounded-lg px-4 py-2">
+                            <p className="text-gray-900 font-bold text-sm">
+                              {hasMore ? `+${remainingCount} ${t('product.gallery')}` : t('product.gallery')}
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -864,20 +928,176 @@ const ProductDetail: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* LEFT CONTENT */}
               <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"><div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{highlights.map((h, i) => (<div key={i} className="text-center"><div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-2"><h.icon className="w-5 h-5 text-primary-600" /></div><p className="text-xs text-gray-400 mb-0.5">{h.label}</p><p className="text-sm font-bold text-gray-800">{h.value}</p></div>))}</div></div>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2"><Info className="w-4 h-4 text-primary-600" />{t('product.description','Description')}</h2><p className="text-sm text-gray-600 leading-relaxed">{(product as any).description || `Nikmati pengalaman ${isTourProduct ? 'wisata' : 'menginap'} terbaik di ${formatLocation(product.location || '')}. ${product.name} menawarkan layanan premium dengan fasilitas lengkap.`}</p></div>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2"><Package className="w-4 h-4 text-primary-600" />{t('product.whats_included',"What's Included")}</h2><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="space-y-2"><p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-2">✓ {t('product.included','Included')}</p>{inclusions.map((item, i) => (<div key={i} className="flex items-center gap-2 text-sm text-gray-700"><CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />{item}</div>))}</div><div className="space-y-2"><p className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2">✗ {t('product.excluded','Not Included')}</p>{exclusions.map((item, i) => (<div key={i} className="flex items-center gap-2 text-sm text-gray-700"><div className="w-4 h-4 rounded-full border-2 border-red-300 flex items-center justify-center shrink-0"><div className="w-1.5 h-0.5 bg-red-400 rounded" /></div>{item}</div>))}</div></div></div>
-                {isTourProduct && itinerary.length > 0 && (<div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary-600" />{t('product.itinerary','Travel Itinerary')}</h2><div className="relative pl-4"><div className="absolute left-0 top-3 bottom-0 w-0.5 bg-primary-100 rounded" /><div className="space-y-6">{itinerary.map((item: any, i: number) => (<div key={i} className="relative pl-6"><div className="absolute left-[-21px] top-1 w-4 h-4 rounded-full bg-primary-500 border-4 border-white shadow-sm" /><div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-extrabold text-white bg-primary-600 px-2 py-0.5 rounded-md tracking-wider uppercase">Day {item.day}</span><span className="text-sm font-bold text-gray-900">{item.title}</span></div>{item.description && (<p className="text-xs text-gray-600 leading-relaxed max-w-2xl mb-2">{item.description}</p>)}{(item.accommodation || (item.meals && item.meals.length > 0)) && (<div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">{item.accommodation && (<span className="text-primary-700 bg-primary-50 border border-primary-100 px-2 py-1 rounded-md">Stay: {item.accommodation}</span>)}{item.meals && item.meals.length > 0 && (<span className="text-orange-700 bg-orange-50 border border-orange-100 px-2 py-1 rounded-md">Meals: {item.meals.join(', ')}</span>)}</div>)}</div>))}</div></div></div>)}
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2"><MapPinned className="w-4 h-4 text-primary-600" />{isTourProduct ? 'Titik Penjemputan' : 'Lokasi'}</h2><div className="flex items-start gap-3 bg-gray-50 rounded-xl p-4"><MapPin className="w-4 h-4 text-primary-500 mt-0.5 shrink-0" /><p className="text-sm text-gray-600">{product.location || 'Lokasi akan dikonfirmasi setelah booking'}</p></div></div>
-                <AvailabilityCalendar blockedDates={product.blocked_dates as unknown as string[] || []} />
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm"><h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2"><Shield className="w-4 h-4 text-primary-600" />{t('product.cancellation_policy','Cancellation Policy')}</h2><div className="space-y-2">{[{label:t('product.cancel_24h','Cancel 24h before'),value:t('product.full_refund','Full refund'),color:'text-green-600'},{label:t('product.cancel_less_24h','Cancel less than 24h'),value:t('product.no_refund','No refund'),color:'text-red-500'},{label:t('product.no_show','No Show'),value:t('product.no_refund','No refund'),color:'text-red-500'}].map((row,i) => (<div key={i} className="flex justify-between items-center text-sm py-2 border-b border-gray-50 last:border-0"><span className="text-gray-600">{row.label}</span><span className={`font-bold ${row.color}`}>{row.value}</span></div>))}</div></div>
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                  <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2"><Star className="w-4 h-4 text-amber-400 fill-amber-400" />{t('product.traveler_reviews','Traveler Reviews')}</h2>
-                  <div className="flex items-center gap-6 mb-5 pb-5 border-b border-gray-100">
-                    <div className="text-center"><p className="text-5xl font-extrabold text-gray-900">{avgRatingStr}</p><div className="flex justify-center gap-0.5 my-1">{[...Array(5)].map((_,i) => <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(Number(avgRatingStr)) ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`} />)}</div><p className="text-xs text-gray-400">{reviewCount} ulasan</p></div>
-                    <div className="flex-1 space-y-1.5">{reviewDistribution.map(([label, pct]) => (<div key={label as string} className="flex items-center gap-2 text-xs"><span className="text-gray-500 w-20">{label}</span><div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} /></div><span className="text-gray-400 w-6">{pct}%</span></div>))}</div>
+                {/* Highlights */}
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {highlights.map((h, i) => (
+                      <div key={i} className="text-center">
+                        <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-2"><h.icon className="w-5 h-5 text-primary-600" /></div>
+                        <p className="text-xs text-gray-400 mb-0.5">{h.label}</p>
+                        <p className="text-sm font-bold text-gray-800">{h.value}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{reviews.length > 0 ? reviews.map(review => (<div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100"><div className="flex items-center gap-3 mb-3"><UserAvatar user={{ name: review.customer_name, avatar: review.customer_avatar }} className="w-9 h-9 border-2 border-primary-100" /><div><p className="font-bold text-gray-900 text-sm">{review.customer_name || 'Customer'}</p><p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString('id-ID')}</p></div></div><div className="flex gap-0.5 mb-2">{[...Array(5)].map((_,i) => <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`} />)}</div><p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{review.comment || 'No comment provided.'}</p>{review.agent_reply && (<div className="mt-3"><button onClick={() => toggleReply(review.id)} className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">{expandedReplies[review.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}{expandedReplies[review.id] ? t('product.close_reply','Close Reply') : t('product.view_reply','View Reply')}</button>{expandedReplies[review.id] && (<div className="mt-2 bg-primary-50 rounded-xl p-3 border border-primary-100 relative"><div className="absolute -top-1.5 left-4 w-3 h-3 bg-primary-50 border-t border-l border-primary-100 transform rotate-45" /><div className="flex items-center gap-2 mb-1.5 relative z-10"><div className="w-4 h-4 bg-primary-100 rounded-full flex items-center justify-center shrink-0"><BadgeCheck className="w-2.5 h-2.5 text-primary-600" /></div><span className="text-xs font-bold text-primary-900">{t('product.agent_response','Agent Response')}</span></div><p className="text-xs text-primary-800 leading-relaxed relative z-10">{review.agent_reply}</p></div>)}</div>)}</div>)) : <p className="text-sm text-gray-500 col-span-full">{t('product.no_reviews','No reviews yet for this product.')}</p>}</div>
+                </div>
+
+                {/* Description */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-primary-600" />{t('product.description')}
+                  </h2>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {(product as any).description || `Enjoy the best ${isTourProduct ? 'tour' : 'stay'} experience in ${formatLocation(product.location || '')}. ${product.name} offers premium service with complete facilities.`}
+                  </p>
+                </div>
+
+                {/* Inclusions / Exclusions */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-primary-600" />{t('product.whats_included')}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-2">✓ {t('product.included')}</p>
+                      {inclusions.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />{item}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2">✗ {t('product.excluded')}</p>
+                      {exclusions.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                          <div className="w-4 h-4 rounded-full border-2 border-red-300 flex items-center justify-center shrink-0"><div className="w-1.5 h-0.5 bg-red-400 rounded" /></div>{item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Itinerary */}
+                {isTourProduct && itinerary.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4 text-primary-600" />{t('product.itinerary')}
+                    </h2>
+                    <div className="relative pl-4">
+                      <div className="absolute left-0 top-3 bottom-0 w-0.5 bg-primary-100 rounded" />
+                      <div className="space-y-6">
+                        {itinerary.map((item: any, i: number) => (
+                          <div key={i} className="relative pl-6">
+                            <div className="absolute left-[-21px] top-1 w-4 h-4 rounded-full bg-primary-500 border-4 border-white shadow-sm" />
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[10px] font-extrabold text-white bg-primary-600 px-2 py-0.5 rounded-md tracking-wider uppercase">{t('itinerary.day_label')} {item.day}</span>
+                              <span className="text-sm font-bold text-gray-900">{item.title}</span>
+                            </div>
+                            {item.description && <p className="text-xs text-gray-600 leading-relaxed max-w-2xl mb-2">{item.description}</p>}
+                            {(item.accommodation || (item.meals && item.meals.length > 0)) && (
+                              <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider">
+                                {item.accommodation && <span className="text-primary-700 bg-primary-50 border border-primary-100 px-2 py-1 rounded-md">{t('itinerary.stay_label')}: {item.accommodation}</span>}
+                                {item.meals && item.meals.length > 0 && <span className="text-orange-700 bg-orange-50 border border-orange-100 px-2 py-1 rounded-md">{t('itinerary.meals_label')}: {item.meals.join(', ')}</span>}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Location */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <MapPinned className="w-4 h-4 text-primary-600" />
+                    {isTourProduct ? t('tour.pickup_point') : t('stay.location_label')}
+                  </h2>
+                  <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-4">
+                    <MapPin className="w-4 h-4 text-primary-500 mt-0.5 shrink-0" />
+                    <p className="text-sm text-gray-600">{product.location || t('tour.location_confirmed')}</p>
+                  </div>
+                </div>
+
+                {/* Availability Calendar */}
+                <AvailabilityCalendar blockedDates={product.blocked_dates as unknown as string[] || []} />
+
+                {/* Cancellation Policy */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary-600" />{t('product.cancellation_policy')}
+                  </h2>
+                  <div className="space-y-2">
+                    {[
+                      { label: t('product.cancel_24h'),      value: t('product.full_refund'), color: 'text-green-600' },
+                      { label: t('product.cancel_less_24h'), value: t('product.no_refund'),   color: 'text-red-500' },
+                      { label: t('product.no_show'),         value: t('product.no_refund'),   color: 'text-red-500' },
+                    ].map((row, i) => (
+                      <div key={i} className="flex justify-between items-center text-sm py-2 border-b border-gray-50 last:border-0">
+                        <span className="text-gray-600">{row.label}</span>
+                        <span className={`font-bold ${row.color}`}>{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reviews */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />{t('product.traveler_reviews')}
+                  </h2>
+                  <div className="flex items-center gap-6 mb-5 pb-5 border-b border-gray-100">
+                    <div className="text-center">
+                      <p className="text-5xl font-extrabold text-gray-900">{avgRatingStr}</p>
+                      <div className="flex justify-center gap-0.5 my-1">
+                        {[...Array(5)].map((_, i) => <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(Number(avgRatingStr)) ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`} />)}
+                      </div>
+                      <p className="text-xs text-gray-400">{reviewCount} {t('reviews_section.reviews_label')}</p>
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      {reviewDistribution.map(([label, pct]) => (
+                        <div key={label as string} className="flex items-center gap-2 text-xs">
+                          <span className="text-gray-500 w-20">{label}</span>
+                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-gray-400 w-6">{pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {reviews.length > 0 ? reviews.map(review => (
+                      <div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                        <div className="flex items-center gap-3 mb-3">
+                          <UserAvatar user={{ name: review.customer_name, avatar: review.customer_avatar }} className="w-9 h-9 border-2 border-primary-100" />
+                          <div>
+                            <p className="font-bold text-gray-900 text-sm">{review.customer_name || 'Customer'}</p>
+                            <p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5 mb-2">{[...Array(5)].map((_, i) => <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`} />)}</div>
+                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">{review.comment || t('reviews_section.no_comment')}</p>
+                        {review.agent_reply && (
+                          <div className="mt-3">
+                            <button onClick={() => toggleReply(review.id)} className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                              {expandedReplies[review.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              {expandedReplies[review.id] ? t('product.close_reply') : t('product.view_reply')}
+                            </button>
+                            {expandedReplies[review.id] && (
+                              <div className="mt-2 bg-primary-50 rounded-xl p-3 border border-primary-100 relative">
+                                <div className="absolute -top-1.5 left-4 w-3 h-3 bg-primary-50 border-t border-l border-primary-100 transform rotate-45" />
+                                <div className="flex items-center gap-2 mb-1.5 relative z-10">
+                                  <div className="w-4 h-4 bg-primary-100 rounded-full flex items-center justify-center shrink-0"><BadgeCheck className="w-2.5 h-2.5 text-primary-600" /></div>
+                                  <span className="text-xs font-bold text-primary-900">{t('product.agent_response')}</span>
+                                </div>
+                                <p className="text-xs text-primary-800 leading-relaxed relative z-10">{review.agent_reply}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )) : <p className="text-sm text-gray-500 col-span-full">{t('product.no_reviews')}</p>}
+                  </div>
                 </div>
               </div>
 
@@ -885,90 +1105,231 @@ const ProductDetail: React.FC = () => {
               <div className="lg:col-span-1">
                 <div className="sticky top-24 space-y-4">
                   <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xl">
+                    {/* Price */}
                     <div className="mb-5 pb-4 border-b border-gray-100">
-                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('explore.from','Starting from')}</p>
-                      <p className="text-3xl font-extrabold text-gray-900">{product.currency} {Number(product.price).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-400 ml-1">/{isTourProduct ? 'orang' : 'malam'}</span></p>
-                      <div className="flex items-center gap-1.5 mt-1"><span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded"><Star className="w-3 h-3 inline mr-0.5" />{avgRatingStr}</span><span className="text-xs text-gray-500">{reviewCount} ulasan</span></div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('explore.from')}</p>
+                      <p className="text-3xl font-extrabold text-gray-900">
+                        {product.currency} {Number(product.price).toLocaleString('id-ID')}
+                        <span className="text-sm font-medium text-gray-400 ml-1">/{isTourProduct ? 'person' : 'night'}</span>
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded"><Star className="w-3 h-3 inline mr-0.5" />{avgRatingStr}</span>
+                        <span className="text-xs text-gray-500">{reviewCount} {t('reviews_section.reviews_label')}</span>
+                      </div>
                     </div>
+
                     <ProductVoucherBanner vouchers={productVouchers} />
-                    {isTourProduct ? (<>
-                      {tourDetails?.tripType === 'Group Trip' && getGroupTiers().length > 0 && (
-                        <div className="mb-4">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Pilih Ukuran Group <span className="text-red-500">*</span></label>
-                          <div className="space-y-2">
-                            {getGroupTiers().map((tier: any, idx: number) => {
-                              const tierPrice = Math.round(Number(product.price) * (1 - tier.discountPct / 100));
-                              const isSelected = selectedTierIdx === idx;
-                              return (
-                                <button key={idx} type="button" onClick={() => { setSelectedTierIdx(idx); setTourPax(tier.minPax); }}
-                                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-                                  <div className="text-left">
-                                    <p className={`text-sm font-bold ${isSelected ? 'text-primary-700' : 'text-gray-800'}`}>{tier.label}</p>
-                                    <p className="text-xs text-gray-400 mt-0.5">{tier.minPax}–{tier.maxPax === 99 ? '∞' : tier.maxPax} peserta</p>
-                                  </div>
-                                  <div className="text-right shrink-0 ml-3">
-                                    <p className={`text-sm font-extrabold ${isSelected ? 'text-primary-600' : 'text-gray-900'}`}>{product.currency} {tierPrice.toLocaleString('id-ID')}</p>
-                                    <p className="text-[10px] text-gray-400">/orang</p>
-                                    {tier.discountPct > 0 && (<span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">-{tier.discountPct}%</span>)}
-                                  </div>
-                                  {isSelected && (<div className="ml-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shrink-0"><Check className="w-3 h-3 text-white" /></div>)}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      <div className="mb-4"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.select_date','Date')} <span className="text-red-500">*</span></label><div className="relative"><CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" /><DatePicker selected={parseDateStr(tourDate)} onChange={(date: Date | null) => { setTourDate(toDateStr(date)); setFieldErrors(p => ({ ...p, tourDate: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Pilih Tanggal" wrapperClassName="w-full" className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.tourDate ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`} /></div><FieldError name="tourDate" /></div>
-                      <div className="mb-4">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.participants','Participants')} <span className="text-red-500">*</span></label>
-                        <div className={`flex items-center gap-3 border rounded-xl p-2 bg-gray-50 mb-2 ${fieldErrors.tourPax ? 'border-red-400' : 'border-gray-200'}`}>
-                          <span className="text-xs text-gray-500 w-16 shrink-0">🧑 Dewasa</span>
-                          <button onClick={() => { const _tt = (product?.details as any)?.tripType || 'Open Trip'; const tier = getGroupTiers()[selectedTierIdx]; const _min = tier ? tier.minPax : (_tt === 'Private Trip' ? 1 : _tt === 'Group Trip' ? 6 : 2); setTourPax(p => Math.max(_min, p - 1)); }} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button>
-                          <span className="flex-1 text-center font-extrabold text-gray-900">{tourPax}</span>
-                          <button onClick={() => { const tier = getGroupTiers()[selectedTierIdx]; if (tier && tier.maxPax !== 99 && tourPax >= tier.maxPax) return; setTourPax(p => p + 1); }} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button>
-                        </div>
-                        <FieldError name="tourPax" />
-                        {getChildPricing()?.enabled && (
-                          <div className="space-y-2 mt-2">
-                            {[
-                              { key: 'infant', label: '🍼 Bayi', desc: '0–1 tahun', pax: infantPax, setter: setInfantPax, priceType: 'infant' as const },
-                              { key: 'child', label: '👦 Anak', desc: '2–11 tahun', pax: childPax, setter: setChildPax, priceType: 'child' as const },
-                              { key: 'teen', label: '🧑 Remaja', desc: '12–17 tahun', pax: teenPax, setter: setTeenPax, priceType: 'teen' as const },
-                            ].map(cat => {
-                              const price = getChildPrice(Number(product.price), cat.priceType);
-                              const discountPct = getChildPricing()?.[cat.priceType] ?? 0;
-                              return (
-                                <div key={cat.key} className="flex items-center gap-3 border border-amber-100 rounded-xl p-2 bg-amber-50">
-                                  <div className="flex-1 min-w-0"><span className="text-xs font-bold text-gray-700">{cat.label}</span><span className="text-[10px] text-gray-400 ml-1">{cat.desc}</span><div className="text-[10px] text-amber-600 font-semibold">{discountPct === 100 ? 'GRATIS' : `${product.currency} ${price.toLocaleString('id-ID')}/orang`}</div></div>
-                                  <button onClick={() => cat.setter(p => Math.max(0, p - 1))} className="w-8 h-8 rounded-lg bg-white border border-amber-200 flex items-center justify-center hover:border-amber-400 transition-all"><Minus className="w-3.5 h-3.5" /></button>
-                                  <span className="w-6 text-center font-extrabold text-gray-900 text-sm">{cat.pax}</span>
-                                  <button onClick={() => cat.setter(p => p + 1)} className="w-8 h-8 rounded-lg bg-white border border-amber-200 flex items-center justify-center hover:border-amber-400 transition-all"><Plus className="w-3.5 h-3.5" /></button>
-                                </div>
-                              );
-                            })}
+
+                    {/* TOUR Booking Fields */}
+                    {isTourProduct ? (
+                      <>
+                        {/* Group Tier Selector */}
+                        {tourDetails?.tripType === 'Group Trip' && getGroupTiers().length > 0 && (
+                          <div className="mb-4">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+                              {t('tour.select_group_size')} <span className="text-red-500">*</span>
+                            </label>
+                            <div className="space-y-2">
+                              {getGroupTiers().map((tier: any, idx: number) => {
+                                const tierPrice = Math.round(Number(product.price) * (1 - tier.discountPct / 100));
+                                const isSelected = selectedTierIdx === idx;
+                                return (
+                                  <button key={idx} type="button" onClick={() => { setSelectedTierIdx(idx); setTourPax(tier.minPax); }}
+                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                                    <div className="text-left">
+                                      <p className={`text-sm font-bold ${isSelected ? 'text-primary-700' : 'text-gray-800'}`}>{tier.label}</p>
+                                      <p className="text-xs text-gray-400 mt-0.5">{tier.minPax}–{tier.maxPax === 99 ? '∞' : tier.maxPax} {t('tour.participants_label')}</p>
+                                    </div>
+                                    <div className="text-right shrink-0 ml-3">
+                                      <p className={`text-sm font-extrabold ${isSelected ? 'text-primary-600' : 'text-gray-900'}`}>{product.currency} {tierPrice.toLocaleString('id-ID')}</p>
+                                      <p className="text-[10px] text-gray-400">{t('tour.per_person')}</p>
+                                      {tier.discountPct > 0 && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">-{tier.discountPct}%</span>}
+                                    </div>
+                                    {isSelected && <div className="ml-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center shrink-0"><Check className="w-3 h-3 text-white" /></div>}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
-                      </div>
-                    </>) : (<>
-                      <div className="mb-4"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.stay_dates','Stay Dates')} <span className="text-red-500">*</span></label><div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.checkIn || fieldErrors.checkOut ? 'border-red-400' : 'border-gray-200'}`}><div className="p-3 bg-gray-50 border-r border-gray-200"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Check-in</label><DatePicker selected={parseDateStr(checkInDate)} onChange={(date: Date | null) => { const str = toDateStr(date); setCheckInDate(str); if (checkOutDate && str >= checkOutDate) setCheckOutDate(''); setFieldErrors(p => ({ ...p, checkIn: '', checkOut: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Check-in" wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div><div className="p-3 bg-gray-50"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Check-out</label><DatePicker selected={parseDateStr(checkOutDate)} onChange={(date: Date | null) => { setCheckOutDate(toDateStr(date)); setFieldErrors(p => ({ ...p, checkOut: '' })); }} minDate={parseDateStr(checkInDate) || new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Check-out" wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div></div>{checkInDate && checkOutDate && nights > 0 && <p className="text-xs text-primary-600 font-semibold mt-1.5 pl-1">{nights} malam</p>}<FieldError name="checkIn" /><FieldError name="checkOut" /></div>
-                      <div className="mb-5"><label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('common.guests','Guests')} <span className="text-red-500">*</span></label><div className="flex items-center gap-3 border border-gray-200 rounded-xl p-2 bg-gray-50"><button onClick={() => setStayGuests(g => Math.max(1, g - 1))} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button><span className="flex-1 text-center font-extrabold text-gray-900">{stayGuests} tamu</span><button onClick={() => setStayGuests(g => g + 1)} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button></div></div>
-                    </>)}
+
+                        {/* Tour Date */}
+                        <div className="mb-4">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                            {t('product.select_date')} <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                            <DatePicker
+                              selected={parseDateStr(tourDate)}
+                              onChange={(date: Date | null) => { setTourDate(toDateStr(date)); setFieldErrors(p => ({ ...p, tourDate: '' })); }}
+                              minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd"
+                              placeholderText={t('product.select_date')} wrapperClassName="w-full"
+                              className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all bg-gray-50 ${fieldErrors.tourDate ? 'border-red-400 focus:ring-red-500/20' : 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20'}`}
+                            />
+                          </div>
+                          <FieldError name="tourDate" />
+                        </div>
+
+                        {/* Participants */}
+                        <div className="mb-4">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                            {t('product.participants')} <span className="text-red-500">*</span>
+                          </label>
+                          <div className={`flex items-center gap-3 border rounded-xl p-2 bg-gray-50 mb-2 ${fieldErrors.tourPax ? 'border-red-400' : 'border-gray-200'}`}>
+                            <span className="text-xs text-gray-500 w-16 shrink-0">🧑 {t('tour.adult')}</span>
+                            <button onClick={() => {
+                              const _tt = (product?.details as any)?.tripType || 'Open Trip';
+                              const tier = getGroupTiers()[selectedTierIdx];
+                              const _min = tier ? tier.minPax : (_tt === 'Private Trip' ? 1 : _tt === 'Group Trip' ? 6 : 2);
+                              setTourPax(p => Math.max(_min, p - 1));
+                            }} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all">
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="flex-1 text-center font-extrabold text-gray-900">{tourPax}</span>
+                            <button onClick={() => {
+                              const tier = getGroupTiers()[selectedTierIdx];
+                              if (tier && tier.maxPax !== 99 && tourPax >= tier.maxPax) return;
+                              setTourPax(p => p + 1);
+                            }} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all">
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <FieldError name="tourPax" />
+
+                          {/* Child Pricing */}
+                          {getChildPricing()?.enabled && (
+                            <div className="space-y-2 mt-2">
+                              {[
+                                { key: 'infant', label: `🍼 ${t('tour.infant')}`, desc: t('tour.infant_age'), pax: infantPax, setter: setInfantPax, priceType: 'infant' as const },
+                                { key: 'child',  label: `👦 ${t('tour.child')}`,  desc: t('tour.child_age'),  pax: childPax,  setter: setChildPax,  priceType: 'child' as const },
+                                { key: 'teen',   label: `🧑 ${t('tour.teen')}`,   desc: t('tour.teen_age'),   pax: teenPax,   setter: setTeenPax,   priceType: 'teen' as const },
+                              ].map(cat => {
+                                const price = getChildPrice(Number(product.price), cat.priceType);
+                                const discountPct = getChildPricing()?.[cat.priceType] ?? 0;
+                                return (
+                                  <div key={cat.key} className="flex items-center gap-3 border border-amber-100 rounded-xl p-2 bg-amber-50">
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-xs font-bold text-gray-700">{cat.label}</span>
+                                      <span className="text-[10px] text-gray-400 ml-1">{cat.desc}</span>
+                                      <div className="text-[10px] text-amber-600 font-semibold">
+                                        {discountPct === 100 ? t('tour.free') : `${product.currency} ${price.toLocaleString('id-ID')}${t('tour.per_person')}`}
+                                      </div>
+                                    </div>
+                                    <button onClick={() => cat.setter(p => Math.max(0, p - 1))} className="w-8 h-8 rounded-lg bg-white border border-amber-200 flex items-center justify-center hover:border-amber-400 transition-all"><Minus className="w-3.5 h-3.5" /></button>
+                                    <span className="w-6 text-center font-extrabold text-gray-900 text-sm">{cat.pax}</span>
+                                    <button onClick={() => cat.setter(p => p + 1)} className="w-8 h-8 rounded-lg bg-white border border-amber-200 flex items-center justify-center hover:border-amber-400 transition-all"><Plus className="w-3.5 h-3.5" /></button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      // STAY Booking Fields
+                      <>
+                        <div className="mb-4">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                            {t('product.stay_dates')} <span className="text-red-500">*</span>
+                          </label>
+                          <div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.checkIn || fieldErrors.checkOut ? 'border-red-400' : 'border-gray-200'}`}>
+                            <div className="p-3 bg-gray-50 border-r border-gray-200">
+                              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">{t('stay.check_in_label')}</label>
+                              <DatePicker selected={parseDateStr(checkInDate)} onChange={(date: Date | null) => { const str = toDateStr(date); setCheckInDate(str); if (checkOutDate && str >= checkOutDate) setCheckOutDate(''); setFieldErrors(p => ({ ...p, checkIn: '', checkOut: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText={t('stay.check_in_label')} wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" />
+                            </div>
+                            <div className="p-3 bg-gray-50">
+                              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">{t('stay.check_out_label')}</label>
+                              <DatePicker selected={parseDateStr(checkOutDate)} onChange={(date: Date | null) => { setCheckOutDate(toDateStr(date)); setFieldErrors(p => ({ ...p, checkOut: '' })); }} minDate={parseDateStr(checkInDate) || new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText={t('stay.check_out_label')} wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" />
+                            </div>
+                          </div>
+                          {checkInDate && checkOutDate && nights > 0 && (
+                            <p className="text-xs text-primary-600 font-semibold mt-1.5 pl-1">{nights} {t('tour.nights')}</p>
+                          )}
+                          <FieldError name="checkIn" />
+                          <FieldError name="checkOut" />
+                        </div>
+                        <div className="mb-5">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                            {t('common.guests')} <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-2 bg-gray-50">
+                            <button onClick={() => setStayGuests(g => Math.max(1, g - 1))} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Minus className="w-3.5 h-3.5" /></button>
+                            <span className="flex-1 text-center font-extrabold text-gray-900">{stayGuests} {t('stay.guests_count')}</span>
+                            <button onClick={() => setStayGuests(g => g + 1)} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-primary-400 hover:text-primary-600 transition-all"><Plus className="w-3.5 h-3.5" /></button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Price Summary */}
                     <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2">
                       {isTourProduct ? (
                         <div className="space-y-1.5">
-                          <div className="flex justify-between text-sm text-gray-600"><span>{tourPax} dewasa × {product.currency} {getTierPrice(Number(product.price)).toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(getTierPrice(Number(product.price)) * tourPax).toLocaleString('id-ID')}</span></div>
-                          {getChildPricing()?.enabled && infantPax > 0 && (<div className="flex justify-between text-sm text-gray-600"><span>{infantPax} bayi × {getChildPricing().infant === 100 ? 'GRATIS' : `${product.currency} ${getChildPrice(Number(product.price),'infant').toLocaleString('id-ID')}`}</span><span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'infant') * infantPax).toLocaleString('id-ID')}</span></div>)}
-                          {getChildPricing()?.enabled && childPax > 0 && (<div className="flex justify-between text-sm text-gray-600"><span>{childPax} anak × {product.currency} {getChildPrice(Number(product.price),'child').toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'child') * childPax).toLocaleString('id-ID')}</span></div>)}
-                          {getChildPricing()?.enabled && teenPax > 0 && (<div className="flex justify-between text-sm text-gray-600"><span>{teenPax} remaja × {product.currency} {getChildPrice(Number(product.price),'teen').toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'teen') * teenPax).toLocaleString('id-ID')}</span></div>)}
+                          <div className="flex justify-between text-sm text-gray-600">
+                            <span>{tourPax} {t('price_summary.adult_pax')} × {product.currency} {getTierPrice(Number(product.price)).toLocaleString('id-ID')}</span>
+                            <span className="font-semibold">{product.currency} {(getTierPrice(Number(product.price)) * tourPax).toLocaleString('id-ID')}</span>
+                          </div>
+                          {getChildPricing()?.enabled && infantPax > 0 && (
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{infantPax} {t('tour.infant')} × {getChildPricing().infant === 100 ? t('tour.free') : `${product.currency} ${getChildPrice(Number(product.price),'infant').toLocaleString('id-ID')}`}</span>
+                              <span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'infant') * infantPax).toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
+                          {getChildPricing()?.enabled && childPax > 0 && (
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{childPax} {t('tour.child')} × {product.currency} {getChildPrice(Number(product.price),'child').toLocaleString('id-ID')}</span>
+                              <span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'child') * childPax).toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
+                          {getChildPricing()?.enabled && teenPax > 0 && (
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{teenPax} {t('tour.teen')} × {product.currency} {getChildPrice(Number(product.price),'teen').toLocaleString('id-ID')}</span>
+                              <span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'teen') * teenPax).toLocaleString('id-ID')}</span>
+                            </div>
+                          )}
                         </div>
-                      ) : (<div className="flex justify-between text-sm text-gray-600"><span>{nights > 0 ? `${nights} malam` : '— malam'} × {stayGuests} tamu × {product.currency} {Number(product.price).toLocaleString('id-ID')}</span><span className="font-semibold">{nights > 0 ? `${product.currency} ${(Number(product.price) * nights * stayGuests).toLocaleString('id-ID')}` : '—'}</span></div>)}
-                      <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900"><span>{t('checkout.total','Total')}</span><span className="text-primary-600">{isTourProduct ? `${product.currency} ${calcTourTotal(Number(product.price)).toLocaleString('id-ID')}` : nights > 0 ? `${product.currency} ${tourStayTotal.toLocaleString('id-ID')}` : '—'}</span></div>
+                      ) : (
+                        <div className="flex justify-between text-sm text-gray-600">
+                          <span>{nights > 0 ? `${nights} ${t('tour.nights')}` : `— ${t('tour.nights')}`} × {stayGuests} {t('stay.guests_count')} × {product.currency} {Number(product.price).toLocaleString('id-ID')}</span>
+                          <span className="font-semibold">{nights > 0 ? `${product.currency} ${(Number(product.price) * nights * stayGuests).toLocaleString('id-ID')}` : '—'}</span>
+                        </div>
+                      )}
+                      <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900">
+                        <span>{t('checkout.total')}</span>
+                        <span className="text-primary-600">
+                          {isTourProduct
+                            ? `${product.currency} ${calcTourTotal(Number(product.price)).toLocaleString('id-ID')}`
+                            : nights > 0 ? `${product.currency} ${tourStayTotal.toLocaleString('id-ID')}` : '—'}
+                        </span>
+                      </div>
                     </div>
-                    <button onClick={handleAddToCart} disabled={isInCart(product.id)} className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${isInCart(product.id) ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30'}`}>{isInCart(product.id) ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t('product.added_to_cart','Added to Cart')}</span> : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> Pesan Sekarang</span>}</button>
-                    <button onClick={() => handleReserveNow('tour_stay')} className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3">{t('product.reserve_now','Reserve Now')}</button>
-                    <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400"><span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" /> Aman</span><span className="flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5 text-blue-500" /> Terverifikasi</span><span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-amber-500" /> 24/7</span></div>
+
+                    {/* CTA Buttons */}
+                    <button onClick={handleAddToCart} disabled={isInCart(product.id)}
+                      className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${isInCart(product.id) ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30'}`}>
+                      {isInCart(product.id)
+                        ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t('product.added_to_cart')}</span>
+                        : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> {t('product.reserve_now')}</span>}
+                    </button>
+                    <button onClick={() => handleReserveNow('tour_stay')} className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3">
+                      {t('product.reserve_now')}
+                    </button>
+                    <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
+                      <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" /> {t('badge.safe')}</span>
+                      <span className="flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5 text-blue-500" /> {t('badge.verified')}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-amber-500" /> {t('badge.support_24')}</span>
+                    </div>
                   </div>
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3"><div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0"><Phone className="w-5 h-5 text-primary-600" /></div><div><p className="text-xs text-gray-500">{t('product.need_help','Need help?')}</p><p className="text-sm font-bold text-gray-800">{t('product.contact_cs','Contact Customer Service')}</p></div></div>
+
+                  {/* Contact CS */}
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0"><Phone className="w-5 h-5 text-primary-600" /></div>
+                    <div>
+                      <p className="text-xs text-gray-500">{t('product.need_help')}</p>
+                      <p className="text-sm font-bold text-gray-800">{t('product.contact_cs')}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -980,11 +1341,21 @@ const ProductDetail: React.FC = () => {
           <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsGalleryOpen(false)}>
             <button onClick={() => setIsGalleryOpen(false)} className="absolute top-6 right-6 text-white/70 hover:text-white p-2 bg-black/50 hover:bg-black/80 rounded-full transition-all"><X className="w-6 h-6" /></button>
             <div className="absolute top-6 left-1/2 -translate-x-1/2 text-white/90 font-medium text-sm bg-black/50 px-4 py-1.5 rounded-full backdrop-blur-md">{currentImageIndex + 1} / {allImages.length}</div>
-            {allImages.length > 1 && (<button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(p => (p === 0 ? allImages.length - 1 : p - 1)); }} className="absolute left-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 bg-black/50 hover:bg-black/80 rounded-full transition-all"><ChevronLeft className="w-6 h-6" /></button>)}
-            <div className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center -mt-10" onClick={(e) => e.stopPropagation()}><img src={allImages[currentImageIndex]} className="max-h-[75vh] max-w-full object-contain shadow-2xl rounded-lg" alt={`Gallery ${currentImageIndex + 1}`} /></div>
-            {allImages.length > 1 && (<button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(p => (p === allImages.length - 1 ? 0 : p + 1)); }} className="absolute right-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 bg-black/50 hover:bg-black/80 rounded-full transition-all"><ChevronRight className="w-6 h-6" /></button>)}
+            {allImages.length > 1 && (
+              <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(p => (p === 0 ? allImages.length - 1 : p - 1)); }} className="absolute left-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 bg-black/50 hover:bg-black/80 rounded-full transition-all"><ChevronLeft className="w-6 h-6" /></button>
+            )}
+            <div className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center -mt-10" onClick={(e) => e.stopPropagation()}>
+              <img src={allImages[currentImageIndex]} className="max-h-[75vh] max-w-full object-contain shadow-2xl rounded-lg" alt={`Gallery ${currentImageIndex + 1}`} />
+            </div>
+            {allImages.length > 1 && (
+              <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(p => (p === allImages.length - 1 ? 0 : p + 1)); }} className="absolute right-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 bg-black/50 hover:bg-black/80 rounded-full transition-all"><ChevronRight className="w-6 h-6" /></button>
+            )}
             <div className="absolute bottom-6 w-full px-8 flex justify-center gap-2 overflow-x-auto pb-4" onClick={(e) => e.stopPropagation()}>
-              {allImages.map((img, idx) => (<button key={idx} onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }} className={`shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all ${currentImageIndex === idx ? 'border-primary-500 opacity-100 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}><img src={img} className="w-full h-full object-cover" alt={`Thumb ${idx + 1}`} /></button>))}
+              {allImages.map((img, idx) => (
+                <button key={idx} onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }} className={`shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all ${currentImageIndex === idx ? 'border-primary-500 opacity-100 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}>
+                  <img src={img} className="w-full h-full object-cover" alt={`Thumb ${idx + 1}`} />
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -1020,88 +1391,223 @@ const ProductDetail: React.FC = () => {
         image={(product as any).seo_og_image || product.image_url || product.image || FALLBACK_IMAGE}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-6 pt-4">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 transition-colors font-medium"><ChevronLeft className="w-4 h-4" /> {t('common.back','Back')}</button>
-          <span>/</span><Link to={langPath('/explore?category_id=3')} className="hover:text-primary-600 transition-colors">Car Rental</Link>
-          <span>/</span><span className="text-gray-900 font-semibold truncate max-w-[200px]">{product.name}</span>
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-primary-600 transition-colors font-medium">
+            <ChevronLeft className="w-4 h-4" /> {t('common.back')}
+          </button>
+          <span>/</span>
+          <Link to={langPath('/explore?category_id=3')} className="hover:text-primary-600 transition-colors">Car Rental</Link>
+          <span>/</span>
+          <span className="text-gray-900 font-semibold truncate max-w-[200px]">{product.name}</span>
         </div>
+
+        {/* Car Title + Meta */}
         <div className="flex items-start justify-between mb-6 gap-4">
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-2">
-              <div className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 text-xs font-bold px-3 py-1 rounded-full"><Car className="w-3.5 h-3.5" /> Booking Details</div>
-              {productVouchers.filter((v: any) => v.is_active).length > 0 && (<div className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-600 border border-orange-200 text-xs font-bold px-3 py-1 rounded-full"><Tag className="w-3.5 h-3.5" />{productVouchers.filter((v: any) => v.is_active).length} Promo</div>)}
+              <div className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 text-xs font-bold px-3 py-1 rounded-full">
+                <Car className="w-3.5 h-3.5" /> {t('car.booking_details')}
+              </div>
+              {productVouchers.filter((v: any) => v.is_active).length > 0 && (
+                <div className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-600 border border-orange-200 text-xs font-bold px-3 py-1 rounded-full">
+                  <Tag className="w-3.5 h-3.5" />{productVouchers.filter((v: any) => v.is_active).length} Promo
+                </div>
+              )}
             </div>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">{product.name}</h1>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
-              <div className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /><span className="font-bold text-gray-800 text-sm">{avgRatingStr}</span><span className="text-gray-400 text-sm">({reviewCount} reviews)</span></div>
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                <span className="font-bold text-gray-800 text-sm">{avgRatingStr}</span>
+                <span className="text-gray-400 text-sm">({reviewCount} {t('reviews_section.reviews_label')})</span>
+              </div>
               <span className="text-gray-300">·</span>
               <p className="text-sm text-gray-500 flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-primary-500" />{formatLocation(product.location || '')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {isLoggedIn && (<button onClick={() => toggleWishlist(product)} className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 active:scale-90 ${isSaved ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}><Heart className={`w-5 h-5 ${isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} /></button>)}
-            <ShareButtons
-              productName={product.name}
-              productImage={getImageUrl(product.image_url || product.image)}
-              productUrl={shareUrl}
-            />
+            {isLoggedIn && (
+              <button onClick={() => toggleWishlist(product)} className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 active:scale-90 ${isSaved ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}>
+                <Heart className={`w-5 h-5 ${isSaved ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} />
+              </button>
+            )}
+            <ShareButtons productName={product.name} productImage={getImageUrl(product.image_url || product.image)} productUrl={shareUrl} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* LEFT */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-3xl overflow-hidden border border-gray-100"><img src={getImageUrl(product.image_url || product.image)} alt={product.name} className="w-full h-auto object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} /></div>
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Car className="w-5 h-5 text-primary-600" />{t('product.car_details','Car Details')}</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-4">{[{icon:Users,label:t('product.passengers','Passengers'),value:`${carDetails?.seats||4} Orang`},{icon:Gauge,label:t('product.transmission','Transmission'),value:carDetails?.transmission==='Automatic'?'Matic':'Manual'},{icon:Fuel,label:t('product.fuel','Fuel'),value:carDetails?.fuelPolicy||'Gas'},{icon:Briefcase,label:t('product.luggage','Luggage'),value:`${carDetails?.luggage||2} Koper`}].map((item,i) => (<div key={i} className="bg-gray-50 rounded-2xl p-4 text-center"><item.icon className="w-6 h-6 text-primary-600 mx-auto mb-2" /><p className="text-xs text-gray-500 mb-1">{item.label}</p><p className="font-bold text-gray-900 text-sm">{item.value}</p></div>))}</div></div>
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100"><h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Package className="w-5 h-5 text-primary-600" />{t('product.facility_include','Facility & Include')}</h2><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{[{icon:Navigation,label:'Free Pick Up'},{icon:Shield,label:'Basic Insurance'},{icon:Headphones,label:'24hr Support'}].map((item,i) => (<div key={i} className="flex items-center gap-3 bg-green-50 rounded-2xl px-4 py-3"><CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /><div className="flex items-center gap-2"><item.icon className="w-4 h-4 text-green-600 shrink-0" /><span className="text-sm font-semibold text-gray-800">{item.label}</span></div></div>))}</div></div>
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"><button onClick={() => setTermsOpen(!termsOpen)} className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"><h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Info className="w-5 h-5 text-primary-600" />{t('product.terms','Terms & Conditions')}</h2>{termsOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}</button>{termsOpen && (<div className="px-6 pb-6 space-y-2 border-t border-gray-100">{['Self-Drive Policy','Cancellation Policy','Checklist dan Sisa Arka'].map((term,i) => (<div key={i} className="flex items-start gap-2 py-2"><div className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 shrink-0" /><span className="text-sm text-gray-700 font-medium">{term}</span></div>))}</div>)}</div>
+            {/* Car Image */}
+            <div className="bg-white rounded-3xl overflow-hidden border border-gray-100">
+              <img src={getImageUrl(product.image_url || product.image)} alt={product.name} className="w-full h-auto object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
+            </div>
+
+            {/* Car Details */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Car className="w-5 h-5 text-primary-600" />{t('product.car_details')}
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { icon: Users,    label: t('product.passengers'),  value: `${carDetails?.seats || 4} ${t('common.guests')}` },
+                  { icon: Gauge,    label: t('product.transmission'), value: carDetails?.transmission === 'Automatic' ? 'Automatic' : 'Manual' },
+                  { icon: Fuel,     label: t('product.fuel'),         value: carDetails?.fuelPolicy || 'Gas' },
+                  { icon: Briefcase,label: t('product.luggage'),      value: `${carDetails?.luggage || 2} Bags` },
+                ].map((item, i) => (
+                  <div key={i} className="bg-gray-50 rounded-2xl p-4 text-center">
+                    <item.icon className="w-6 h-6 text-primary-600 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500 mb-1">{item.label}</p>
+                    <p className="font-bold text-gray-900 text-sm">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Facilities */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Package className="w-5 h-5 text-primary-600" />{t('product.facility_include')}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { icon: Navigation,  label: t('facilities.free_pickup') },
+                  { icon: Shield,      label: t('facilities.basic_insurance') },
+                  { icon: Headphones,  label: t('facilities.support_24') },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-green-50 rounded-2xl px-4 py-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                    <div className="flex items-center gap-2">
+                      <item.icon className="w-4 h-4 text-green-600 shrink-0" />
+                      <span className="text-sm font-semibold text-gray-800">{item.label}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Terms */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <button onClick={() => setTermsOpen(!termsOpen)} className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Info className="w-5 h-5 text-primary-600" />{t('product.terms')}</h2>
+                {termsOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+              {termsOpen && (
+                <div className="px-6 pb-6 space-y-2 border-t border-gray-100">
+                  {[t('terms_items.self_drive'), t('terms_items.cancellation'), t('terms_items.checklist')].map((term, i) => (
+                    <div key={i} className="flex items-start gap-2 py-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-2 shrink-0" />
+                      <span className="text-sm text-gray-700 font-medium">{term}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Pickup Location */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><MapPinned className="w-5 h-5 text-primary-600" />{t('product.pickup_location','Pickup Location')}</h2>
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <MapPinned className="w-5 h-5 text-primary-600" />{t('product.pickup_location')}
+              </h2>
               <div className="flex gap-3 mb-4">
-                {[{value:'kantor',label:t('product.rental_office','Rental Office')},{value:'lokasi_lain',label:t('product.other_location','Other Location')}].map(opt => (
-                  <button key={opt.value} onClick={() => setPickupType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${pickupType===opt.value?'border-primary-500 bg-primary-50 text-primary-700':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                    {pickupType===opt.value && <Check className="w-3.5 h-3.5 inline mr-1" />}{opt.label}
+                {[{ value: 'kantor', label: t('product.rental_office') }, { value: 'lokasi_lain', label: t('product.other_location') }].map(opt => (
+                  <button key={opt.value} onClick={() => setPickupType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${pickupType === opt.value ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    {pickupType === opt.value && <Check className="w-3.5 h-3.5 inline mr-1" />}{opt.label}
                   </button>
                 ))}
               </div>
               {pickupType === 'lokasi_lain' ? (
                 <div>
-                  <LocationAutocomplete placeholder="Ketik lokasi penjemputan (misal: bandara)..." value={pickupAddress} onChange={(val) => { setPickupAddress(val); setFieldErrors(p => ({ ...p, pickupAddress: '' })); }} error={!!fieldErrors.pickupAddress} />
+                  <LocationAutocomplete
+                    placeholder={t('product.pickup_location') + '…'}
+                    value={pickupAddress}
+                    onChange={(val) => { setPickupAddress(val); setFieldErrors(p => ({ ...p, pickupAddress: '' })); }}
+                    error={!!fieldErrors.pickupAddress}
+                  />
                   <FieldError name="pickupAddress" />
                   <DeliveryFeeBadge info={pickupDelivery} type="pickup" />
                 </div>
               ) : (
-                <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3"><MapPin className="w-4 h-4 text-gray-400" /><span className="text-sm text-gray-500">{formatLocation(product.location || 'Lokasi Kantor Rental')}</span></div>
+                <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-500">{formatLocation(product.location || t('product.rental_office'))}</span>
+                </div>
               )}
             </div>
 
             {/* Dropoff Location */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Navigation className="w-5 h-5 text-primary-600" />{t('product.dropoff_location','Dropoff Location')}</h2>
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Navigation className="w-5 h-5 text-primary-600" />{t('product.dropoff_location')}
+              </h2>
               <div className="flex gap-3 mb-4">
-                {[{value:'kantor',label:t('product.rental_office','Rental Office')},{value:'lokasi_lain',label:t('product.other_location','Other Location')}].map(opt => (
-                  <button key={opt.value} onClick={() => setDropoffType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${dropoffType===opt.value?'border-primary-500 bg-primary-50 text-primary-700':'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                    {dropoffType===opt.value && <Check className="w-3.5 h-3.5 inline mr-1" />}{opt.label}
+                {[{ value: 'kantor', label: t('product.rental_office') }, { value: 'lokasi_lain', label: t('product.other_location') }].map(opt => (
+                  <button key={opt.value} onClick={() => setDropoffType(opt.value as any)} className={`flex-1 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all ${dropoffType === opt.value ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                    {dropoffType === opt.value && <Check className="w-3.5 h-3.5 inline mr-1" />}{opt.label}
                   </button>
                 ))}
               </div>
               {dropoffType === 'lokasi_lain' ? (
                 <div>
-                  <LocationAutocomplete placeholder="Ketik lokasi pengembalian (misal: hotel)..." value={dropoffAddress} onChange={(val) => { setDropoffAddress(val); setFieldErrors(p => ({ ...p, dropoffAddress: '' })); }} error={!!fieldErrors.dropoffAddress} />
+                  <LocationAutocomplete
+                    placeholder={t('product.dropoff_location') + '…'}
+                    value={dropoffAddress}
+                    onChange={(val) => { setDropoffAddress(val); setFieldErrors(p => ({ ...p, dropoffAddress: '' })); }}
+                    error={!!fieldErrors.dropoffAddress}
+                  />
                   <FieldError name="dropoffAddress" />
                   <DeliveryFeeBadge info={dropoffDelivery} type="dropoff" />
                 </div>
               ) : (
-                <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3"><MapPin className="w-4 h-4 text-gray-400" /><span className="text-sm text-gray-500">{formatLocation(product.location || 'Lokasi Kantor Rental')}</span></div>
+                <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-4 py-3">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-500">{formatLocation(product.location || t('product.rental_office'))}</span>
+                </div>
               )}
             </div>
 
+            {/* Availability Calendar */}
             <AvailabilityCalendar blockedDates={product.blocked_dates as unknown as string[] || []} />
 
+            {/* Reviews */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400 fill-amber-400" />{t('product.reviews','Reviews')}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">{reviews.length > 0 ? reviews.map(review => (<div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100"><div className="flex items-center gap-3 mb-3"><UserAvatar user={{ name: review.customer_name, avatar: review.customer_avatar }} className="w-10 h-10 border-2 border-primary-100" /><div><p className="font-bold text-gray-900 text-sm">{review.customer_name || 'Customer'}</p><p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString('id-ID')}</p></div></div><div className="flex gap-0.5 mb-2">{[...Array(5)].map((_,i) => <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`} />)}</div><p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{review.comment || 'No comment provided.'}</p>{review.agent_reply && (<div className="mt-3 border-t border-gray-100 pt-3"><button onClick={() => toggleReply(review.id)} className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">{expandedReplies[review.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}{expandedReplies[review.id] ? t('product.close_reply','Close Reply') : t('product.view_reply','View Reply')}</button>{expandedReplies[review.id] && (<div className="mt-2 bg-primary-50 rounded-xl p-3 border border-primary-100 relative"><div className="absolute -top-1.5 left-4 w-3 h-3 bg-primary-50 border-t border-l border-primary-100 transform rotate-45" /><div className="flex items-center gap-2 mb-1.5 relative z-10"><div className="w-4 h-4 bg-primary-100 rounded-full flex items-center justify-center shrink-0"><BadgeCheck className="w-2.5 h-2.5 text-primary-600" /></div><span className="text-xs font-bold text-primary-900">{t('product.agent_response','Agent Response')}</span></div><p className="text-xs text-primary-800 leading-relaxed relative z-10">{review.agent_reply}</p></div>)}</div>)}</div>)) : <p className="text-sm text-gray-500 col-span-full">{t('product.no_reviews','No reviews yet for this car.')}</p>}</div>
+              <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-400 fill-amber-400" />{t('product.reviews')}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {reviews.length > 0 ? reviews.map(review => (
+                  <div key={review.id} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <div className="flex items-center gap-3 mb-3">
+                      <UserAvatar user={{ name: review.customer_name, avatar: review.customer_avatar }} className="w-10 h-10 border-2 border-primary-100" />
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{review.customer_name || 'Customer'}</p>
+                        <p className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-0.5 mb-2">{[...Array(5)].map((_, i) => <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`} />)}</div>
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{review.comment || t('reviews_section.no_comment')}</p>
+                    {review.agent_reply && (
+                      <div className="mt-3 border-t border-gray-100 pt-3">
+                        <button onClick={() => toggleReply(review.id)} className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                          {expandedReplies[review.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          {expandedReplies[review.id] ? t('product.close_reply') : t('product.view_reply')}
+                        </button>
+                        {expandedReplies[review.id] && (
+                          <div className="mt-2 bg-primary-50 rounded-xl p-3 border border-primary-100 relative">
+                            <div className="absolute -top-1.5 left-4 w-3 h-3 bg-primary-50 border-t border-l border-primary-100 transform rotate-45" />
+                            <div className="flex items-center gap-2 mb-1.5 relative z-10">
+                              <div className="w-4 h-4 bg-primary-100 rounded-full flex items-center justify-center shrink-0"><BadgeCheck className="w-2.5 h-2.5 text-primary-600" /></div>
+                              <span className="text-xs font-bold text-primary-900">{t('product.agent_response')}</span>
+                            </div>
+                            <p className="text-xs text-primary-800 leading-relaxed relative z-10">{review.agent_reply}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )) : <p className="text-sm text-gray-500 col-span-full">{t('product.no_reviews')}</p>}
+              </div>
             </div>
           </div>
 
@@ -1109,34 +1615,55 @@ const ProductDetail: React.FC = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-4">
               <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
+                {/* Price */}
                 <div className="mb-5 pb-4 border-b border-gray-100">
-                  <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">No. ID: {String(product.id).padStart(6, '0')}</p>
-                  <p className="text-3xl font-extrabold text-gray-900">{product.currency} {Number(product.price).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-400 ml-1">/hari</span></p>
-                  <div className="flex items-center gap-1 mt-1"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /><span className="text-sm font-bold text-gray-700">{avgRatingStr}</span><span className="text-xs text-gray-400">({reviewCount} reviews)</span></div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('car.rental_id')}: {String(product.id).padStart(6, '0')}</p>
+                  <p className="text-3xl font-extrabold text-gray-900">
+                    {product.currency} {Number(product.price).toLocaleString('id-ID')}
+                    <span className="text-sm font-medium text-gray-400 ml-1">{t('car.per_day')}</span>
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <span className="text-sm font-bold text-gray-700">{avgRatingStr}</span>
+                    <span className="text-xs text-gray-400">({reviewCount} {t('reviews_section.reviews_label')})</span>
+                  </div>
                 </div>
+
                 <ProductVoucherBanner vouchers={productVouchers} />
 
-                {/* Pickup Date */}
+                {/* Pickup Date/Time */}
                 <div className="mb-4">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.pickup_time','Pickup Time')} <span className="text-red-500">*</span></label>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                    {t('product.pickup_time')} <span className="text-red-500">*</span>
+                  </label>
                   <div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.carPickupDate ? 'border-red-400' : 'border-gray-200'}`}>
-                    <div className="p-3 bg-gray-50 border-r border-gray-200"><DatePicker selected={parseDateStr(carPickupDate)} onChange={(date: Date | null) => { setCarPickupDate(toDateStr(date)); setFieldErrors(p => ({ ...p, carPickupDate: '' })) }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Pilih Tanggal" wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div>
-                    <div className="p-3 bg-gray-50"><input type="time" value={carPickupTime} onChange={(e) => setCarPickupTime(e.target.value)} className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div>
+                    <div className="p-3 bg-gray-50 border-r border-gray-200">
+                      <DatePicker selected={parseDateStr(carPickupDate)} onChange={(date: Date | null) => { setCarPickupDate(toDateStr(date)); setFieldErrors(p => ({ ...p, carPickupDate: '' })); }} minDate={new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText={t('product.select_date')} wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" />
+                    </div>
+                    <div className="p-3 bg-gray-50">
+                      <input type="time" value={carPickupTime} onChange={(e) => setCarPickupTime(e.target.value)} className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" />
+                    </div>
                   </div>
                   <FieldError name="carPickupDate" />
                 </div>
 
-                {/* Return Date */}
+                {/* Return Date/Time */}
                 <div className="mb-5">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">{t('product.return_time','Return Time')} <span className="text-red-500">*</span></label>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
+                    {t('product.return_time')} <span className="text-red-500">*</span>
+                  </label>
                   <div className={`grid grid-cols-2 gap-1 border rounded-xl overflow-hidden ${fieldErrors.carDropoffDate ? 'border-red-400' : 'border-gray-200'}`}>
-                    <div className="p-3 bg-gray-50 border-r border-gray-200"><DatePicker selected={parseDateStr(carDropoffDate)} onChange={(date: Date | null) => { setCarDropoffDate(toDateStr(date)); setFieldErrors(p => ({ ...p, carDropoffDate: '' })) }} minDate={parseDateStr(carPickupDate) || new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText="Pilih Tanggal" wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div>
-                    <div className="p-3 bg-gray-50"><input type="time" value={carDropoffTime} onChange={(e) => setCarDropoffTime(e.target.value)} className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" /></div>
+                    <div className="p-3 bg-gray-50 border-r border-gray-200">
+                      <DatePicker selected={parseDateStr(carDropoffDate)} onChange={(date: Date | null) => { setCarDropoffDate(toDateStr(date)); setFieldErrors(p => ({ ...p, carDropoffDate: '' })); }} minDate={parseDateStr(carPickupDate) || new Date()} excludeDates={excludedDates} dateFormat="yyyy-MM-dd" placeholderText={t('product.select_date')} wrapperClassName="w-full" className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" />
+                    </div>
+                    <div className="p-3 bg-gray-50">
+                      <input type="time" value={carDropoffTime} onChange={(e) => setCarDropoffTime(e.target.value)} className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none" />
+                    </div>
                   </div>
                   {rentalDays > 0 && (
                     <p className={`text-xs font-semibold mt-1.5 pl-1 ${rentalDays < 2 ? 'text-red-500' : 'text-primary-600'}`}>
-                      {t('product.duration_label', 'Duration')}: {rentalDays} {t('common.days', 'days')}
-                      {rentalDays < 2 && ' — Minimum sewa 2 hari'}
+                      {t('product.duration_label')}: {rentalDays} {t('common.days')}
+                      {rentalDays < 2 && ` — ${t('car.min_rental_days')}`}
                     </p>
                   )}
                   <FieldError name="carDropoffDate" />
@@ -1144,24 +1671,38 @@ const ProductDetail: React.FC = () => {
 
                 {/* Add-Ons */}
                 <div className="mb-5">
-                  <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5"><BadgeCheck className="w-4 h-4 text-primary-500" />{t('product.add_ons','Add-Ons')}</p>
+                  <p className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5">
+                    <BadgeCheck className="w-4 h-4 text-primary-500" />{t('product.add_ons')}
+                  </p>
                   <div className="space-y-2">
                     {[
-                      ...(carDetails?.driver ? [{ key: 'withDriver', label: t('product.with_driver','With Driver'), desc: `${formatRp(DRIVER_PRICE_PER_12H)} / 12 jam`, price: DRIVER_PRICE_PER_12H, icon: UserCog, warning: '*Belum termasuk BBM, tiket parkir, e-toll, dll.' }] : []),
-                      { key: 'premiumInsurance', label: t('product.premium_insurance','Premium Insurance'), desc: t('product.full_protection','Full protection'), price: 75_000, icon: Shield },
-                      { key: 'childSeat', label: t('product.child_seat','Child Seat'), desc: t('product.child_seat_desc','Safe seat for children'), price: 50_000, icon: Users },
+                      ...(carDetails?.driver ? [{
+                        key: 'withDriver',
+                        label: t('product.with_driver'),
+                        desc: `${formatRp(DRIVER_PRICE_PER_12H)} / 12 jam`,
+                        price: DRIVER_PRICE_PER_12H,
+                        icon: UserCog,
+                        warning: t('car.driver_warning'),
+                      }] : []),
+                      { key: 'premiumInsurance', label: t('product.premium_insurance'), desc: t('product.full_protection'), price: 75_000, icon: Shield },
+                      { key: 'childSeat',        label: t('product.child_seat'),        desc: t('product.child_seat_desc'),  price: 50_000, icon: Users },
                     ].map((addon) => {
                       const isChecked = addOns[addon.key as keyof typeof addOns];
                       const AddonIcon = addon.icon;
                       return (
-                        <button key={addon.key} onClick={() => setAddOns(prev => ({ ...prev, [addon.key]: !prev[addon.key as keyof typeof addOns] }))}
+                        <button key={addon.key}
+                          onClick={() => setAddOns(prev => ({ ...prev, [addon.key]: !prev[addon.key as keyof typeof addOns] }))}
                           className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 transition-all text-left ${isChecked ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-                          <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-all ${isChecked ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>{isChecked && <Check className="w-3 h-3 text-white" />}</div>
+                          <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-all ${isChecked ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
+                            {isChecked && <Check className="w-3 h-3 text-white" />}
+                          </div>
                           <AddonIcon className={`mt-0.5 w-4 h-4 shrink-0 ${isChecked ? 'text-green-600' : 'text-gray-400'}`} />
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-bold ${isChecked ? 'text-green-700' : 'text-gray-800'}`}>{addon.label}</p>
                             <p className="text-[11px] text-gray-400 leading-relaxed">{addon.desc}</p>
-                            {'warning' in addon && (addon as any).warning && (<p className="text-[10px] text-amber-500 font-semibold mt-1">{(addon as any).warning}</p>)}
+                            {'warning' in addon && (addon as any).warning && (
+                              <p className="text-[10px] text-amber-500 font-semibold mt-1">{(addon as any).warning}</p>
+                            )}
                           </div>
                           <p className="text-xs font-bold text-gray-500 shrink-0">+{product.currency} {addon.price.toLocaleString('id-ID')}</p>
                         </button>
@@ -1172,36 +1713,90 @@ const ProductDetail: React.FC = () => {
 
                 {/* Price Summary */}
                 <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-2">
-                  <div className="flex justify-between text-sm text-gray-600"><span>Sewa {rentalDays} hari × {product.currency} {basePrice.toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(basePrice * rentalDays).toLocaleString('id-ID')}</span></div>
-                  {addOns.withDriver && (<div className="flex justify-between text-sm text-gray-600"><span>Sopir × {rentalDays} hari</span><span className="font-semibold">+{product.currency} {(DRIVER_PRICE_PER_12H * rentalDays).toLocaleString('id-ID')}</span></div>)}
-                  {addOns.premiumInsurance && (<div className="flex justify-between text-sm text-gray-600"><span>Premium Insurance × {rentalDays} hari</span><span className="font-semibold">+{product.currency} {(75_000 * rentalDays).toLocaleString('id-ID')}</span></div>)}
-                  {addOns.childSeat && (<div className="flex justify-between text-sm text-gray-600"><span>Child Seat × {rentalDays} hari</span><span className="font-semibold">+{product.currency} {(50_000 * rentalDays).toLocaleString('id-ID')}</span></div>)}
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{t('price_summary.rental_label')} {rentalDays} {t('common.days')} × {product.currency} {basePrice.toLocaleString('id-ID')}</span>
+                    <span className="font-semibold">{product.currency} {(basePrice * rentalDays).toLocaleString('id-ID')}</span>
+                  </div>
+                  {addOns.withDriver && (
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>{t('price_summary.driver_label')} × {rentalDays} {t('common.days')}</span>
+                      <span className="font-semibold">+{product.currency} {(DRIVER_PRICE_PER_12H * rentalDays).toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+                  {addOns.premiumInsurance && (
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>{t('price_summary.insurance_label')} × {rentalDays} {t('common.days')}</span>
+                      <span className="font-semibold">+{product.currency} {(75_000 * rentalDays).toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+                  {addOns.childSeat && (
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>{t('price_summary.child_seat_label')} × {rentalDays} {t('common.days')}</span>
+                      <span className="font-semibold">+{product.currency} {(50_000 * rentalDays).toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
                   {pickupType === 'lokasi_lain' && (
                     <div className="flex justify-between text-sm text-gray-600">
-                      <span className="flex items-center gap-1"><Navigation className="w-3 h-3 text-primary-400 shrink-0" />{t('product.pickup_fee','Pickup Fee')}{pickupDelivery.loading && <Loader2 className="w-3 h-3 animate-spin ml-1" />}</span>
-                      <span className={`font-semibold ${needsManualPickup ? 'text-amber-500' : effectivePickupFee === 0 ? 'text-green-600' : ''}`}>{pickupDelivery.loading ? '…' : needsManualPickup ? 'Konfirmasi agen' : effectivePickupFee === 0 ? 'GRATIS' : `+${product.currency} ${effectivePickupFee.toLocaleString('id-ID')}`}</span>
+                      <span className="flex items-center gap-1">
+                        <Navigation className="w-3 h-3 text-primary-400 shrink-0" />{t('product.pickup_fee')}
+                        {pickupDelivery.loading && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                      </span>
+                      <span className={`font-semibold ${needsManualPickup ? 'text-amber-500' : effectivePickupFee === 0 ? 'text-green-600' : ''}`}>
+                        {pickupDelivery.loading ? '…' : needsManualPickup ? t('delivery.manual_confirm') : effectivePickupFee === 0 ? t('delivery.free') : `+${product.currency} ${effectivePickupFee.toLocaleString('id-ID')}`}
+                      </span>
                     </div>
                   )}
                   {dropoffType === 'lokasi_lain' && (
                     <div className="flex justify-between text-sm text-gray-600">
-                      <span className="flex items-center gap-1"><MapPinned className="w-3 h-3 text-primary-400 shrink-0" />{t('product.dropoff_fee','Dropoff Fee')}{dropoffDelivery.loading && <Loader2 className="w-3 h-3 animate-spin ml-1" />}</span>
-                      <span className={`font-semibold ${needsManualDropoff ? 'text-amber-500' : effectiveDropoffFee === 0 ? 'text-green-600' : ''}`}>{dropoffDelivery.loading ? '…' : needsManualDropoff ? 'Konfirmasi agen' : effectiveDropoffFee === 0 ? 'GRATIS' : `+${product.currency} ${effectiveDropoffFee.toLocaleString('id-ID')}`}</span>
+                      <span className="flex items-center gap-1">
+                        <MapPinned className="w-3 h-3 text-primary-400 shrink-0" />{t('product.dropoff_fee')}
+                        {dropoffDelivery.loading && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                      </span>
+                      <span className={`font-semibold ${needsManualDropoff ? 'text-amber-500' : effectiveDropoffFee === 0 ? 'text-green-600' : ''}`}>
+                        {dropoffDelivery.loading ? '…' : needsManualDropoff ? t('delivery.manual_confirm') : effectiveDropoffFee === 0 ? t('delivery.free') : `+${product.currency} ${effectiveDropoffFee.toLocaleString('id-ID')}`}
+                      </span>
                     </div>
                   )}
                   <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900">
-                    <span>{t('checkout.total','Total')}</span>
-                    <span className="text-primary-600">{(needsManualPickup || needsManualDropoff) ? <span className="text-amber-500 text-sm">+ biaya antar/jemput (konfirmasi)</span> : `${product.currency} ${totalCarPrice.toLocaleString('id-ID')}`}</span>
+                    <span>{t('checkout.total')}</span>
+                    <span className="text-primary-600">
+                      {(needsManualPickup || needsManualDropoff)
+                        ? <span className="text-amber-500 text-sm">{t('car.plus_agent_fee')}</span>
+                        : `${product.currency} ${totalCarPrice.toLocaleString('id-ID')}`}
+                    </span>
                   </div>
                   {(needsManualPickup || needsManualDropoff) && (
-                    <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 flex items-start gap-1.5"><AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />Biaya antar/jemput untuk lokasi &gt;60 km akan dikonfirmasi agen dalam 1×24 jam setelah booking.</p>
+                    <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 flex items-start gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />{t('delivery.outside_range_note')}
+                    </p>
                   )}
                 </div>
 
-                <button onClick={handleAddToCart} disabled={isInCart(product.id)} className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${isInCart(product.id) ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30 hover:shadow-primary-700/40'}`}>{isInCart(product.id) ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t('product.added_to_cart','Added to Cart')}</span> : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> Proceed to Booking</span>}</button>
-                <button onClick={() => handleReserveNow('car')} className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3">{t('product.reserve_now','Reserve Now')}</button>
-                <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400"><span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" /> Aman</span><span className="flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5 text-blue-500" /> Terverifikasi</span><span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-amber-500" /> 24/7 Support</span></div>
+                {/* CTA Buttons */}
+                <button onClick={handleAddToCart} disabled={isInCart(product.id)}
+                  className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${isInCart(product.id) ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30 hover:shadow-primary-700/40'}`}>
+                  {isInCart(product.id)
+                    ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t('product.added_to_cart')}</span>
+                    : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> {t('car.proceed_booking')}</span>}
+                </button>
+                <button onClick={() => handleReserveNow('car')} className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3">
+                  {t('product.reserve_now')}
+                </button>
+                <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
+                  <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" /> {t('badge.safe')}</span>
+                  <span className="flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5 text-blue-500" /> {t('badge.verified')}</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-amber-500" /> {t('car.support_24')}</span>
+                </div>
               </div>
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3"><div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0"><Phone className="w-5 h-5 text-primary-600" /></div><div><p className="text-xs text-gray-500">{t('product.need_help','Need help?')}</p><p className="text-sm font-bold text-gray-800">{t('product.contact_cs','Contact Customer Service')}</p></div></div>
+
+              {/* Contact CS */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0"><Phone className="w-5 h-5 text-primary-600" /></div>
+                <div>
+                  <p className="text-xs text-gray-500">{t('product.need_help')}</p>
+                  <p className="text-sm font-bold text-gray-800">{t('product.contact_cs')}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
