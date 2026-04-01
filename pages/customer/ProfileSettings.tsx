@@ -469,6 +469,28 @@ const ProfileSettings: React.FC = () => {
                     </button>
                   </div>
 
+                  {/* Referral Code */}
+                  {user?.referral_code && (
+                    <div className="bg-gradient-to-r from-primary-50 to-white rounded-2xl border border-primary-100 shadow-sm p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-primary-900 mb-1">Ajak Teman</h3>
+                        <p className="text-sm text-gray-500">Bagikan link ini dan nikmati keuntungan bersama.</p>
+                        <div className="mt-3 text-sm font-bold tracking-widest text-primary-700 bg-white px-4 py-2 rounded-lg border border-primary-200 inline-block shadow-sm">
+                          {user.referral_code}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          const url = `${window.location.origin}/register?ref=${user.referral_code}`;
+                          navigator.clipboard.writeText(url);
+                          Swal.fire({ icon: 'success', title: 'Tersalin!', text: 'Link referral berhasil disalin ke clipboard.', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+                        }}
+                        className="px-6 py-3 bg-primary-600 text-white rounded-xl font-bold text-sm transition-colors hover:bg-primary-700 whitespace-nowrap shadow-md shadow-primary-500/20">
+                        Salin Tautan
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               )}
 
