@@ -89,6 +89,7 @@ export type AuthUser = {
   tempat_tinggal?: string | null;
   phone_number?: string | null;
   pending_email?: string | null;
+  referral_code?: string;
 };
 
 export type UploadedMediaItem = {
@@ -192,6 +193,7 @@ export interface RegisterPayload {
   role?: "CUSTOMER" | "AGENT" | "ADMIN";
   specialization?: string;
   phone_number?: string;
+  referral_code?: string | null;
 }
 
 export interface FlashSaleCampaign {
@@ -275,6 +277,7 @@ export interface User {
     accountNumber: string;
     accountHolder: string;
   };
+  referral_code?: string;
 }
 
 export interface Category {

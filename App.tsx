@@ -160,6 +160,18 @@ const ScrollToTop = () => {
   return null;
 };
 
+const ReferralCatcher = () => {
+  const { search } = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const ref = params.get('ref');
+    if (ref && !localStorage.getItem('trivgoo_ref_code')) {
+      localStorage.setItem('trivgoo_ref_code', ref.toUpperCase());
+    }
+  }, [search]);
+  return null;
+};
+
 const AppGates: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isOnline = useOnlineStatus();
   if (!isOnline) return <OfflinePage />;
@@ -332,6 +344,7 @@ const App: React.FC = () => (
           <WishlistProvider>
             <BrowserRouter>
               <ScrollToTop />
+              <ReferralCatcher />
               <PushNotificationSync />
               <AppGates>
                 <ErrorBoundary>

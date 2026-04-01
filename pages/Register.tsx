@@ -37,7 +37,12 @@ const Register: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await authService.register(form);
+      const payload = {
+        ...form,
+        referral_code: localStorage.getItem('trivgoo_ref_code') || null,
+      };
+      await authService.register(payload);
+      localStorage.removeItem('trivgoo_ref_code');
       setIsSuccess(true);
       showToast(t('auth.account_created'), 'success');
     } catch (err: any) {

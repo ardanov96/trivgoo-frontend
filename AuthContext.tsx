@@ -33,6 +33,7 @@ function normalize_user(api_user: any): AuthUser {
     tempat_tinggal: api_user.tempat_tinggal,
     phone_number: api_user.phone_number,
     pending_email: api_user.pending_email,
+    referral_code: api_user.referral_code,
   };
 }
 
