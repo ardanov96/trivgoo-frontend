@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
@@ -33,7 +34,9 @@ const NotFound: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50/60 to-primary-50 flex flex-col items-center justify-center px-4 pt-20 relative overflow-hidden">
+    <>
+      <SEO title="404 Not Found | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50/60 to-primary-50 flex flex-col items-center justify-center px-4 pt-20 relative overflow-hidden">
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-200/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-amber-200/25 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #E05845 1.5px, transparent 1.5px)', backgroundSize: '40px 40px' }} />
@@ -73,6 +76,7 @@ const NotFound: React.FC = () => {
         </motion.div>
       </motion.div>
     </div>
+    </>
   );
 };
 

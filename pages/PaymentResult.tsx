@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEO from '../components/SEO';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, XCircle, Clock, ArrowRight, Home, BookCheckIcon } from 'lucide-react';
 import http from '../services/http';
@@ -188,7 +189,9 @@ const PaymentResult: React.FC = () => {
   const current = config[status];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <>
+      <SEO title="Payment Result | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className={`bg-white rounded-2xl shadow-lg border ${current.border} overflow-hidden`}>
           <div className={`${current.bg} px-6 py-8 flex flex-col items-center text-center`}>
@@ -306,6 +309,7 @@ const PaymentResult: React.FC = () => {
         </p>
       </div>
     </div>
+    </>
   );
 };
 

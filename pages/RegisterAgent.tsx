@@ -1,5 +1,6 @@
 import { ArrowLeft, Eye, EyeOff, Building2, Car, Palmtree } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate'; // ✅ fix
@@ -49,7 +50,9 @@ const RegisterAgent: React.FC = () => {
   // ── Success screen ──────────────────────────────────────────────────────
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-16 md:pt-20 px-4 sm:px-6 lg:px-8">
+      <>
+        <SEO title="Agent Registration | Trivgoo" noindex={true} />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-16 md:pt-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg border border-gray-100 text-center">
           <div className="flex justify-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
@@ -72,6 +75,7 @@ const RegisterAgent: React.FC = () => {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
@@ -79,7 +83,9 @@ const RegisterAgent: React.FC = () => {
     `cursor-pointer p-3 rounded-xl border flex flex-col items-center justify-center text-center gap-2 transition-all ${active ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`;
 
   return (
-    <div className="min-h-screen flex bg-white pt-16 md:pt-20">
+    <>
+      <SEO title="Agent Registration | Trivgoo" noindex={true} />
+      <div className="min-h-screen flex bg-white pt-16 md:pt-20">
       {/* Left Side */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-primary-900">
         <img src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1500&q=80" alt="Business Partnership" className="absolute inset-0 w-full h-full object-cover opacity-50" />
@@ -166,6 +172,7 @@ const RegisterAgent: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

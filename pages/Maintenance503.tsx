@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Wrench } from 'lucide-react';
@@ -43,7 +44,9 @@ const Maintenance503: React.FC = () => {
   
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-gray-900 to-gray-950 flex flex-col items-center justify-center px-4 relative overflow-hidden">
+    <>
+      <SEO title="Under Maintenance | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gradient-to-br from-primary-900 via-gray-900 to-gray-950 flex flex-col items-center justify-center px-4 relative overflow-hidden">
       <div className="absolute top-0 left-1/3 w-96 h-96 bg-primary-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/3 w-80 h-80 bg-amber-500/8 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #E05845 1.5px, transparent 1.5px)', backgroundSize: '48px 48px' }} />
@@ -115,6 +118,7 @@ const Maintenance503: React.FC = () => {
         </motion.div>
       </motion.div>
     </div>
+    </>
   );
 };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { useWishlist } from '../components/WishlistContext';
 import { Link } from 'react-router-dom';
@@ -13,7 +14,9 @@ const Wishlist: React.FC = () => {
   const { wishlist, removeFromWishlist } = useWishlist();
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-12">
+    <>
+      <SEO title="Wishlist | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gray-50 pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
@@ -104,6 +107,7 @@ const Wishlist: React.FC = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

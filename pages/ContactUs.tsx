@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate'; // ✅ fix missing import
+import SEO from '../components/SEO';
 
 interface FormData   { name: string; email: string; phone: string; subject: string; message: string; }
 interface FormErrors { name?: string; email?: string; phone?: string; subject?: string; message?: string; }
@@ -68,7 +69,33 @@ const ContactUs: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <SEO
+        title="Contact Us | Trivgoo"
+        description="Hubungi tim Trivgoo untuk pertanyaan, dukungan, atau kerjasama. Kami siap membantu Anda."
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "ContactPage",
+          "name": "Contact Trivgoo",
+          "url": "https://trivgoo.com/contact",
+          "mainEntity": {
+            "@type": "LocalBusiness",
+            "name": "Trivgoo",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Jl. Mekar I No.43, Pemogan",
+              "addressLocality": "Denpasar",
+              "addressRegion": "Bali",
+              "postalCode": "80221",
+              "addressCountry": "ID"
+            },
+            "telephone": "+62-821-4444-3784",
+            "email": "cs@trivgoo.com",
+            "openingHours": "Mo-Sa 09:00-18:00"
+          }
+        }}
+      />
+      <div className="min-h-screen bg-gray-50">
 
       {/* ── Hero ── */}
       <div className="relative text-white py-20 md:py-32 overflow-hidden"
@@ -299,6 +326,7 @@ const ContactUs: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

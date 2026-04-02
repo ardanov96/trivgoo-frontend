@@ -85,6 +85,38 @@ const Home: React.FC = () => {
       <SEO
         title={t('home.seo_title', 'Trivgoo - Find Your Adventure')}
         description={t('home.seo_description', 'Discover perfect destinations, best car rentals, and amazing hotels.')}
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Trivgoo",
+            "url": "https://trivgoo.com",
+            "logo": "https://trivgoo.com/favicon_trp.png",
+            "sameAs": [
+              "https://facebook.com/trivgoo",
+              "https://instagram.com/trivgoo",
+              "https://twitter.com/trivgoo",
+              "https://linkedin.com/company/trivgoo"
+            ],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+62-821-4444-3784",
+              "contactType": "customer service",
+              "availableLanguage": ["Indonesian", "English"]
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Trivgoo",
+            "url": "https://trivgoo.com",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://trivgoo.com/explore?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]}
       />
 
       <HeroSection />

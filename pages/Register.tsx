@@ -1,5 +1,6 @@
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
@@ -62,7 +63,9 @@ const Register: React.FC = () => {
   // ── Success screen ──────────────────────────────────────────────────────────
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-16 md:pt-20 px-4 sm:px-6 lg:px-8">
+      <>
+        <SEO title="Register | Trivgoo" noindex={true} />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-16 md:pt-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg border border-gray-100 text-center">
           <div className="flex justify-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
@@ -89,11 +92,14 @@ const Register: React.FC = () => {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-white pt-16 md:pt-20">
+    <>
+      <SEO title="Register | Trivgoo" noindex={true} />
+      <div className="min-h-screen flex bg-white pt-16 md:pt-20">
       {/* Left Side - Visual */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gray-900">
         <img
@@ -207,6 +213,7 @@ const Register: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

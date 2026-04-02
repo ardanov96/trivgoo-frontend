@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -57,7 +58,9 @@ const VerifyEmail: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <>
+      <SEO title="Verify Email | Trivgoo" noindex={true} />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg text-center">
 
         {status === 'loading' && (
@@ -125,6 +128,7 @@ const VerifyEmail: React.FC = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

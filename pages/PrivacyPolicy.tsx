@@ -1,6 +1,7 @@
 import { ArrowLeft, ChevronRight, Shield } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { Link } from 'react-router-dom';
 
@@ -44,7 +45,9 @@ const PrivacyPolicy: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <SEO title="Privacy Policy | Trivgoo" />
+      <div className="min-h-screen bg-white">
 
       {/* ── Animated Hero ── */}
       <div
@@ -335,6 +338,7 @@ const PrivacyPolicy: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

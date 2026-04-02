@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
@@ -137,15 +138,20 @@ const Payment: React.FC = () => {
   if (!state) {
     // Tampilkan loading singkat sebelum redirect terjadi
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <>
+        <SEO title="Payment | Trivgoo" noindex={true} />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
       </div>
+      </>
     );
   }
 
   if (isPaid) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <>
+        <SEO title="Payment | Trivgoo" noindex={true} />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl text-center max-w-md w-full animate-in zoom-in duration-300">
           <div className="w-20 h-20 md:w-24 md:h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 md:mb-8 border border-green-100">
             <CheckCircle className="w-10 h-10 md:w-12 md:h-12 text-green-500" />
@@ -168,13 +174,16 @@ const Payment: React.FC = () => {
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   const isTour = state.product.category_id === 1 || state.product.category_id === 3; // Basic assumption based on mock IDs
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-12 px-4 sm:px-6 lg:px-8 font-sans">
+    <>
+      <SEO title="Payment | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gray-50 pt-20 pb-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
@@ -447,6 +456,7 @@ const Payment: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

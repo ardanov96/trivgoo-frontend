@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 import { ArrowRight, Wallet, FileText, Camera, Star, ShieldCheck, Smartphone, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -16,7 +17,9 @@ const TrivPay: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="bg-white">
+    <>
+      <SEO title="TrivPay | Trivgoo" />
+      <div className="bg-white">
 
       {/* ── HERO BANNER ── */}
       <section className="bg-[#FFF0EE] pt-28 pb-14 md:pt-36 md:pb-20 overflow-hidden relative">
@@ -218,6 +221,7 @@ const TrivPay: React.FC = () => {
       </section>
 
     </div>
+    </>
   );
 };
 

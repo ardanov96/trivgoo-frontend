@@ -6,7 +6,30 @@
   "scripts": {
     "dev": "vite --host localhost",
     "build": "vite build",
+    "postbuild:disabled": "react-snap",
     "preview": "vite preview"
+  },
+  "reactSnap": {
+    "source": "dist",
+    "include": [
+      "/",
+      "/about-us",
+      "/contact",
+      "/help-center"
+    ],
+    "exclude": [
+      "/dashboard",
+      "/checkout",
+      "/login",
+      "/register",
+      "/my-account",
+      "/my-bookings"
+    ],
+    "inlineCss": true,
+    "puppeteerArgs": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox"
+    ]
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
@@ -42,6 +65,7 @@
     "@types/react": "^19.2.7",
     "@types/react-datepicker": "^6.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "react-snap": "^1.23.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

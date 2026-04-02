@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 const TermAndService: React.FC = () => {
   const { langPath } = useLangNavigate();
@@ -40,7 +41,9 @@ const TermAndService: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <SEO title="Terms of Service | Trivgoo" />
+      <div className="min-h-screen bg-white">
 
       {/* ── Animated Hero ── */}
       <div
@@ -315,6 +318,7 @@ const TermAndService: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

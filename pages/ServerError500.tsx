@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
@@ -26,7 +27,9 @@ const ServerError500: React.FC<Props> = ({ onReset }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-orange-50/30 flex flex-col items-center justify-center px-4 pt-20 relative overflow-hidden">
+    <>
+      <SEO title="500 Server Error | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-orange-50/30 flex flex-col items-center justify-center px-4 pt-20 relative overflow-hidden">
       <div className="absolute top-1/4 right-1/4 w-80 h-80 bg-slate-200/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-orange-200/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #64748b 1.5px, transparent 1.5px)', backgroundSize: '40px 40px' }} />
@@ -72,6 +75,7 @@ const ServerError500: React.FC<Props> = ({ onReset }) => {
         </motion.div>
       </motion.div>
     </div>
+    </>
   );
 };
 

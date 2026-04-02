@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Calendar, CreditCard, Ticket } from 'lucide-react';
@@ -19,7 +20,9 @@ const BookingSuccess: React.FC = () => {
     amount > 0 ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-24 pb-12 px-4">
+    <>
+      <SEO title="Booking Success | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-24 pb-12 px-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100">
 
         {/* Icon */}
@@ -90,6 +93,7 @@ const BookingSuccess: React.FC = () => {
         {t('common.secure_payment', 'Secure payment')} by DOKU
       </p>
     </div>
+    </>
   );
 };
 

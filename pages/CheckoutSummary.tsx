@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import SEO from '../components/SEO';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
@@ -246,7 +247,9 @@ const CheckoutSummary: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
+    <>
+      <SEO title="Checkout Summary | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gray-50 pb-12">
       {/* ── Topbar ── */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -355,6 +358,7 @@ const CheckoutSummary: React.FC = () => {
 
       </div>
     </div>
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import React, { useCallback, useMemo, useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
@@ -101,7 +102,9 @@ const Login: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <>
+      <SEO title="Login | Trivgoo" noindex={true} />
+      <div className="min-h-screen flex bg-white">
       {/* Left Side - Visual */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gray-900">
         <img
@@ -229,6 +232,7 @@ const Login: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

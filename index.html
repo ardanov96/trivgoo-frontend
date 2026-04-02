@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon_trp.png" />
@@ -13,11 +13,11 @@
     <meta property="og:description" content="Trivgoo is your ultimate travel platform for exploring Indonesia and Asia. Discover tours, stays, and car rentals." />
     <meta property="og:image" content="https://trivgoo.com/thumbnail.png" />
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://trivgoo.com/" />
-    <meta property="twitter:title" content="Trivgoo - Experience the Indonesia & Asia" />
-    <meta property="twitter:description" content="Trivgoo is your ultimate travel platform for exploring Indonesia and Asia. Discover tours, stays, and car rentals." />
-    <meta property="twitter:image" content="https://trivgoo.com/thumbnail.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://trivgoo.com/" />
+    <meta name="twitter:title" content="Trivgoo - Experience the Indonesia & Asia" />
+    <meta name="twitter:description" content="Trivgoo is your ultimate travel platform for exploring Indonesia and Asia. Discover tours, stays, and car rentals." />
+    <meta name="twitter:image" content="https://trivgoo.com/thumbnail.png" />
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TY8LCPZFSB"></script>
@@ -28,6 +28,13 @@
       gtag('config', 'G-TY8LCPZFSB');
     </script>
 
+
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href="/index.css" as="style" />
+    <link rel="preload" href="/fonts/Vlogger.woff" as="font" type="font/woff" crossorigin />
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link
@@ -153,21 +160,7 @@
     </style>
 
     <link rel="stylesheet" href="/index.css" />
-    <script type="importmap">
-      {
-        "imports": {
-          "react": "https://esm.sh/react@18.3.1",
-          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1",
-          "react/": "https://esm.sh/react@18.3.1/",
-          "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-          "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.3.1,react-dom@18.3.1",
-          "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.3.1",
-          "react-markdown": "https://esm.sh/react-markdown@9.0.1?deps=react@18.3.1",
-          "recharts": "https://esm.sh/recharts@2.12.7?deps=react@18.3.1,react-dom@18.3.1",
-          "react-dom/": "https://esm.sh/react-dom@18.3.1/"
-        }
-      }
-    </script>
+
     <script type="module" crossorigin src="/index.tsx"></script>
   </head>
   <body

@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from '../components/SEO';
 import { BLOG_POSTS } from './blog/constants';
 import { useReveal, useBlogFilter } from './blog/hooks';
 import { HeroSection } from './blog/components/HeroSection';
@@ -15,7 +16,27 @@ const TravelBlog: React.FC = () => {
   const gridReveal     = useReveal();
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <SEO 
+        title="Travel Blog | Trivgoo" 
+        description="Read the latest travel articles, tips, and destination guides on Trivgoo."
+        type="website"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Blog",
+          "name": "Trivgoo Travel Blog",
+          "description": "Read the latest travel articles, tips, and destination guides on Trivgoo.",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trivgoo",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://trivgoo.com/logo.png"
+            }
+          }
+        }}
+      />
+      <div className="min-h-screen bg-white">
       <HeroSection searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <FeaturedSection ref={featuredReveal.ref} inView={featuredReveal.inView} posts={featuredPosts} />
       <TrendingSection ref={trendingReveal.ref} inView={trendingReveal.inView} posts={trendingPosts} />
@@ -29,6 +50,7 @@ const TravelBlog: React.FC = () => {
         onClearFilters={clearFilters}
       />
     </div>
+    </>
   );
 };
 

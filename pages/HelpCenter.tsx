@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 import { Link } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
 
@@ -116,8 +117,23 @@ const HelpCenter: React.FC = () => {
     return cat ? t(cat.labelKey) : slug;
   };
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": FAQ_DATA.map(faq => ({
+      "@type": "Question",
+      "name": faq.question ? faq.question.replace(/<[^>]*>?/gm, '') : '',
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.answer ? faq.answer.replace(/<[^>]*>?/gm, '') : ''
+      }
+    }))
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <SEO title="Help Center | Trivgoo" jsonLd={faqJsonLd} />
+      <div className="min-h-screen bg-gray-50">
 
       {/* ── Hero ── */}
       <div
@@ -358,6 +374,7 @@ const HelpCenter: React.FC = () => {
 
       </div>
     </div>
+    </>
   );
 };
 

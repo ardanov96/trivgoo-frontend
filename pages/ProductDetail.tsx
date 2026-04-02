@@ -901,7 +901,7 @@ const ProductDetail: React.FC = () => {
             <div className="relative rounded-2xl overflow-hidden mb-8" style={{ height: '400px' }}>
               <div className="grid gap-1.5 h-full" style={{ gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr' }}>
                 <div className="row-span-2 relative overflow-hidden bg-gray-200">
-                  <img src={allImages[0]} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => openGallery(0)} onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
+                  <img src={allImages[0]} alt={product.name} width="800" height="600" decoding="async" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => openGallery(0)} onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
                 </div>
                 {[0,1,2,3].map((i) => {
                   const src = allImages[i+1] || allImages[0];
@@ -909,7 +909,7 @@ const ProductDetail: React.FC = () => {
                   const remainingCount = allImages.length - 5;
                   return (
                     <div key={i} className="relative overflow-hidden bg-gray-200">
-                      <img src={src} alt={`${product.name} ${i+2}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => openGallery(i+1)} onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
+                      <img src={src} alt={`${product.name} ${i+2}`} loading="lazy" decoding="async" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer" onClick={() => openGallery(i+1)} onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
                       {i === 3 && (
                         <div onClick={() => openGallery(4)} className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors">
                           <div className="bg-white rounded-lg px-4 py-2">
@@ -1345,7 +1345,7 @@ const ProductDetail: React.FC = () => {
               <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(p => (p === 0 ? allImages.length - 1 : p - 1)); }} className="absolute left-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 bg-black/50 hover:bg-black/80 rounded-full transition-all"><ChevronLeft className="w-6 h-6" /></button>
             )}
             <div className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center -mt-10" onClick={(e) => e.stopPropagation()}>
-              <img src={allImages[currentImageIndex]} className="max-h-[75vh] max-w-full object-contain shadow-2xl rounded-lg" alt={`Gallery ${currentImageIndex + 1}`} />
+              <img src={allImages[currentImageIndex]} className="max-h-[75vh] max-w-full object-contain shadow-2xl rounded-lg" decoding="async" alt={`Gallery ${currentImageIndex + 1}`} />
             </div>
             {allImages.length > 1 && (
               <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(p => (p === allImages.length - 1 ? 0 : p + 1)); }} className="absolute right-6 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 bg-black/50 hover:bg-black/80 rounded-full transition-all"><ChevronRight className="w-6 h-6" /></button>
@@ -1353,7 +1353,7 @@ const ProductDetail: React.FC = () => {
             <div className="absolute bottom-6 w-full px-8 flex justify-center gap-2 overflow-x-auto pb-4" onClick={(e) => e.stopPropagation()}>
               {allImages.map((img, idx) => (
                 <button key={idx} onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }} className={`shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all ${currentImageIndex === idx ? 'border-primary-500 opacity-100 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}>
-                  <img src={img} className="w-full h-full object-cover" alt={`Thumb ${idx + 1}`} />
+                  <img src={img} className="w-full h-full object-cover" loading="lazy" decoding="async" alt={`Thumb ${idx + 1}`} />
                 </button>
               ))}
             </div>
@@ -1389,6 +1389,46 @@ const ProductDetail: React.FC = () => {
         title={(product as any).seo_title || `${product.name} Rental | Trivgoo`}
         description={(product as any).seo_description || `Rent ${product.name} starting from ${product.currency} ${Number(product.price).toLocaleString('id-ID')}/day on Trivgoo.`}
         image={(product as any).seo_og_image || product.image_url || product.image || FALLBACK_IMAGE}
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": product.name,
+            "image": product.image_url || product.image || FALLBACK_IMAGE,
+            "description": (product as any).seo_description || `Rent ${product.name} on Trivgoo.`,
+            "offers": {
+              "@type": "Offer",
+              "priceCurrency": product.currency || 'IDR',
+              "price": product.price,
+              "availability": "https://schema.org/InStock",
+              "url": window.location.href
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": `https://trivgoo.com${langPath('/')}`
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Explore",
+                "item": `https://trivgoo.com${langPath('/explore')}`
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": product.name,
+                "item": window.location.href
+              }
+            ]
+          }
+        ]}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
@@ -1415,7 +1455,7 @@ const ProductDetail: React.FC = () => {
                 </div>
               )}
             </div>
-            <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">{product.name}</h1>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">{product.name}</h2>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -1441,7 +1481,7 @@ const ProductDetail: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Car Image */}
             <div className="bg-white rounded-3xl overflow-hidden border border-gray-100">
-              <img src={getImageUrl(product.image_url || product.image)} alt={product.name} className="w-full h-auto object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
+              <img src={getImageUrl(product.image_url || product.image)} alt={product.name} decoding="async" className="w-full h-auto object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMAGE; }} />
             </div>
 
             {/* Car Details */}

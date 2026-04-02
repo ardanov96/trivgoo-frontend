@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 import { useReveal, useApplicationForm } from './career/hooks';
 import type { JobPosition } from './career/constants';
 
@@ -58,7 +59,33 @@ const Career: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <SEO
+        title="Career | Trivgoo"
+        description="Bergabunglah dengan tim Trivgoo. Lihat lowongan terbaru dan mulai karir di industri pariwisata digital."
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          "title": "Open Positions at Trivgoo",
+          "description": "Join our team at Trivgoo, a leading travel tech platform in Indonesia.",
+          "hiringOrganization": {
+            "@type": "Organization",
+            "name": "Trivgoo",
+            "sameAs": "https://trivgoo.com"
+          },
+          "jobLocation": {
+            "@type": "Place",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Denpasar",
+              "addressRegion": "Bali",
+              "addressCountry": "ID"
+            }
+          },
+          "employmentType": "FULL_TIME"
+        }}
+      />
+      <div className="min-h-screen bg-white">
       <HeroSection
         onViewPositions={() => scrollTo(openPositionsRef)}
         onViewCulture={() => scrollTo(cultureRef)}
@@ -80,6 +107,7 @@ const Career: React.FC = () => {
 
       <CtaSection ref={ctaReveal.ref} inView={ctaReveal.inView} />
     </div>
+    </>
   );
 };
 

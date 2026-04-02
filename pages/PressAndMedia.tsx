@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 import { useReveal }             from './press/hooks/useReveal';
 import type { MediaAsset }       from './press/constants';
 
@@ -26,7 +27,9 @@ const PressAndMedia: React.FC = () => {
   void selectedAsset;
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <SEO title="Press & Media | Trivgoo" />
+      <div className="min-h-screen bg-white">
       <HeroSection />
 
       <PressReleasesSection ref={pressReveal.ref}    inView={pressReveal.inView} />
@@ -35,6 +38,7 @@ const PressAndMedia: React.FC = () => {
       <ContactSection       ref={contactReveal.ref}  inView={contactReveal.inView} />
       <CtaSection           ref={ctaReveal.ref}       inView={ctaReveal.inView} />
     </div>
+    </>
   );
 };
 

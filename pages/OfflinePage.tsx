@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
@@ -61,7 +62,9 @@ const OfflinePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-950 flex flex-col items-center justify-center px-4 relative overflow-hidden">
+    <>
+      <SEO title="Offline | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-950 flex flex-col items-center justify-center px-4 relative overflow-hidden">
 
       {/* Background */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-900/10 rounded-full blur-3xl pointer-events-none" />
@@ -164,9 +167,9 @@ const OfflinePage: React.FC = () => {
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.4 }}
             >
-              <h1 className="text-2xl md:text-3xl font-serif font-bold text-white mb-3">
+              <h2 className="text-2xl md:text-3xl font-serif font-bold text-white mb-3">
                 Kamu Sedang Offline
-              </h1>
+              </h2>
               <p className="text-gray-400 leading-relaxed mb-8 max-w-sm mx-auto">
                 Sepertinya koneksi internetmu terputus. Periksa Wi-Fi atau data selulermu,
                 lalu coba lagi.
@@ -207,6 +210,7 @@ const OfflinePage: React.FC = () => {
         </AnimatePresence>
       </motion.div>
     </div>
+    </>
   );
 };
 

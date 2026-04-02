@@ -1,4 +1,23 @@
 User-agent: *
 Allow: /
+Disallow: /*/admin/
+Disallow: /*/agent/
+Disallow: /*/my-bookings/
+Disallow: /*/my-account/
+Disallow: /*/my-cards/
+Disallow: /*/my-refunds/
+Disallow: /*/my-passengers/
+Disallow: /*/my-notifications/
+Disallow: /*/loyalty/
+Disallow: /*/payment/
+Disallow: /*/checkout-summary/
+Disallow: /*/booking-success/
+Disallow: /*/booking-pending/
+Disallow: /*/booking-failed/
+Disallow: /*/verify-email/
+Disallow: /*/login
+Disallow: /*/register
+Disallow: /*/forgot-password
+Disallow: /*/reset-password
 
 Sitemap: https://trivgoo.com/sitemap.xml

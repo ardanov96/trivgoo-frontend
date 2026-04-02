@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Lock, AlertTriangle } from 'lucide-react';
@@ -66,19 +67,24 @@ const ResetPassword = () => {
   // Loading state
   if (validating) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <>
+        <SEO title="Reset Password | Trivgoo" noindex={true} />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4" />
           <p className="text-gray-600">{t('auth.validating_token', 'Validating reset token...')}</p>
         </div>
       </div>
+      </>
     );
   }
 
   // Invalid / expired token
   if (!tokenValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <>
+        <SEO title="Reset Password | Trivgoo" noindex={true} />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl text-center">
           <div className="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <AlertTriangle className="h-8 w-8 text-red-500" />
@@ -103,11 +109,14 @@ const ResetPassword = () => {
           </Link>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <>
+      <SEO title="Reset Password | Trivgoo" noindex={true} />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center mb-4">
@@ -188,6 +197,7 @@ const ResetPassword = () => {
         </form>
       </div>
     </div>
+    </>
   );
 };
 

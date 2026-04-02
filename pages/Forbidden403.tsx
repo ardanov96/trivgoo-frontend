@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
@@ -13,7 +14,9 @@ const Forbidden403: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50/40 to-amber-50 flex flex-col items-center justify-center px-4 pt-20 relative overflow-hidden">
+    <>
+      <SEO title="403 Forbidden | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50/40 to-amber-50 flex flex-col items-center justify-center px-4 pt-20 relative overflow-hidden">
       <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-red-200/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-orange-200/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #E05845 1.5px, transparent 1.5px)', backgroundSize: '40px 40px' }} />
@@ -60,6 +63,7 @@ const Forbidden403: React.FC = () => {
         </motion.div>
       </motion.div>
     </div>
+    </>
   );
 };
 

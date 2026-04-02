@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { useScrollReveal }   from './about/hooks/useScrollReveal';
 import { HeroSection }       from './about/components/HeroSection';
@@ -18,7 +19,9 @@ const AboutUs: React.FC = () => {
   const ctaRef      = useScrollReveal();
 
   return (
-    <div className="min-h-screen">
+    <>
+      <SEO title="About Us | Trivgoo" />
+      <div className="min-h-screen">
       <HeroSection />
       <AboutSection    ref={aboutRef.ref}    inView={aboutRef.inView} />
       <StatsSection    ref={statsRef.ref}    inView={statsRef.inView} />
@@ -26,6 +29,7 @@ const AboutUs: React.FC = () => {
       <GallerySection  ref={galleryRef.ref}  inView={galleryRef.inView} activeGallery={activeGallery} onTabChange={setActiveGallery} />
       <CtaSection      ref={ctaRef.ref}      inView={ctaRef.inView} />
     </div>
+    </>
   );
 };
 

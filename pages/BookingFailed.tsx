@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { XCircle, RefreshCcw, Home, AlertCircle, HelpCircle, CreditCard } from 'lucide-react';
@@ -17,7 +18,9 @@ const BookingFailed: React.FC = () => {
     || t('booking.failed_desc', 'Payment was cancelled or the transaction time has expired.');
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-24 pb-12 px-4">
+    <>
+      <SEO title="Booking Failed | Trivgoo" noindex={true} />
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-24 pb-12 px-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100">
 
         {/* Icon */}
@@ -86,6 +89,7 @@ const BookingFailed: React.FC = () => {
         {t('common.secure_payment', 'Secure payment')} by DOKU
       </p>
     </div>
+    </>
   );
 };
 
