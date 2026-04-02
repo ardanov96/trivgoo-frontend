@@ -41,7 +41,7 @@ export const REVIEWS = [
 ];
 
 export const SEARCH_CATEGORIES = [
-  { id: 'tours',     label: 'Wisata',           icon: Palmtree,  placeholder: 'Where do you want to go?' },
+  { id: 'tours',     label: 'Tour',           icon: Palmtree,  placeholder: 'Where do you want to go?' },
   { id: 'stays',     label: 'Hotel & Villa',    icon: Building2, placeholder: 'City, hotel, or destination' },
   { id: 'cars',      label: 'Car Rental',       icon: Car,       placeholder: 'Pick-up location' },
   { id: 'transfers', label: 'Airport Transfer', icon: Plane,     placeholder: 'Airport or Hotel' },

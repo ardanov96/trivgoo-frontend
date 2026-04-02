@@ -19,8 +19,8 @@ interface NotifCategory {
   icon: React.ReactNode;
   iconBg: string;
   iconColor: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descKey: string;
   channels: NotifChannel;
   important?: boolean;
 }
@@ -28,18 +28,19 @@ interface NotifCategory {
 const MyNotifications: React.FC = () => {
   const { langPath } = useLangNavigate();
   const { t } = useTranslation();
+
   const [masterEnabled, setMasterEnabled] = useState(true);
-  const [quietHours, setQuietHours] = useState(false);
-  const [quietStart, setQuietStart] = useState('22:00');
-  const [quietEnd, setQuietEnd]   = useState('07:00');
+  const [quietHours, setQuietHours]       = useState(false);
+  const [quietStart, setQuietStart]       = useState('22:00');
+  const [quietEnd, setQuietEnd]           = useState('07:00');
 
   const [categories, setCategories] = useState<NotifCategory[]>([
     {
       id: 'booking',
       icon: <ShoppingBag className="w-5 h-5" />,
       iconBg: 'bg-primary-100', iconColor: 'text-primary-600',
-      title: 'Status Booking & Pesanan',
-      description: 'Konfirmasi, perubahan status, dan pengingat jadwal perjalanan',
+      titleKey: 'notifications_page.cat_booking_title',
+      descKey:  'notifications_page.cat_booking_desc',
       channels: { push: true, email: true, sms: true },
       important: true,
     },
@@ -47,8 +48,8 @@ const MyNotifications: React.FC = () => {
       id: 'payment',
       icon: <Shield className="w-5 h-5" />,
       iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600',
-      title: 'Pembayaran & Refund',
-      description: 'Konfirmasi pembayaran, invoice, dan update status refund',
+      titleKey: 'notifications_page.cat_payment_title',
+      descKey:  'notifications_page.cat_payment_desc',
       channels: { push: true, email: true, sms: false },
       important: true,
     },
@@ -56,32 +57,32 @@ const MyNotifications: React.FC = () => {
       id: 'promo',
       icon: <Tag className="w-5 h-5" />,
       iconBg: 'bg-orange-100', iconColor: 'text-orange-600',
-      title: 'Promo & Penawaran Spesial',
-      description: 'Flash sale, voucher eksklusif, dan diskon terbatas',
+      titleKey: 'notifications_page.cat_promo_title',
+      descKey:  'notifications_page.cat_promo_desc',
       channels: { push: true, email: false, sms: false },
     },
     {
       id: 'price',
       icon: <Megaphone className="w-5 h-5" />,
       iconBg: 'bg-sky-100', iconColor: 'text-sky-600',
-      title: 'Alert Harga Penerbangan',
-      description: 'Notifikasi saat harga tiket mencapai target yang Anda set',
+      titleKey: 'notifications_page.cat_price_title',
+      descKey:  'notifications_page.cat_price_desc',
       channels: { push: true, email: true, sms: false },
     },
     {
       id: 'review',
       icon: <Star className="w-5 h-5" />,
       iconBg: 'bg-amber-100', iconColor: 'text-amber-600',
-      title: 'Ulasan & Feedback',
-      description: 'Pengingat untuk memberikan ulasan setelah perjalanan selesai',
+      titleKey: 'notifications_page.cat_review_title',
+      descKey:  'notifications_page.cat_review_desc',
       channels: { push: true, email: false, sms: false },
     },
     {
       id: 'news',
       icon: <Info className="w-5 h-5" />,
       iconBg: 'bg-violet-100', iconColor: 'text-violet-600',
-      title: 'Berita & Tips Perjalanan',
-      description: 'Konten editorial, travel tips, dan rekomendasi destinasi',
+      titleKey: 'notifications_page.cat_news_title',
+      descKey:  'notifications_page.cat_news_desc',
       channels: { push: false, email: true, sms: false },
     },
   ]);
@@ -105,9 +106,9 @@ const MyNotifications: React.FC = () => {
     cat.channels.push || cat.channels.email || cat.channels.sms;
 
   const CHANNELS = [
-    { key: 'push'  as const, icon: <Smartphone className="w-4 h-4" />, label: 'Push' },
-    { key: 'email' as const, icon: <Mail className="w-4 h-4" />,       label: 'Email' },
-    { key: 'sms'   as const, icon: <MessageSquare className="w-4 h-4" />, label: 'SMS' },
+    { key: 'push'  as const, icon: <Smartphone className="w-4 h-4" />,    label: t('notifications_page.channel_push')  },
+    { key: 'email' as const, icon: <Mail className="w-4 h-4" />,          label: t('notifications_page.channel_email') },
+    { key: 'sms'   as const, icon: <MessageSquare className="w-4 h-4" />, label: t('notifications_page.channel_sms')   },
   ];
 
   const enabledCount = categories.filter(isCategoryOn).length;
@@ -118,14 +119,16 @@ const MyNotifications: React.FC = () => {
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-gray-400 mb-6">
-          <Link to={langPath('/my-account')} className="hover:text-primary-600 transition-colors">Akun Saya</Link>
+          <Link to={langPath('/my-account')} className="hover:text-primary-600 transition-colors">
+            {t('notifications_page.breadcrumb_account')}
+          </Link>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-gray-600 font-medium">Pengaturan Notifikasi</span>
+          <span className="text-gray-600 font-medium">{t('notifications_page.breadcrumb_current')}</span>
         </div>
 
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Pengaturan Notifikasi</h1>
-          <p className="text-sm text-gray-500 mt-1">Kontrol penuh atas notifikasi yang Anda terima</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('notifications_page.page_title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('notifications_page.page_subtitle')}</p>
         </div>
 
         {/* Master toggle card */}
@@ -140,10 +143,16 @@ const MyNotifications: React.FC = () => {
               </div>
               <div>
                 <p className={`font-bold text-base ${masterEnabled ? 'text-white' : 'text-gray-600'}`}>
-                  {masterEnabled ? 'Notifikasi Aktif' : 'Semua Notifikasi Nonaktif'}
+                  {masterEnabled
+                    ? t('notifications_page.master_on_title')
+                    : t('notifications_page.master_off_title')
+                  }
                 </p>
                 <p className={`text-xs mt-0.5 ${masterEnabled ? 'text-blue-200' : 'text-gray-400'}`}>
-                  {masterEnabled ? `${enabledCount} dari ${categories.length} kategori diaktifkan` : 'Klik untuk mengaktifkan'}
+                  {masterEnabled
+                    ? t('notifications_page.master_on_desc', { count: enabledCount, total: categories.length })
+                    : t('notifications_page.master_off_desc')
+                  }
                 </p>
               </div>
             </div>
@@ -161,11 +170,14 @@ const MyNotifications: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center">
-                {quietHours ? <VolumeX className="w-4 h-4 text-slate-600" /> : <Volume2 className="w-4 h-4 text-slate-600" />}
+                {quietHours
+                  ? <VolumeX className="w-4 h-4 text-slate-600" />
+                  : <Volume2 className="w-4 h-4 text-slate-600" />
+                }
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">Jam Tenang</p>
-                <p className="text-xs text-gray-400">Hentikan notifikasi push di jam tertentu</p>
+                <p className="text-sm font-bold text-gray-900">{t('notifications_page.quiet_hours_title')}</p>
+                <p className="text-xs text-gray-400">{t('notifications_page.quiet_hours_desc')}</p>
               </div>
             </div>
             <button
@@ -175,28 +187,45 @@ const MyNotifications: React.FC = () => {
               <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${quietHours ? 'translate-x-5' : ''}`} />
             </button>
           </div>
+
           {quietHours && (
             <div className="flex items-center gap-4 bg-gray-50 rounded-xl p-4">
               <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-500 mb-1">Mulai</label>
-                <input type="time" value={quietStart} onChange={e => setQuietStart(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 outline-none" />
+                <label className="block text-xs font-bold text-gray-500 mb-1">
+                  {t('notifications_page.quiet_start')}
+                </label>
+                <input
+                  type="time"
+                  value={quietStart}
+                  onChange={e => setQuietStart(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 outline-none"
+                />
               </div>
               <div className="text-gray-300 font-bold mt-4">—</div>
               <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-500 mb-1">Selesai</label>
-                <input type="time" value={quietEnd} onChange={e => setQuietEnd(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 outline-none" />
+                <label className="block text-xs font-bold text-gray-500 mb-1">
+                  {t('notifications_page.quiet_end')}
+                </label>
+                <input
+                  type="time"
+                  value={quietEnd}
+                  onChange={e => setQuietEnd(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 outline-none"
+                />
               </div>
             </div>
           )}
         </div>
 
         {/* Categories */}
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Kategori Notifikasi</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+          {t('notifications_page.categories_label')}
+        </p>
+
         <div className={`space-y-3 transition-opacity ${masterEnabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
           {categories.map(cat => (
             <div key={cat.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
               {/* Category header */}
               <div className="flex items-start justify-between p-5 pb-4">
                 <div className="flex items-start gap-3">
@@ -205,12 +234,14 @@ const MyNotifications: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-gray-900">{cat.title}</p>
+                      <p className="text-sm font-bold text-gray-900">{t(cat.titleKey)}</p>
                       {cat.important && (
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">Penting</span>
+                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">
+                          {t('notifications_page.badge_important')}
+                        </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{cat.description}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{t(cat.descKey)}</p>
                   </div>
                 </div>
                 <button
@@ -257,14 +288,17 @@ const MyNotifications: React.FC = () => {
         {/* Save button */}
         <div className="mt-8 flex justify-end">
           <button className="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-primary-600/20 active:scale-95">
-            Simpan Pengaturan
+            {t('notifications_page.save_button')}
           </button>
         </div>
 
-        {/* Note */}
+        {/* Important note */}
         <div className="mt-4 flex items-start gap-2.5 bg-gray-100 rounded-2xl p-4">
           <Info className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-gray-500 leading-relaxed">Notifikasi bertanda <strong>Penting</strong> tidak dapat dinonaktifkan sepenuhnya karena berkaitan dengan keamanan dan status transaksi Anda.</p>
+          <p
+            className="text-xs text-gray-500 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: t('notifications_page.important_note') }}
+          />
         </div>
       </div>
     </div>

@@ -1,5 +1,4 @@
 // src/components/VoucherSelector.tsx
-// List voucher dinamis sama seperti AgentVouchers.tsx — pakai agentVoucherService.list()
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
@@ -7,19 +6,24 @@ import {
   ChevronDown, ChevronUp, AlertCircle, Plus,
   RefreshCw, ExternalLink, CheckCircle2, Calendar, Zap,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { agentVoucherService, Voucher, CreateVoucherPayload } from '../services/voucherService';
 import { useLangNavigate } from '@/src/hooks/useLangNavigate';
 
 interface VoucherSelectorProps {
   selectedIds: number[];
-  onChange: (ids: number[]) => void;
+  onChange:    (ids: number[]) => void;
 }
 
 const formatRp = (n: number) => `Rp ${Number(n).toLocaleString('id-ID')}`;
 
+// ── VoucherBadge ─────────────────────────────────────────────────────────────
 const VoucherBadge: React.FC<{ voucher: Voucher; onRemove: () => void }> = ({ voucher, onRemove }) => (
   <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-xl text-xs font-bold text-orange-700">
-    {voucher.type === 'percent' ? <Percent className="w-3 h-3 shrink-0" /> : <DollarSign className="w-3 h-3 shrink-0" />}
+    {voucher.type === 'percent'
+      ? <Percent className="w-3 h-3 shrink-0" />
+      : <DollarSign className="w-3 h-3 shrink-0" />
+    }
     <span className="max-w-[120px] truncate font-mono tracking-wide">{voucher.code}</span>
     <span className="font-normal text-orange-400">
       {voucher.type === 'percent' ? `${voucher.value}%` : formatRp(voucher.value)}
@@ -39,7 +43,9 @@ const EMPTY_QUICK: QuickFormData = {
   value: '', min_transaction: '', expires_at: '', max_usage: '',
 };
 
+// ── Main Component ────────────────────────────────────────────────────────────
 const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange }) => {
+  const { t } = useTranslation();
   const { langNavigate } = useLangNavigate();
 
   const [vouchers, setVouchers]         = useState<Voucher[]>([]);
@@ -55,37 +61,28 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
 
   const fetchingRef = useRef(false);
 
-  // ── Fetch semua voucher agent — sama seperti AgentVouchers.tsx ────────────
   const loadVouchers = async (force = false) => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
-      // Gunakan .list() bukan .getActive() agar konsisten dengan AgentVouchers page
       const data = await agentVoucherService.list();
-      // list() return VoucherListResponse { vouchers, total, page, limit }
-      // sama persis dengan yang dipakai AgentVouchers.tsx: listRes.vouchers || []
       setVouchers(data.vouchers ?? []);
     } catch {
-      setError('Gagal memuat voucher. Coba refresh.');
+      setError(t('voucher_selector.error_load'));
     } finally {
       setIsLoading(false);
       fetchingRef.current = false;
     }
   };
 
-  // Load saat panel pertama kali dibuka
   useEffect(() => {
-    // Load segera jika ada selectedIds (edit mode) atau saat panel dibuka
     if (selectedIds.length > 0 || isOpen) {
-      if (vouchers.length === 0 && !isLoading) {
-        loadVouchers();
-      }
+      if (vouchers.length === 0 && !isLoading) loadVouchers();
     }
   }, [isOpen, selectedIds.length]);
 
-  // ── Derived ───────────────────────────────────────────────────────────────
   const selectedVouchers = vouchers.filter(v => selectedIds.includes(Number(v.id)));
 
   const filteredVouchers = vouchers.filter(v => {
@@ -107,13 +104,17 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
   const isFull = (v: Voucher) =>
     v.max_usage != null && Number(v.used_count) >= Number(v.max_usage);
 
-  // ── Quick Create ──────────────────────────────────────────────────────────
+  // ── Quick Create validation ───────────────────────────────────────────────
   const validateQuick = () => {
     const e: Partial<QuickFormData> = {};
-    if (!quickForm.code.trim()) e.code = 'Wajib diisi';
-    else if (!/^[A-Z0-9_-]+$/i.test(quickForm.code)) e.code = 'Hanya huruf, angka, - dan _';
-    if (!quickForm.value || Number(quickForm.value) <= 0) e.value = 'Harus angka positif';
-    else if (quickForm.type === 'percent' && Number(quickForm.value) > 100) e.value = 'Maks 100%';
+    if (!quickForm.code.trim())
+      e.code = t('voucher_selector.quick_err_code_required');
+    else if (!/^[A-Z0-9_-]+$/i.test(quickForm.code))
+      e.code = t('voucher_selector.quick_err_code_format');
+    if (!quickForm.value || Number(quickForm.value) <= 0)
+      e.value = t('voucher_selector.quick_err_value_positive');
+    else if (quickForm.type === 'percent' && Number(quickForm.value) > 100)
+      e.value = t('voucher_selector.quick_err_value_max_percent');
     setQuickErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -135,15 +136,14 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
         is_active:       1,
       } as CreateVoucherPayload);
 
-      // Tambah ke list & langsung pilih
       setVouchers(prev => [created, ...prev]);
       onChange([...selectedIds, Number(created.id)]);
-      setQuickSuccess(`Voucher "${created.code}" dibuat & dipilih!`);
+      setQuickSuccess(t('voucher_selector.quick_success', { code: created.code }));
       setQuickForm(EMPTY_QUICK);
       setQuickErrors({});
       setTimeout(() => { setShowQuick(false); setQuickSuccess(null); }, 1500);
     } catch (e: any) {
-      setQuickErrors({ code: e?.response?.data?.message || 'Gagal membuat voucher' });
+      setQuickErrors({ code: e?.response?.data?.message || t('voucher_selector.quick_err_create_failed') });
     } finally {
       setQuickLoading(false);
     }
@@ -154,11 +154,14 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
     <div className="space-y-3">
 
       {/* Toggle button */}
-      <button type="button" onClick={() => setIsOpen(p => !p)}
-        className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-white hover:border-orange-300 hover:shadow-sm transition-all text-sm font-bold text-gray-700 group">
+      <button
+        type="button"
+        onClick={() => setIsOpen(p => !p)}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-white hover:border-orange-300 hover:shadow-sm transition-all text-sm font-bold text-gray-700 group"
+      >
         <span className="flex items-center gap-2">
           <Tag className="w-4 h-4 text-orange-500" />
-          Pilih Voucher Saya
+          {t('voucher_selector.toggle_label')}
           {selectedIds.length > 0 && (
             <span className="inline-flex items-center justify-center w-5 h-5 bg-orange-500 text-white text-[10px] font-extrabold rounded-full">
               {selectedIds.length}
@@ -166,12 +169,12 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
           )}
         </span>
         {isOpen
-          ? <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-orange-500" />
+          ? <ChevronUp   className="w-4 h-4 text-gray-400 group-hover:text-orange-500" />
           : <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-orange-500" />
         }
       </button>
 
-      {/* Badge voucher terpilih */}
+      {/* Selected voucher badges */}
       {selectedVouchers.length > 0 && (
         <div className="flex flex-wrap gap-2 px-1">
           {selectedVouchers.map(v => (
@@ -188,30 +191,44 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
           <div className="p-3 border-b border-gray-100 bg-gray-50 flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input type="text" placeholder="Cari kode atau deskripsi..."
+              <input
+                type="text"
+                placeholder={t('voucher_selector.search_placeholder')}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400"
-                value={search} onChange={e => setSearch(e.target.value)} />
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
             </div>
             {!showQuick && (
-              <button type="button" onClick={() => setShowQuick(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shrink-0">
-                <Plus className="w-3.5 h-3.5" /> Buat
+              <button
+                type="button"
+                onClick={() => setShowQuick(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" /> {t('voucher_selector.btn_create')}
               </button>
             )}
-            <button type="button" onClick={() => loadVouchers(true)} title="Refresh"
-              className="p-2.5 rounded-xl border border-gray-200 hover:bg-white transition-all shrink-0">
+            <button
+              type="button"
+              onClick={() => loadVouchers(true)}
+              title={t('voucher_selector.btn_refresh')}
+              className="p-2.5 rounded-xl border border-gray-200 hover:bg-white transition-all shrink-0"
+            >
               <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
           </div>
 
-          {/* Quick Create */}
+          {/* Quick Create form */}
           {showQuick && (
             <div className="p-4 border-b border-orange-100 bg-orange-50">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-bold text-orange-700 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5" /> Buat Voucher Cepat
+                  <Zap className="w-3.5 h-3.5" /> {t('voucher_selector.quick_title')}
                 </p>
-                <button type="button" onClick={() => { setShowQuick(false); setQuickErrors({}); setQuickForm(EMPTY_QUICK); }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowQuick(false); setQuickErrors({}); setQuickForm(EMPTY_QUICK); }}
+                >
                   <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
                 </button>
               </div>
@@ -224,14 +241,20 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
               )}
 
               <div className="space-y-3">
+                {/* Code + Type */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Kode *</label>
-                    <input type="text" value={quickForm.code}
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      {t('voucher_selector.quick_label_code')} *
+                    </label>
+                    <input
+                      type="text"
+                      value={quickForm.code}
                       onChange={e => setQuickForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
                       placeholder="PROMO10"
                       className={`w-full px-3 py-2 rounded-lg border text-xs font-mono font-bold tracking-widest focus:outline-none
-                        ${quickErrors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white focus:border-orange-400'}`} />
+                        ${quickErrors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white focus:border-orange-400'}`}
+                    />
                     {quickErrors.code && (
                       <p className="text-red-500 text-[10px] mt-0.5 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />{quickErrors.code}
@@ -239,136 +262,192 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
                     )}
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipe</label>
-                    <select value={quickForm.type}
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      {t('voucher_selector.quick_label_type')}
+                    </label>
+                    <select
+                      value={quickForm.type}
                       onChange={e => setQuickForm(f => ({ ...f, type: e.target.value as 'percent' | 'fixed' }))}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400">
-                      <option value="percent">Persentase (%)</option>
-                      <option value="fixed">Nominal (Rp)</option>
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400"
+                    >
+                      <option value="percent">{t('voucher_selector.quick_type_percent')}</option>
+                      <option value="fixed">{t('voucher_selector.quick_type_fixed')}</option>
                     </select>
                   </div>
                 </div>
 
+                {/* Value + Min transaction */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nilai *</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      {t('voucher_selector.quick_label_value')} *
+                    </label>
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">
                         {quickForm.type === 'percent' ? '%' : 'Rp'}
                       </span>
-                      <input type="number" value={quickForm.value}
+                      <input
+                        type="number"
+                        value={quickForm.value}
                         onChange={e => setQuickForm(f => ({ ...f, value: e.target.value }))}
                         placeholder={quickForm.type === 'percent' ? '10' : '50000'}
                         className={`w-full pl-7 pr-2 py-2 rounded-lg border text-xs focus:outline-none
-                          ${quickErrors.value ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white focus:border-orange-400'}`} />
+                          ${quickErrors.value ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white focus:border-orange-400'}`}
+                      />
                     </div>
-                    {quickErrors.value && <p className="text-red-500 text-[10px] mt-0.5">{quickErrors.value}</p>}
+                    {quickErrors.value && (
+                      <p className="text-red-500 text-[10px] mt-0.5">{quickErrors.value}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Min. Transaksi</label>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      {t('voucher_selector.quick_label_min_transaction')}
+                    </label>
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">Rp</span>
-                      <input type="number" value={quickForm.min_transaction}
+                      <input
+                        type="number"
+                        value={quickForm.min_transaction}
                         onChange={e => setQuickForm(f => ({ ...f, min_transaction: e.target.value }))}
                         placeholder="0"
-                        className="w-full pl-7 pr-2 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400" />
+                        className="w-full pl-7 pr-2 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400"
+                      />
                     </div>
                   </div>
                 </div>
 
+                {/* Description */}
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Deskripsi</label>
-                  <input type="text" value={quickForm.description}
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                    {t('voucher_selector.quick_label_description')}
+                  </label>
+                  <input
+                    type="text"
+                    value={quickForm.description}
                     onChange={e => setQuickForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="Diskon spesial untuk produk ini..."
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400" />
+                    placeholder={t('voucher_selector.quick_desc_placeholder')}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400"
+                  />
                 </div>
 
+                {/* Expiry + Max usage */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" /> Kedaluwarsa
+                      <Calendar className="w-3 h-3" /> {t('voucher_selector.quick_label_expires')}
                     </label>
-                    <input type="datetime-local" value={quickForm.expires_at}
+                    <input
+                      type="datetime-local"
+                      value={quickForm.expires_at}
                       onChange={e => setQuickForm(f => ({ ...f, expires_at: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400" />
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400"
+                    />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Max Penggunaan</label>
-                    <input type="number" value={quickForm.max_usage}
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      {t('voucher_selector.quick_label_max_usage')}
+                    </label>
+                    <input
+                      type="number"
+                      value={quickForm.max_usage}
                       onChange={e => setQuickForm(f => ({ ...f, max_usage: e.target.value }))}
                       placeholder="∞"
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400" />
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs focus:outline-none focus:border-orange-400"
+                    />
                   </div>
                 </div>
 
+                {/* Actions */}
                 <div className="flex gap-2 pt-1">
-                  <button type="button" onClick={handleQuickCreate} disabled={quickLoading}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold disabled:opacity-60">
+                  <button
+                    type="button"
+                    onClick={handleQuickCreate}
+                    disabled={quickLoading}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold disabled:opacity-60"
+                  >
                     {quickLoading
-                      ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Menyimpan...</>
-                      : <><CheckCircle2 className="w-3.5 h-3.5" /> Buat & Pilih</>
+                      ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> {t('voucher_selector.quick_btn_saving')}</>
+                      : <><CheckCircle2 className="w-3.5 h-3.5" /> {t('voucher_selector.quick_btn_create_select')}</>
                     }
                   </button>
-                  <button type="button" onClick={() => langNavigate('/agent/vouchers')}
-                    className="flex items-center gap-1 px-3 py-2 rounded-xl border border-gray-200 text-gray-500 hover:text-primary-600 hover:border-primary-300 text-xs font-semibold">
-                    <ExternalLink className="w-3.5 h-3.5" /> Kelola
+                  <button
+                    type="button"
+                    onClick={() => langNavigate('/agent/vouchers')}
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl border border-gray-200 text-gray-500 hover:text-primary-600 hover:border-primary-300 text-xs font-semibold"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> {t('voucher_selector.btn_manage')}
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* List */}
+          {/* Voucher list */}
           <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
 
+            {/* Loading */}
             {isLoading && (
               <div className="flex items-center justify-center py-10 text-gray-400 text-sm">
                 <div className="w-5 h-5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin mr-2" />
-                Memuat...
+                {t('voucher_selector.loading')}
               </div>
             )}
 
+            {/* Error */}
             {error && !isLoading && (
               <div className="flex flex-col items-center gap-2 p-6 text-center">
                 <AlertCircle className="w-5 h-5 text-red-400" />
                 <p className="text-sm text-red-500">{error}</p>
-                <button type="button" onClick={() => loadVouchers(true)}
-                  className="text-xs font-bold text-orange-600 hover:underline mt-1">
-                  Coba lagi
+                <button
+                  type="button"
+                  onClick={() => loadVouchers(true)}
+                  className="text-xs font-bold text-orange-600 hover:underline mt-1"
+                >
+                  {t('voucher_selector.btn_retry')}
                 </button>
               </div>
             )}
 
+            {/* Empty state */}
             {!isLoading && !error && filteredVouchers.length === 0 && !showQuick && (
               <div className="py-10 px-6 text-center">
                 <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <Tag className="w-6 h-6 text-orange-200" />
                 </div>
                 <p className="text-sm font-semibold text-gray-700">
-                  {search ? 'Tidak ada voucher yang cocok' : 'Belum ada voucher'}
+                  {search ? t('voucher_selector.empty_no_match') : t('voucher_selector.empty_no_vouchers')}
                 </p>
                 {!search && (
                   <div className="flex items-center justify-center gap-2 mt-4">
-                    <button type="button" onClick={() => setShowQuick(true)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold">
-                      <Plus className="w-3.5 h-3.5" /> Buat Sekarang
+                    <button
+                      type="button"
+                      onClick={() => setShowQuick(true)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> {t('voucher_selector.btn_create_now')}
                     </button>
-                    <button type="button" onClick={() => langNavigate('/agent/vouchers')}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-600 text-xs font-semibold">
-                      <ExternalLink className="w-3.5 h-3.5" /> Halaman Voucher
+                    <button
+                      type="button"
+                      onClick={() => langNavigate('/agent/vouchers')}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-600 text-xs font-semibold"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> {t('voucher_selector.btn_voucher_page')}
                     </button>
                   </div>
                 )}
               </div>
             )}
 
+            {/* Voucher rows */}
             {!isLoading && !error && filteredVouchers.map(v => {
               const isSelected = selectedIds.includes(Number(v.id));
               const expired    = isExpired(v);
               const full       = isFull(v);
               return (
-                <button key={v.id} type="button" onClick={() => toggle(Number(v.id))}
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => toggle(Number(v.id))}
                   className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-all
                     ${isSelected ? 'bg-orange-50 hover:bg-orange-100' : 'hover:bg-gray-50'}`}
                 >
@@ -383,31 +462,44 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
                         ${v.type === 'percent' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
                         {v.type === 'percent' ? `${v.value}% off` : `${formatRp(Number(v.value))} off`}
                       </span>
-                      {/* Status badge — sama seperti AgentVouchers.tsx */}
+                      {/* Status badges */}
                       {!v.is_active && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">Nonaktif</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">
+                          {t('voucher_selector.status_inactive')}
+                        </span>
                       )}
                       {v.is_active && expired && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">Kadaluarsa</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600">
+                          {t('voucher_selector.status_expired')}
+                        </span>
                       )}
                       {v.is_active && !expired && full && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-600">Kuota habis</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-600">
+                          {t('voucher_selector.status_quota_full')}
+                        </span>
                       )}
                       {v.is_active && !expired && !full && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">Aktif</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
+                          {t('voucher_selector.status_active')}
+                        </span>
                       )}
                     </div>
-                    {v.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{v.description}</p>}
+                    {v.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">{v.description}</p>
+                    )}
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-[10px] text-gray-400">Min. {formatRp(Number(v.min_transaction))}</span>
+                      <span className="text-[10px] text-gray-400">
+                        {t('voucher_selector.row_min', { amount: formatRp(Number(v.min_transaction)) })}
+                      </span>
                       {v.expires_at && (
                         <span className="text-[10px] text-gray-400">
-                          s/d {new Date(v.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {t('voucher_selector.row_until')}{' '}
+                          {new Date(v.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       )}
                       {v.max_usage != null && (
                         <span className="text-[10px] text-gray-400">
-                          {v.used_count}/{v.max_usage} digunakan
+                          {t('voucher_selector.row_used', { used: v.used_count, max: v.max_usage })}
                         </span>
                       )}
                     </div>
@@ -419,10 +511,15 @@ const VoucherSelector: React.FC<VoucherSelectorProps> = ({ selectedIds, onChange
 
           {/* Footer */}
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-            <span className="text-xs text-gray-400">{selectedIds.length} voucher dipilih</span>
-            <button type="button" onClick={() => setIsOpen(false)}
-              className="text-xs font-bold text-orange-600 hover:underline">
-              Selesai
+            <span className="text-xs text-gray-400">
+              {t('voucher_selector.footer_selected', { count: selectedIds.length })}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="text-xs font-bold text-orange-600 hover:underline"
+            >
+              {t('voucher_selector.btn_done')}
             </button>
           </div>
         </div>

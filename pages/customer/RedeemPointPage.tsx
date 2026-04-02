@@ -11,11 +11,11 @@ import { loyaltyService, type PointBalance, type PointRedemption } from '../../s
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const VOUCHER_OPTIONS = [
-  { points: 100,  value: 10_000,  label: '100 pts → Rp 10.000' },
-  { points: 250,  value: 25_000,  label: '250 pts → Rp 25.000' },
-  { points: 500,  value: 50_000,  label: '500 pts → Rp 50.000' },
-  { points: 1000, value: 100_000, label: '1.000 pts → Rp 100.000' },
-  { points: 2000, value: 210_000, label: '2.000 pts → Rp 210.000 🔥' },
+  { points: 100,  value: 10_000  },
+  { points: 250,  value: 25_000  },
+  { points: 500,  value: 50_000  },
+  { points: 1000, value: 100_000 },
+  { points: 2000, value: 210_000, hot: true },
 ];
 
 function formatRp(n: number) {
@@ -23,7 +23,6 @@ function formatRp(n: number) {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-
 const RedeemPointPage: React.FC = () => {
   const { langPath } = useLangNavigate();
   const { t } = useTranslation();
@@ -63,7 +62,7 @@ const RedeemPointPage: React.FC = () => {
 
     const points = mode === 'voucher' ? selectedOption!.points : Number(checkoutPoints);
     if ((balance?.balance ?? 0) < points) {
-      setError('Point tidak cukup');
+      setError(t('redeem.insufficient_points', 'Insufficient points'));
       return;
     }
 
@@ -71,11 +70,10 @@ const RedeemPointPage: React.FC = () => {
     try {
       const result = await loyaltyService.redeem({ redemption_type: mode, points });
       setSuccess(result);
-      // refresh balance
       const newBal = await loyaltyService.getBalance();
       setBalance(newBal);
     } catch (e: any) {
-      setError(e?.response?.data?.message || 'Gagal melakukan redeem');
+      setError(e?.response?.data?.message || t('redeem.redeem_failed', 'Failed to redeem'));
     } finally {
       setSubmitting(false);
     }
@@ -110,7 +108,7 @@ const RedeemPointPage: React.FC = () => {
           className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-5 text-white flex items-center justify-between"
         >
           <div>
-            <p className="text-white/50 text-xs font-bold uppercase tracking-wider">{t('loyalty.your_points', 'Point Balance')}</p>
+            <p className="text-white/50 text-xs font-bold uppercase tracking-wider">{t('redeem.point_balance', 'Point Balance')}</p>
             <p className="text-4xl font-bold font-mono mt-1">{(balance?.balance ?? 0).toLocaleString('id-ID')}</p>
             <p className="text-white/50 text-xs mt-1">{t('redeem.pts_available', 'pts available')}</p>
           </div>
@@ -129,7 +127,10 @@ const RedeemPointPage: React.FC = () => {
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all
                   ${mode === m ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                {m === 'voucher' ? <><Ticket className="w-4 h-4" /> {t('redeem.to_voucher', 'To Voucher')}</> : <><ShoppingCart className="w-4 h-4" /> {t('redeem.checkout_deduct', 'Checkout Deduct')}</>}
+                {m === 'voucher'
+                  ? <><Ticket className="w-4 h-4" /> {t('redeem.to_voucher', 'To Voucher')}</>
+                  : <><ShoppingCart className="w-4 h-4" /> {t('redeem.checkout_deduct', 'Checkout Deduct')}</>
+                }
               </button>
             ))}
           </div>
@@ -154,6 +155,7 @@ const RedeemPointPage: React.FC = () => {
                 {VOUCHER_OPTIONS.map((opt) => {
                   const canAfford = (balance?.balance ?? 0) >= opt.points;
                   const isSelected = selectedOption?.points === opt.points;
+                  const label = `${opt.points.toLocaleString('id-ID')} pts → ${formatRp(opt.value)}${opt.hot ? ' 🔥' : ''}`;
                   return (
                     <button
                       key={opt.points}
@@ -168,7 +170,7 @@ const RedeemPointPage: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-bold text-gray-900">{formatRp(opt.value)} {t('redeem.discount', 'discount')}</p>
-                          <p className="text-xs text-gray-500">{opt.points.toLocaleString('id-ID')} {t('loyalty.points', 'points')}</p>
+                          <p className="text-xs text-gray-500">{opt.points.toLocaleString('id-ID')} {t('loyalty.points', 'points')}{opt.hot ? ' 🔥' : ''}</p>
                         </div>
                       </div>
                       {isSelected && <CheckCircle2 className="w-5 h-5 text-gray-900" />}
@@ -186,8 +188,12 @@ const RedeemPointPage: React.FC = () => {
                 >
                   <div>
                     <p className="text-white/60 text-xs font-bold uppercase tracking-wider">{t('redeem.you_will_get', 'You will get')}</p>
-                    <p className="text-2xl font-bold mt-1">{formatRp(selectedOption.value)} <span className="text-sm font-normal text-white/60">{t('redeem.voucher', 'voucher')}</span></p>
-                    <p className="text-white/50 text-xs mt-0.5">{t('redeem.deduct_from_balance', 'Deduct')} {selectedOption.points.toLocaleString('id-ID')} pts {t('redeem.from_balance', 'from balance')}</p>
+                    <p className="text-2xl font-bold mt-1">
+                      {formatRp(selectedOption.value)} <span className="text-sm font-normal text-white/60">{t('redeem.voucher', 'voucher')}</span>
+                    </p>
+                    <p className="text-white/50 text-xs mt-0.5">
+                      {t('redeem.deduct_from_balance', 'Deduct')} {selectedOption.points.toLocaleString('id-ID')} pts {t('redeem.from_balance', 'from balance')}
+                    </p>
                   </div>
                   <ChevronRight className="w-6 h-6 text-white/40" />
                 </motion.div>
@@ -219,7 +225,7 @@ const RedeemPointPage: React.FC = () => {
                     min={10}
                     max={balance?.balance ?? 0}
                     step={10}
-                    placeholder="{t('redeem.amount_placeholder', 'Enter point amount')}"
+                    placeholder={t('redeem.amount_placeholder', 'Enter point amount')}
                     className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:border-primary-500 text-sm font-semibold transition-all"
                   />
                 </div>
@@ -239,7 +245,7 @@ const RedeemPointPage: React.FC = () => {
                       <p className="text-white/50 text-xs mt-0.5">{t('redeem.checkout_credit', 'checkout discount credit')}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-white/60 text-xs">Pakai</p>
+                      <p className="text-white/60 text-xs">{t('redeem.use_label', 'Use')}</p>
                       <p className="font-bold">{Number(checkoutPoints).toLocaleString('id-ID')} pts</p>
                     </div>
                   </div>
@@ -281,8 +287,9 @@ const RedeemPointPage: React.FC = () => {
                   <p className="font-bold text-green-800">{t('redeem.success_title', 'Redeem Successful!')}</p>
                   <p className="text-xs text-green-600">
                     {success.redemption_type === 'voucher'
-                      ? `Voucher ${success.voucher_code ?? ''} sudah tersimpan di akunmu`
-                      : `Kredit ${formatRp(success.discount_amount ?? 0)} siap digunakan`}
+                      ? t('redeem.success_voucher_desc', 'Voucher {{code}} has been saved to your account', { code: success.voucher_code ?? '' })
+                      : t('redeem.success_credit_desc', 'Credit {{amount}} is ready to use', { amount: formatRp(success.discount_amount ?? 0) })
+                    }
                   </p>
                 </div>
               </div>
@@ -306,7 +313,10 @@ const RedeemPointPage: React.FC = () => {
             disabled={submitting || (mode === 'voucher' ? !selectedOption : !checkoutPoints)}
             className="w-full py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-2xl font-bold text-sm transition-all shadow-lg disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
           >
-            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('common.loading', 'Processing...')}</> : <><Gift className="w-4 h-4" /> {t('redeem.redeem_now', 'Redeem Now')}</>}
+            {submitting
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('common.loading', 'Processing...')}</>
+              : <><Gift className="w-4 h-4" /> {t('redeem.redeem_now', 'Redeem Now')}</>
+            }
           </motion.button>
         )}
 
@@ -319,11 +329,17 @@ const RedeemPointPage: React.FC = () => {
                 <div key={r.id} className="flex items-center justify-between px-5 py-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${r.redemption_type === 'voucher' ? 'bg-blue-50' : 'bg-orange-50'}`}>
-                      {r.redemption_type === 'voucher' ? <Ticket className="w-4 h-4 text-blue-600" /> : <ShoppingCart className="w-4 h-4 text-orange-600" />}
+                      {r.redemption_type === 'voucher'
+                        ? <Ticket className="w-4 h-4 text-blue-600" />
+                        : <ShoppingCart className="w-4 h-4 text-orange-600" />
+                      }
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-800">
-                        {r.redemption_type === 'voucher' ? `Voucher ${r.voucher_code ?? ''}` : t('redeem.checkout_deduct', 'Checkout Deduct')}
+                        {r.redemption_type === 'voucher'
+                          ? `${t('redeem.voucher', 'Voucher')} ${r.voucher_code ?? ''}`
+                          : t('redeem.checkout_deduct', 'Checkout Deduct')
+                        }
                       </p>
                       <p className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString('id-ID')}</p>
                     </div>
@@ -331,11 +347,11 @@ const RedeemPointPage: React.FC = () => {
                   <div className="text-right">
                     <p className="text-sm font-bold text-gray-900">−{r.points_spent.toLocaleString('id-ID')} pts</p>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      r.status === 'used' ? 'bg-green-100 text-green-700' :
+                      r.status === 'used'    ? 'bg-green-100 text-green-700' :
                       r.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                       r.status === 'expired' ? 'bg-red-100 text-red-600' :
                       'bg-gray-100 text-gray-500'}`}>
-                      {r.status}
+                      {t(`redeem.status_${r.status}`, r.status)}
                     </span>
                   </div>
                 </div>

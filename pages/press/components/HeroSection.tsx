@@ -37,17 +37,32 @@ export const HeroSection = () => {
     {/* Content */}
     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center justify-center" style={{ minHeight: '100vh' }}>
       <div className="text-center max-w-4xl mx-auto">
-        <motion.span initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.2 }} className="inline-block py-2 px-4 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-bold tracking-[0.2em] mb-6 uppercase border border-white/20">
-          Pers & Media
+        <motion.span
+          initial={{ opacity: 0, y: -18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.2 }}
+          className="inline-block py-2 px-4 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-bold tracking-[0.2em] mb-6 uppercase border border-white/20"
+        >
+          {t('press.hero.badge')}
         </motion.span>
-        <motion.h1 initial={{ opacity: 0, y: 44 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.4, ease: EASE }} className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 leading-tight">
-          Informasi Resmi untuk <br />
-          <motion.span initial={{ opacity: 0, scale: 0.88 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.75, ease: EASE }} className="text-transparent bg-clip-text bg-gradient-to-r from-white via-yellow-200 to-amber-300 inline-block">
-            Rekan Media
+        <motion.h1
+          initial={{ opacity: 0, y: 44 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.85, delay: 0.4, ease: EASE }}
+          className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold mb-6 leading-tight"
+        >
+          {t('press.hero.title_line1')} <br />
+          <motion.span
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.75, ease: EASE }}
+            className="text-transparent bg-clip-text bg-gradient-to-r from-white via-yellow-200 to-amber-300 inline-block"
+          >
+            {t('press.hero.title_highlight')}
           </motion.span>
         </motion.h1>
       </div>
     </div>
   </div>
   );
-}
+};
