@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import { useAuth } from '../../AuthContext';
 import { authService } from '../../services/authService';
 import UserAvatar from '../../components/UserAvatar';
+import { ReferralStats } from '../../types';
 
 const ProfileSettings: React.FC = () => {
   const { user, updateUser, refreshMe, logout } = useAuth();
@@ -14,6 +15,13 @@ const ProfileSettings: React.FC = () => {
   const { t } = useTranslation();
   const { langNavigate } = useLangNavigate();
   const [activeTab, setActiveTab] = useState<'info' | 'security'>('info');
+  const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
+
+  useEffect(() => {
+    if (user?.referral_code) {
+      authService.getReferralStats().then(setReferralStats).catch(() => {});
+    }
+  }, [user?.referral_code]);
 
   // Date parsing
   let defaultY = '', defaultM = '', defaultD = '';
@@ -488,6 +496,122 @@ const ProfileSettings: React.FC = () => {
                         className="px-6 py-3 bg-primary-600 text-white rounded-xl font-bold text-sm transition-colors hover:bg-primary-700 whitespace-nowrap shadow-md shadow-primary-500/20">
                         Salin Tautan
                       </button>
+                    </div>
+                  )}
+
+                  {/* Referral Statistics & Travel Coins */}
+                  {referralStats && (
+                    <div className="space-y-6 mt-6">
+
+                      {/* Travel Coins Card */}
+                      <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm p-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div>
+                            <h3 className="text-lg font-bold text-amber-900 mb-1">💰 Travel Coins Saya</h3>
+                            <p className="text-3xl font-black text-amber-800 tracking-tight">
+                              {(referralStats.point_balance?.balance || 0).toLocaleString('id-ID')} <span className="text-base font-bold text-amber-600">Coins</span>
+                            </p>
+                            <p className="text-xs text-amber-600 mt-1">
+                              ≈ Rp{((referralStats.point_balance?.balance || 0) * 10).toLocaleString('id-ID')}
+                            </p>
+                          </div>
+                          <div className="text-right text-xs text-amber-700 space-y-1">
+                            <p>Total Didapat: <span className="font-bold">{(referralStats.point_balance?.lifetime_earned || 0).toLocaleString('id-ID')}</span></p>
+                            <p>Total Dipakai: <span className="font-bold">{(referralStats.point_balance?.lifetime_spent || 0).toLocaleString('id-ID')}</span></p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Stats Cards */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
+                          <p className="text-sm font-bold text-gray-500 mb-1">Total Dilihat (Klik)</p>
+                          <p className="text-2xl font-black text-gray-900">{referralStats.total_clicks}</p>
+                        </div>
+                        <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 text-center">
+                          <p className="text-sm font-bold text-primary-700 mb-1">Total Bergabung</p>
+                          <p className="text-2xl font-black text-primary-900">{referralStats.total_registered}</p>
+                        </div>
+                      </div>
+
+                      {/* Friends Table with Reward Status */}
+                      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Riwayat Referral</h3>
+
+                        {referralStats.friends && referralStats.friends.length > 0 ? (
+                          <div className="overflow-x-auto rounded-xl border border-gray-100">
+                            <table className="w-full text-left text-sm whitespace-nowrap">
+                              <thead className="bg-gray-50 text-gray-600 font-bold border-b border-gray-100">
+                                <tr>
+                                  <th className="px-4 py-3">Nama Teman</th>
+                                  <th className="px-4 py-3">Verifikasi</th>
+                                  <th className="px-4 py-3">Booking</th>
+                                  <th className="px-4 py-3 text-right">Bergabung</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {referralStats.friends.map((friend, idx) => {
+                                  const dateJoined = new Date(friend.created_at).toLocaleDateString('id-ID', {
+                                    day: 'numeric', month: 'short', year: 'numeric'
+                                  });
+                                  const isVerified = friend.verification_status === 'VERIFIED' || friend.verification_status === 'WAITING_DOCUMENT';
+                                  return (
+                                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                      <td className="px-4 py-3">
+                                        <p className="font-medium text-gray-900">{friend.name}</p>
+                                        <p className="text-xs text-gray-400">
+                                          {friend.email.replace(/(.{2})(.*)(?=@)/, (_m: string, p1: string, p2: string) => p1 + p2.replace(/./g, '*'))}
+                                        </p>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        {isVerified ? (
+                                          <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded-lg">
+                                            <Check className="w-3 h-3" /> +500
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg">
+                                            ⏳ Menunggu
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        {friend.booking_rewarded ? (
+                                          <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded-lg">
+                                            <Check className="w-3 h-3" /> +1.500
+                                          </span>
+                                        ) : friend.has_booking ? (
+                                          <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-lg">
+                                            ✓ Sudah Booking
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
+                                            ⏳ Belum
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-3 text-right text-gray-500 text-xs">{dateJoined}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 bg-gray-50 rounded-xl border border-gray-100 border-dashed">
+                            <p className="text-sm text-gray-500 font-medium">Belum ada teman yang bergabung menggunakan link Anda.</p>
+                          </div>
+                        )}
+
+                        {/* Gamification Microcopy */}
+                        {referralStats.friends && referralStats.friends.some(f => !f.booking_rewarded && (f.verification_status === 'VERIFIED' || f.verification_status === 'WAITING_DOCUMENT')) && (
+                          <div className="mt-4 bg-gradient-to-r from-primary-50 to-blue-50 rounded-xl border border-primary-100 p-4 text-center">
+                            <p className="text-sm font-bold text-primary-800">
+                              🔥 Ajak temanmu untuk booking pertama dan dapatkan <span className="text-primary-600">+1.500 poin</span> lagi!
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
                   )}
 

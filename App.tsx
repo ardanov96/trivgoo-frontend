@@ -11,6 +11,7 @@ import { UserRole } from './types';
 import { CartProvider } from './components/CartContext';
 import ChatbotWidget from './components/ChatbotWidget';
 import { useTranslation } from 'react-i18next';
+import { authService } from './services/authService';
 
 // ── Infrastructure ─────────────────────────────────────────────────────────
 import { ErrorBoundary }   from './components/ErrorBoundary';
@@ -166,7 +167,9 @@ const ReferralCatcher = () => {
     const params = new URLSearchParams(search);
     const ref = params.get('ref');
     if (ref && !localStorage.getItem('trivgoo_ref_code')) {
-      localStorage.setItem('trivgoo_ref_code', ref.toUpperCase());
+      const code = ref.toUpperCase();
+      localStorage.setItem('trivgoo_ref_code', code);
+      authService.trackReferralClick(code).catch(() => {});
     }
   }, [search]);
   return null;
