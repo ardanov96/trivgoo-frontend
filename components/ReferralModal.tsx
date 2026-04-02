@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { X, Link2, Copy, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
-// Whatsapp, Facebook, Instagram SVG icons (karena lucide tidak punya)
+// Whatsapp, Facebook, Instagram SVG icons (lucide does not include these)
 const WhatsappIcon = () => (
   <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current" xmlns="http://www.w3.org/2000/svg">
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -22,8 +23,8 @@ const InstagramIcon = () => (
 );
 
 interface ReferralModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen:        boolean;
+  onClose:       () => void;
   referralCode?: string;
 }
 
@@ -32,6 +33,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
   onClose,
   referralCode = 'TRIVGOO2025',
 }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const referralLink = `https://trivgoo.com/register?ref=${referralCode}`;
@@ -42,17 +44,17 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
+      // fallback — silently ignore
     }
   };
 
-  const shareText = `Yuk join Trivgoo dan dapatkan diskon perjalananmu! Gunakan kode referral aku: ${referralCode} atau klik link ini: ${referralLink}`;
+  const shareText = t('referral_modal.share_text', { code: referralCode, link: referralLink });
 
   const shareOptions = [
     {
-      label: 'Link',
-      icon: <Link2 className="w-7 h-7 text-gray-600" />,
-      bg: 'bg-gray-100',
+      label: t('referral_modal.share_link'),
+      icon:  <Link2 className="w-7 h-7 text-gray-600" />,
+      bg:    'bg-gray-100',
       action: () => {
         navigator.clipboard.writeText(referralLink);
         setCopied(true);
@@ -60,16 +62,16 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
       },
     },
     {
-      label: 'Whatsapp',
-      icon: <span className="text-[#25D366]"><WhatsappIcon /></span>,
-      bg: 'bg-green-50',
+      label: 'WhatsApp',
+      icon:  <span className="text-[#25D366]"><WhatsappIcon /></span>,
+      bg:    'bg-green-50',
       action: () =>
         window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank'),
     },
     {
       label: 'Facebook',
-      icon: <span className="text-[#1877F2]"><FacebookIcon /></span>,
-      bg: 'bg-blue-50',
+      icon:  <span className="text-[#1877F2]"><FacebookIcon /></span>,
+      bg:    'bg-blue-50',
       action: () =>
         window.open(
           `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`,
@@ -78,15 +80,11 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
     },
     {
       label: 'Instagram',
-      icon: (
-        <span className="text-[#E1306C]">
-          <InstagramIcon />
-        </span>
-      ),
-      bg: 'bg-pink-50',
+      icon:  <span className="text-[#E1306C]"><InstagramIcon /></span>,
+      bg:    'bg-pink-50',
       action: () => {
         navigator.clipboard.writeText(shareText);
-        alert('Teks sudah disalin! Buka Instagram dan tempel di Story atau DM kamu.');
+        alert(t('referral_modal.instagram_alert'));
       },
     },
   ];
@@ -115,7 +113,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
           >
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 relative">
 
-              {/* Close Button */}
+              {/* Close button */}
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
@@ -127,20 +125,20 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
               <div className="flex justify-center mb-5">
                 <img
                   src="/homepage-asset/card3.png"
-                  alt="Referral Illustration"
+                  alt={t('referral_modal.illustration_alt')}
                   className="w-28 h-28 object-contain"
                 />
               </div>
 
               {/* Title */}
               <h3 className="text-center font-serif font-bold text-xl text-gray-900 mb-1">
-                Invite Friend via...
+                {t('referral_modal.title')}
               </h3>
               <p className="text-center text-xs text-gray-400 mb-6">
-                Bagikan kode referral kamu dan dapatkan reward
+                {t('referral_modal.subtitle')}
               </p>
 
-              {/* Share Buttons */}
+              {/* Share buttons */}
               <div className="flex justify-center gap-6 mb-8">
                 {shareOptions.map((opt) => (
                   <button
@@ -148,9 +146,7 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
                     onClick={opt.action}
                     className="flex flex-col items-center gap-2 group"
                   >
-                    <div
-                      className={`w-14 h-14 ${opt.bg} rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all duration-200 active:scale-95`}
-                    >
+                    <div className={`w-14 h-14 ${opt.bg} rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all duration-200 active:scale-95`}>
                       {opt.icon}
                     </div>
                     <span className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-800 transition-colors">
@@ -163,15 +159,17 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
               {/* Divider */}
               <div className="flex items-center gap-3 mb-5">
                 <div className="flex-1 h-px bg-gray-100" />
-                <span className="text-xs text-gray-400 font-medium">atau salin kode referral</span>
+                <span className="text-xs text-gray-400 font-medium">
+                  {t('referral_modal.or_copy_code')}
+                </span>
                 <div className="flex-1 h-px bg-gray-100" />
               </div>
 
-              {/* Referral Code Box */}
+              {/* Referral code box */}
               <div className="flex items-center gap-3 bg-primary-50 border border-primary-100 rounded-2xl px-5 py-4">
                 <div className="flex-1">
                   <p className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mb-0.5">
-                    Kode Referral Kamu
+                    {t('referral_modal.your_code_label')}
                   </p>
                   <p className="text-2xl font-bold text-primary-600 tracking-widest font-mono">
                     {referralCode}
@@ -179,29 +177,23 @@ const ReferralModal: React.FC<ReferralModalProps> = ({
                 </div>
                 <button
                   onClick={handleCopy}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg ${
                     copied
                       ? 'bg-green-500 text-white shadow-green-500/30'
                       : 'bg-primary-600 text-white hover:bg-primary-700 shadow-primary-600/30'
-                  } shadow-lg`}
+                  }`}
                 >
                   {copied ? (
-                    <>
-                      <CheckCheck className="w-4 h-4" />
-                      Disalin!
-                    </>
+                    <><CheckCheck className="w-4 h-4" /> {t('referral_modal.copied')}</>
                   ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      Salin
-                    </>
+                    <><Copy className="w-4 h-4" /> {t('referral_modal.copy')}</>
                   )}
                 </button>
               </div>
 
               {/* Info */}
               <p className="text-center text-[11px] text-gray-400 mt-4 leading-relaxed">
-                Temanmu akan mendapat diskon & kamu dapat kredit perjalanan 🎉
+                {t('referral_modal.info_note')}
               </p>
 
             </div>

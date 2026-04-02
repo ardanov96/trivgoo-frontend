@@ -25,17 +25,15 @@ interface PriceAlert {
 }
 
 const MOCK_ALERTS: PriceAlert[] = [
-  { id: '1', from: 'Jakarta',   fromCode: 'CGK', to: 'Bali',      toCode: 'DPS', currentPrice: 890_000,   targetPrice: 750_000, trend: 'down',   trendPct: 8,  active: true,  lastChecked: '2 jam lalu',  nextDeparture: '15 Apr 2024' },
-  { id: '2', from: 'Surabaya',  fromCode: 'SUB', to: 'Lombok',    toCode: 'LOP', currentPrice: 1_200_000, targetPrice: 900_000, trend: 'up',     trendPct: 12, active: true,  lastChecked: '5 jam lalu',  nextDeparture: '20 Apr 2024' },
-  { id: '3', from: 'Jakarta',   fromCode: 'CGK', to: 'Yogyakarta', toCode: 'JOG', currentPrice: 620_000, targetPrice: 500_000, trend: 'stable', trendPct: 0,  active: false, lastChecked: '1 hari lalu', nextDeparture: '10 May 2024' },
-  { id: '4', from: 'Bali',      fromCode: 'DPS', to: 'Labuan Bajo', toCode: 'LBJ', currentPrice: 2_100_000, targetPrice: 1_800_000, trend: 'down', trendPct: 5, active: true, lastChecked: '3 jam lalu', nextDeparture: '01 Jun 2024' },
+  { id: '1', from: 'Jakarta',  fromCode: 'CGK', to: 'Bali',        toCode: 'DPS', currentPrice: 890_000,   targetPrice: 750_000,   trend: 'down',   trendPct: 8,  active: true,  lastChecked: '2 jam lalu',  nextDeparture: '15 Apr 2024' },
+  { id: '2', from: 'Surabaya', fromCode: 'SUB', to: 'Lombok',      toCode: 'LOP', currentPrice: 1_200_000, targetPrice: 900_000,   trend: 'up',     trendPct: 12, active: true,  lastChecked: '5 jam lalu',  nextDeparture: '20 Apr 2024' },
+  { id: '3', from: 'Jakarta',  fromCode: 'CGK', to: 'Yogyakarta',  toCode: 'JOG', currentPrice: 620_000,   targetPrice: 500_000,   trend: 'stable', trendPct: 0,  active: false, lastChecked: '1 hari lalu', nextDeparture: '10 May 2024' },
+  { id: '4', from: 'Bali',     fromCode: 'DPS', to: 'Labuan Bajo', toCode: 'LBJ', currentPrice: 2_100_000, targetPrice: 1_800_000, trend: 'down',   trendPct: 5,  active: true,  lastChecked: '3 jam lalu',  nextDeparture: '01 Jun 2024' },
 ];
 
 const fmt = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
 const TrendBadge: React.FC<{ trend: PriceTrend; pct: number }> = ({ trend, pct }) => {
-  const { langPath } = useLangNavigate();
-  const { t } = useTranslation();
   if (trend === 'down') return (
     <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
       <TrendingDown className="w-3 h-3" /> Turun {pct}%

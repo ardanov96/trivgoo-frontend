@@ -92,21 +92,27 @@ export const CIRCUIT_V = [8, 22, 38, 55, 70, 88];
 export const CIRCUIT_DOTS = [[8,18],[22,35],[38,52],[55,70],[70,35],[88,85],[22,70],[55,18],[38,85]];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+// Category keys are now i18n keys consumed by components via t()
+export type PressReleaseCategory = 'announcement' | 'partnership' | 'award' | 'expansion';
+export type CoverageType         = 'article' | 'interview' | 'review' | 'feature';
+export type MediaAssetType       = 'image' | 'video' | 'logo' | 'press-kit';
+
 export interface PressRelease {
   id:          number;
-  title:       string;
-  summary:     string;
+  titleKey:    string;   // e.g. 'press.releases.items.1.title'
+  summaryKey:  string;   // e.g. 'press.releases.items.1.summary'
   date:        string;
-  category:    'Pengumuman' | 'Kemitraan' | 'Penghargaan' | 'Ekspansi';
+  category:    PressReleaseCategory;
   downloadUrl: string;
   isNew?:      boolean;
 }
 
 export interface MediaAsset {
   id:          number;
-  type:        'image' | 'video' | 'logo' | 'press-kit';
-  title:       string;
-  description: string;
+  type:        MediaAssetType;
+  titleKey:    string;   // e.g. 'press.assets.items.1.title'
+  descKey:     string;   // e.g. 'press.assets.items.1.description'
   thumbnail:   string;
   downloadUrl: string;
   format:      string;
@@ -117,68 +123,92 @@ export interface PressCoverage {
   id:      number;
   outlet:  string;
   logo:    string;
-  title:   string;
-  excerpt: string;
+  titleKey:   string;   // e.g. 'press.coverage.items.1.title'
+  excerptKey: string;   // e.g. 'press.coverage.items.1.excerpt'
   url:     string;
   date:    string;
-  type:    'Artikel' | 'Wawancara' | 'Ulasan' | 'Feature';
+  type:    CoverageType;
+}
+
+export interface ContactInfo {
+  icon:       React.ComponentType<{ className?: string }>;
+  titleKey:   string;   // e.g. 'press.contact.contacts.press_inquiries'
+  detailKey:  string;   // e.g. 'press.contact.contacts.press_inquiries' (or literal for email/phone)
+  detail:     string;   // literal value (email address, phone number)
+  link:       string;
 }
 
 // ── Press releases ────────────────────────────────────────────────────────────
 export const PRESS_RELEASES: PressRelease[] = [
-  { id:1, title:'Trivgoo Raih Pendanaan Seri B $15 Juta untuk Ekspansi Asia Tenggara',  summary:'Putaran pendanaan dipimpin Sequoia Capital untuk mempercepat pertumbuhan dan pengembangan teknologi di sektor perjalanan.',              date:'15 Maret 2024',   category:'Pengumuman', downloadUrl:'#', isNew:true },
-  { id:2, title:'Kemitraan dengan Badan Pariwisata Indonesia untuk Pariwisata Berkelanjutan', summary:'Kolaborasi bertujuan mempromosikan destinasi ramah lingkungan dan mendukung komunitas lokal di seluruh Nusantara.',                  date:'10 Maret 2024',   category:'Kemitraan',  downloadUrl:'#' },
-  { id:3, title:'Trivgoo Raih "Inovasi Perjalanan Terbaik" di Asia Tech Awards 2024',   summary:'Penghargaan atas teknologi perencanaan perjalanan bertenaga AI yang mempersonalisasi pengalaman wisata.',                                 date:'28 Februari 2024',category:'Penghargaan',downloadUrl:'#' },
-  { id:4, title:'Ekspansi ke Pasar Vietnam dan Thailand Diumumkan',                     summary:'Kantor baru dibuka di Hanoi dan Bangkok untuk memenuhi permintaan yang terus tumbuh di Asia Tenggara.',                                   date:'15 Februari 2024',category:'Ekspansi',   downloadUrl:'#' },
-  { id:5, title:'Peluncuran Inisiatif Perjalanan Bebas Karbon',                         summary:'Program baru memungkinkan wisatawan mengimbangi jejak karbon mereka melalui proyek lingkungan yang terverifikasi.',                        date:'5 Februari 2024', category:'Pengumuman', downloadUrl:'#' },
-  { id:6, title:'Kemitraan dengan Singapore Airlines untuk Pemesanan Terpadu',          summary:'Kolaborasi strategis untuk menawarkan pemesanan penerbangan dan pengalaman wisata secara seamless dalam satu platform.',                   date:'22 Januari 2024', category:'Kemitraan',  downloadUrl:'#' },
+  { id: 1, titleKey: 'press.releases.items.1.title', summaryKey: 'press.releases.items.1.summary', date: '15 Mar 2024', category: 'announcement', downloadUrl: '#', isNew: true },
+  { id: 2, titleKey: 'press.releases.items.2.title', summaryKey: 'press.releases.items.2.summary', date: '10 Mar 2024', category: 'partnership',  downloadUrl: '#' },
+  { id: 3, titleKey: 'press.releases.items.3.title', summaryKey: 'press.releases.items.3.summary', date: '28 Feb 2024', category: 'award',         downloadUrl: '#' },
+  { id: 4, titleKey: 'press.releases.items.4.title', summaryKey: 'press.releases.items.4.summary', date: '15 Feb 2024', category: 'expansion',     downloadUrl: '#' },
+  { id: 5, titleKey: 'press.releases.items.5.title', summaryKey: 'press.releases.items.5.summary', date: '5 Feb 2024',  category: 'announcement',  downloadUrl: '#' },
+  { id: 6, titleKey: 'press.releases.items.6.title', summaryKey: 'press.releases.items.6.summary', date: '22 Jan 2024', category: 'partnership',   downloadUrl: '#' },
 ];
 
 // ── Media assets ──────────────────────────────────────────────────────────────
 export const MEDIA_ASSETS: MediaAsset[] = [
-  { id:1, type:'logo',      title:'Paket Logo Trivgoo',    description:'Set logo lengkap dalam berbagai format dan variasi warna',             thumbnail:'https://images.unsplash.com/photo-1634942537034-2531766767d1?auto=format&fit=crop&w=400&q=80', downloadUrl:'#', format:'ZIP (SVG, PNG, EPS)', size:'45 MB'   },
-  { id:2, type:'image',     title:'Fotografi Brand',       description:'Gambar resolusi tinggi destinasi dan tim Trivgoo',                      thumbnail:'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=400&q=80', downloadUrl:'#', format:'ZIP (JPG, PNG)',      size:'2,3 GB'  },
-  { id:3, type:'video',     title:'Video Brand Story',     description:'Video ikhtisar perusahaan dan pernyataan misi Trivgoo',                 thumbnail:'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?auto=format&fit=crop&w=400&q=80', downloadUrl:'#', format:'MP4 (4K, 1080p)',     size:'1,8 GB'  },
-  { id:4, type:'press-kit', title:'Press Kit Lengkap',     description:'Semua aset media dan informasi perusahaan dalam satu paket',           thumbnail:'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=400&q=80', downloadUrl:'#', format:'PDF + ZIP',           size:'3,2 GB'  },
-  { id:5, type:'image',     title:'Foto Tim Eksekutif',    description:'Foto profesional para pemimpin dan tim inti Trivgoo',                   thumbnail:'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=400&q=80', downloadUrl:'#', format:'JPG',                 size:'850 MB'  },
-  { id:6, type:'video',     title:'Video Demo Produk',     description:'Panduan platform dan demonstrasi fitur unggulan',                       thumbnail:'https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=400&q=80', downloadUrl:'#', format:'MP4',                 size:'2,1 GB'  },
+  { id: 1, type: 'logo',      titleKey: 'press.assets.items.1.title', descKey: 'press.assets.items.1.description', thumbnail: 'https://images.unsplash.com/photo-1634942537034-2531766767d1?auto=format&fit=crop&w=400&q=80', downloadUrl: '#', format: 'ZIP (SVG, PNG, EPS)', size: '45 MB'   },
+  { id: 2, type: 'image',     titleKey: 'press.assets.items.2.title', descKey: 'press.assets.items.2.description', thumbnail: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=400&q=80', downloadUrl: '#', format: 'ZIP (JPG, PNG)',      size: '2.3 GB'  },
+  { id: 3, type: 'video',     titleKey: 'press.assets.items.3.title', descKey: 'press.assets.items.3.description', thumbnail: 'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?auto=format&fit=crop&w=400&q=80', downloadUrl: '#', format: 'MP4 (4K, 1080p)',     size: '1.8 GB'  },
+  { id: 4, type: 'press-kit', titleKey: 'press.assets.items.4.title', descKey: 'press.assets.items.4.description', thumbnail: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=400&q=80', downloadUrl: '#', format: 'PDF + ZIP',           size: '3.2 GB'  },
+  { id: 5, type: 'image',     titleKey: 'press.assets.items.5.title', descKey: 'press.assets.items.5.description', thumbnail: 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=400&q=80', downloadUrl: '#', format: 'JPG',                 size: '850 MB'  },
+  { id: 6, type: 'video',     titleKey: 'press.assets.items.6.title', descKey: 'press.assets.items.6.description', thumbnail: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=400&q=80', downloadUrl: '#', format: 'MP4',                 size: '2.1 GB'  },
 ];
 
 // ── Press coverage ────────────────────────────────────────────────────────────
 export const PRESS_COVERAGE: PressCoverage[] = [
-  { id:1, outlet:'TechCrunch',      logo:'https://logo.clearbit.com/techcrunch.com',       title:'Bagaimana AI Mengubah Perencanaan Perjalanan di Asia Tenggara',      excerpt:'Pendekatan inovatif Trivgoo menggunakan machine learning untuk menciptakan itinerari yang dipersonalisasi...', url:'#', date:'18 Maret 2024',   type:'Feature'    },
-  { id:2, outlet:'Forbes',          logo:'https://logo.clearbit.com/forbes.com',            title:'Startup yang Menjadikan Perjalanan Mewah Terjangkau untuk Semua',    excerpt:'Wawancara dengan CEO Trivgoo tentang demokratisasi pengalaman perjalanan premium...',                        url:'#', date:'12 Maret 2024',   type:'Wawancara'  },
-  { id:3, outlet:'Travel + Leisure',logo:'https://logo.clearbit.com/travelandleisure.com',  title:'10 Inovasi Teknologi Perjalanan Terbaik 2024',                        excerpt:'Perencana perjalanan AI Trivgoo berhasil masuk daftar inovasi tahunan bergengsi ini...',                      url:'#', date:'5 Maret 2024',    type:'Ulasan'     },
-  { id:4, outlet:'The Jakarta Post',logo:'https://logo.clearbit.com/thejakartapost.com',    title:'Startup Indonesia Berekspansi ke Seluruh Kawasan ASEAN',             excerpt:'Kisah sukses lokal merambah regional dengan pendanaan baru dan berbagai kemitraan strategis...',               url:'#', date:'25 Februari 2024',type:'Artikel'    },
-  { id:5, outlet:'Bloomberg',       logo:'https://logo.clearbit.com/bloomberg.com',         title:'Investor Menaruh Harapan Besar pada Teknologi Perjalanan Asia',      excerpt:'Analisis putaran pendanaan terbaru termasuk Seri B Trivgoo yang menarik perhatian pasar...',                  url:'#', date:'20 Februari 2024',type:'Feature'    },
-  { id:6, outlet:'CNN Travel',      logo:'https://logo.clearbit.com/cnn.com',               title:'Pariwisata Berkelanjutan Mendapat Sentuhan Teknologi Terkini',       excerpt:'Bagaimana teknologi membantu wisatawan membuat pilihan ramah lingkungan yang lebih bijak...',                 url:'#', date:'15 Februari 2024',type:'Artikel'    },
+  { id: 1, outlet: 'TechCrunch',       logo: 'https://logo.clearbit.com/techcrunch.com',       titleKey: 'press.coverage.items.1.title', excerptKey: 'press.coverage.items.1.excerpt', url: '#', date: '18 Mar 2024',  type: 'feature'   },
+  { id: 2, outlet: 'Forbes',           logo: 'https://logo.clearbit.com/forbes.com',            titleKey: 'press.coverage.items.2.title', excerptKey: 'press.coverage.items.2.excerpt', url: '#', date: '12 Mar 2024',  type: 'interview' },
+  { id: 3, outlet: 'Travel + Leisure', logo: 'https://logo.clearbit.com/travelandleisure.com',  titleKey: 'press.coverage.items.3.title', excerptKey: 'press.coverage.items.3.excerpt', url: '#', date: '5 Mar 2024',   type: 'review'    },
+  { id: 4, outlet: 'The Jakarta Post', logo: 'https://logo.clearbit.com/thejakartapost.com',    titleKey: 'press.coverage.items.4.title', excerptKey: 'press.coverage.items.4.excerpt', url: '#', date: '25 Feb 2024',  type: 'article'   },
+  { id: 5, outlet: 'Bloomberg',        logo: 'https://logo.clearbit.com/bloomberg.com',         titleKey: 'press.coverage.items.5.title', excerptKey: 'press.coverage.items.5.excerpt', url: '#', date: '20 Feb 2024',  type: 'feature'   },
+  { id: 6, outlet: 'CNN Travel',       logo: 'https://logo.clearbit.com/cnn.com',               titleKey: 'press.coverage.items.6.title', excerptKey: 'press.coverage.items.6.excerpt', url: '#', date: '15 Feb 2024',  type: 'article'   },
 ];
 
 // ── Contact info ──────────────────────────────────────────────────────────────
-import { Mail, Phone, Users } from 'lucide-react';
-
-export const CONTACT_INFO = [
-  { icon: Mail,  title: 'Pertanyaan Pers',       detail: 'press@trivgoo.com',                      link: 'mailto:press@trivgoo.com' },
-  { icon: Phone, title: 'Hubungan Media',        detail: '+62 21 1234 5678 ext. 2',                link: 'tel:+622112345678'        },
-  { icon: Users, title: 'Permintaan Narasumber', detail: 'Ajukan permintaan wawancara media',       link: '#contact-form'            },
-];
+// Icons are imported by the component itself; only keys + literal values here
+export const CONTACT_INFO_DATA = [
+  { titleKey: 'press.contact.contacts.press_inquiries', detail: 'press@trivgoo.com',             link: 'mailto:press@trivgoo.com', icon: 'mail'  },
+  { titleKey: 'press.contact.contacts.media_relations', detail: '+62 21 1234 5678 ext. 2',       link: 'tel:+622112345678',        icon: 'phone' },
+  { titleKey: 'press.contact.contacts.speaker_request', detailKey: 'press.contact.contacts.speaker_request_detail', detail: '', link: '#contact-form', icon: 'users' },
+] as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-export const getCategoryColor = (category: PressRelease['category']): string => {
+
+// Returns the i18n key for a category color class — color logic stays in getCategoryColor
+export const getCategoryColorClass = (category: PressReleaseCategory): string => {
   switch (category) {
-    case 'Pengumuman': return 'bg-blue-100 text-blue-700';
-    case 'Kemitraan':  return 'bg-green-100 text-green-700';
-    case 'Penghargaan':return 'bg-amber-100 text-amber-700';
-    case 'Ekspansi':   return 'bg-purple-100 text-purple-700';
-    default:           return 'bg-gray-100 text-gray-700';
+    case 'announcement': return 'bg-blue-100 text-blue-700';
+    case 'partnership':  return 'bg-green-100 text-green-700';
+    case 'award':        return 'bg-amber-100 text-amber-700';
+    case 'expansion':    return 'bg-purple-100 text-purple-700';
+    default:             return 'bg-gray-100 text-gray-700';
   }
 };
 
-export const getAssetLabel = (type: MediaAsset['type']): string => {
+export const getCategoryColor = getCategoryColorClass;
+
+// Returns the i18n key for the category label
+export const getCategoryKey = (category: PressReleaseCategory): string =>
+  `press.releases.categories.${category}`;
+
+// Returns the i18n key for an asset type label
+export const getAssetTypeKey = (type: MediaAssetType): string =>
+  `press.assets.types.${type === 'press-kit' ? 'press_kit' : type}`;
+
+// Returns the i18n key for a coverage type label
+export const getCoverageTypeKey = (type: CoverageType): string =>
+  `press.coverage.types.${type}`;
+
+// Legacy helper — kept for backward compat; prefer getAssetTypeKey + t()
+export const getAssetLabel = (type: MediaAssetType): string => {
   switch (type) {
     case 'press-kit': return 'Press Kit';
     case 'logo':      return 'Logo';
-    case 'image':     return 'Gambar';
+    case 'image':     return 'Image';
     case 'video':     return 'Video';
     default:          return type;
   }

@@ -32,7 +32,7 @@ export const VoucherPicker: React.FC<Props> = ({
 
   const isAgent = ownerFilter === 'agent';
 
-  // Filter hanya voucher sesuai ownerFilter — support field scope_owner maupun owner
+  // Filter vouchers by ownerFilter
   const visibleVouchers = useMemo(() =>
     availableVouchers.filter(v => {
       const ownerVal = v.scope_owner ?? v.owner;
@@ -60,11 +60,9 @@ export const VoucherPicker: React.FC<Props> = ({
     onApply(v);
   };
 
-  // ── Tema visual per owner ────────────────────────────────────────────
+  // ── Theme per owner — only non-translatable visual tokens here ───────────
   const theme = isAgent
     ? {
-        title:         'Voucher Eksklusif Agen',
-        sub:           'khusus produk ini',
         headerIconBg:  'bg-orange-100',
         headerIcon:    <User className="w-4 h-4 text-orange-600" />,
         countBadge:    'text-orange-600 bg-orange-50 border-orange-200',
@@ -75,11 +73,13 @@ export const VoucherPicker: React.FC<Props> = ({
         toggleText:    'text-orange-700',
         toggleChevron: 'text-orange-500',
         rowBorder:     'border-orange-200 hover:border-orange-400 hover:bg-orange-50',
-        badge:         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700"><User className="w-2.5 h-2.5" /> Agen</span>,
+        badge: (
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700">
+            <User className="w-2.5 h-2.5" /> {t('voucher_picker.badge_agent')}
+          </span>
+        ),
       }
     : {
-        title:         'Voucher Platform',
-        sub:           'berlaku semua produk',
         headerIconBg:  'bg-blue-100',
         headerIcon:    <Shield className="w-4 h-4 text-blue-600" />,
         countBadge:    'text-blue-600 bg-blue-50 border-blue-200',
@@ -90,10 +90,21 @@ export const VoucherPicker: React.FC<Props> = ({
         toggleText:    'text-blue-700',
         toggleChevron: 'text-blue-500',
         rowBorder:     'border-blue-200 hover:border-blue-400 hover:bg-blue-50',
-        badge:         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700"><Shield className="w-2.5 h-2.5" /> Platform</span>,
+        badge: (
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
+            <Shield className="w-2.5 h-2.5" /> {t('voucher_picker.badge_platform')}
+          </span>
+        ),
       };
 
-  // ── Row voucher ──────────────────────────────────────────────────────
+  // Translated strings that depend on isAgent — resolved after t() is in scope
+  const titleText   = isAgent ? t('voucher_picker.title_agent')    : t('voucher_picker.title_platform');
+  const subText     = isAgent ? t('voucher_picker.sub_agent')      : t('voucher_picker.sub_platform');
+  const toggleLabel = hasApplied
+    ? t('voucher_picker.toggle_change', { title: titleText.toLowerCase() })
+    : t('voucher_picker.toggle_pick',   { title: titleText.toLowerCase() });
+
+  // ── VoucherRow ────────────────────────────────────────────────────────────
   const VoucherRow = ({ v }: { v: any }) => {
     const eligible  = Number(amount) >= Number(v.min_transaction);
     const isApplied = appliedVoucher?.id === v.id;
@@ -112,7 +123,7 @@ export const VoucherPicker: React.FC<Props> = ({
               : 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
           }`}
       >
-        {/* Icon tipe diskon */}
+        {/* Discount type icon */}
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0
           ${v.type === 'percent' ? 'bg-blue-100' : 'bg-green-100'}`}>
           {v.type === 'percent'
@@ -134,30 +145,36 @@ export const VoucherPicker: React.FC<Props> = ({
           )}
           {v.expires_at && (
             <p className="text-[10px] text-gray-400 mt-0.5">
-              Berlaku s/d {new Date(v.expires_at).toLocaleDateString('id-ID', {
+              {t('voucher_picker.valid_until')}{' '}
+              {new Date(v.expires_at).toLocaleDateString('id-ID', {
                 day: 'numeric', month: 'short', year: 'numeric',
               })}
             </p>
           )}
           {!eligible && (
             <p className="text-[10px] text-red-400 font-semibold mt-0.5">
-              Min. transaksi {formatRp(v.min_transaction)}
+              {t('voucher_picker.min_transaction', { amount: formatRp(v.min_transaction) })}
             </p>
           )}
         </div>
 
-        {/* Nilai diskon */}
+        {/* Discount value */}
         <div className="text-right shrink-0">
           <span className={`text-sm font-extrabold
             ${v.type === 'percent' ? 'text-blue-600' : 'text-green-600'}`}>
-            {v.type === 'percent' ? `${v.value}% OFF` : `${formatRp(v.value)} OFF`}
+            {v.type === 'percent'
+              ? t('voucher_picker.off_percent', { value: v.value })
+              : t('voucher_picker.off_amount',  { value: formatRp(v.value) })
+            }
           </span>
           {v.type === 'percent' && v.max_discount && (
-            <p className="text-[10px] text-gray-400">maks. {formatRp(v.max_discount)}</p>
+            <p className="text-[10px] text-gray-400">
+              {t('voucher_picker.max_discount', { amount: formatRp(v.max_discount) })}
+            </p>
           )}
           {eligible && discount > 0 && (
             <p className="text-[10px] text-green-500 font-semibold mt-0.5">
-              Hemat {formatRp(discount)}
+              {t('voucher_picker.save', { amount: formatRp(discount) })}
             </p>
           )}
         </div>
@@ -175,10 +192,10 @@ export const VoucherPicker: React.FC<Props> = ({
         <div className={`w-7 h-7 ${theme.headerIconBg} rounded-lg flex items-center justify-center`}>
           {theme.headerIcon}
         </div>
-        <h3 className="font-bold text-gray-800 text-sm">{theme.title}</h3>
+        <h3 className="font-bold text-gray-800 text-sm">{titleText}</h3>
         {hasAny && !hasApplied && (
           <span className={`ml-auto text-[11px] font-bold border px-2 py-0.5 rounded-full ${theme.countBadge}`}>
-            {visibleVouchers.length} tersedia
+            {t('voucher_picker.available_count', { count: visibleVouchers.length })}
           </span>
         )}
       </div>
@@ -195,7 +212,9 @@ export const VoucherPicker: React.FC<Props> = ({
                 {appliedVoucher.code}
               </p>
               <p className="text-xs text-green-600 mt-0.5">
-                Hemat {formatRp(calcSingleDiscount(appliedVoucher, amount))}
+                {t('voucher_picker.applied_save', {
+                  amount: formatRp(calcSingleDiscount(appliedVoucher, amount)),
+                })}
                 {appliedVoucher.type === 'percent' && ` (${appliedVoucher.value}%)`}
               </p>
             </div>
@@ -219,12 +238,10 @@ export const VoucherPicker: React.FC<Props> = ({
           >
             <span className={`text-sm font-semibold flex items-center gap-2 ${theme.toggleText}`}>
               <Tag className="w-4 h-4" />
-              {hasApplied
-                ? `Ganti ${theme.title.toLowerCase()}`
-                : `Pilih ${theme.title.toLowerCase()}`}
+              {toggleLabel}
             </span>
             {open
-              ? <ChevronUp className={`w-4 h-4 ${theme.toggleChevron}`} />
+              ? <ChevronUp   className={`w-4 h-4 ${theme.toggleChevron}`} />
               : <ChevronDown className={`w-4 h-4 ${theme.toggleChevron}`} />
             }
           </button>

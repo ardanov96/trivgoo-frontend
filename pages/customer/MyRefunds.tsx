@@ -80,10 +80,10 @@ const MOCK_REFUNDS: Refund[] = [
 ];
 
 const STATUS_CONFIG: Record<RefundStatus, { label: string; icon: React.ReactNode; badge: string; dot: string }> = {
-  processing: { label: 'Diproses',    icon: <Clock className="w-4 h-4" />,        badge: 'bg-amber-50 text-amber-700 border-amber-200',  dot: 'bg-amber-400' },
-  approved:   { label: 'Disetujui',   icon: <CheckCircle2 className="w-4 h-4" />, badge: 'bg-blue-50 text-blue-700 border-blue-200',     dot: 'bg-blue-400' },
-  completed:  { label: 'Selesai',     icon: <CheckCircle2 className="w-4 h-4" />, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
-  rejected:   { label: 'Ditolak',     icon: <XCircle className="w-4 h-4" />,      badge: 'bg-red-50 text-red-600 border-red-200',        dot: 'bg-red-400' },
+  processing: { label: 'Diproses',  icon: <Clock className="w-4 h-4" />,        badge: 'bg-amber-50 text-amber-700 border-amber-200',      dot: 'bg-amber-400' },
+  approved:   { label: 'Disetujui', icon: <CheckCircle2 className="w-4 h-4" />, badge: 'bg-blue-50 text-blue-700 border-blue-200',         dot: 'bg-blue-400' },
+  completed:  { label: 'Selesai',   icon: <CheckCircle2 className="w-4 h-4" />, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-400' },
+  rejected:   { label: 'Ditolak',   icon: <XCircle className="w-4 h-4" />,      badge: 'bg-red-50 text-red-600 border-red-200',            dot: 'bg-red-400' },
 };
 
 const fmt = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
@@ -259,9 +259,13 @@ const MyRefunds: React.FC = () => {
                   </div>
                 )}
 
-                <button className="flex items-center gap-2 w-full justify-center py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
+                {/* ✅ FIX: tombol "Lihat Detail Booking" sekarang pakai Link + langPath */}
+                <Link
+                  to={langPath(`/my-bookings/${selected.bookingCode}`)}
+                  className="flex items-center gap-2 w-full justify-center py-3 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+                >
                   <ArrowUpRight className="w-4 h-4" /> Lihat Detail Booking
-                </button>
+                </Link>
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
 import { Mail, Phone, User } from 'lucide-react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ContactForm, useContactForm } from '../hooks/useContactForm';
+import type { useContactForm } from '../hooks/useContactForm';
 
 type FormHook = ReturnType<typeof useContactForm>;
 
@@ -18,49 +18,65 @@ const inputError = 'border-red-400 focus:ring-red-500/20';
 export const ContactFormSection: React.FC<Props> = ({ form, errors, setField }) => {
   const { t } = useTranslation();
   return (
-  <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-    <h3 className="font-bold text-gray-800 mb-4">{t('checkout.contact_details', 'Contact Details')}</h3>
-    <div className="space-y-3">
+    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+      <h3 className="font-bold text-gray-800 mb-4">{t('contact_form.section_title')}</h3>
+      <div className="space-y-3">
 
-      {/* Nama */}
-      <div>
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
-          {t('checkout.name', 'Full Name')} <span className="text-red-500">*</span>
-        </label>
-        <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="Masukkan nama lengkap"
-            className={`${inputBase} ${errors.name ? inputError : inputValid}`} />
+        {/* Full Name */}
+        <div>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
+            {t('contact_form.name_label')} <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setField('name', e.target.value)}
+              placeholder={t('contact_form.name_placeholder')}
+              className={`${inputBase} ${errors.name ? inputError : inputValid}`}
+            />
+          </div>
+          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
         </div>
-        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-      </div>
 
-      {/* Email */}
-      <div>
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
-          Email <span className="text-red-500">*</span>
-        </label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="email" value={form.email} onChange={(e) => setField('email', e.target.value)} placeholder="nama@email.com"
-            className={`${inputBase} ${errors.email ? inputError : inputValid}`} />
+        {/* Email */}
+        <div>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
+            {t('contact_form.email_label')} <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setField('email', e.target.value)}
+              placeholder={t('contact_form.email_placeholder')}
+              className={`${inputBase} ${errors.email ? inputError : inputValid}`}
+            />
+          </div>
+          {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
         </div>
-        {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-      </div>
 
-      {/* No HP */}
-      <div>
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
-          No. HP / WhatsApp <span className="text-red-500">*</span>
-        </label>
-        <div className="relative">
-          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="tel" value={form.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="08xxxxxxxxxx"
-            className={`${inputBase} ${errors.phone ? inputError : inputValid}`} />
+        {/* Phone / WhatsApp */}
+        <div>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">
+            {t('contact_form.phone_label')} <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setField('phone', e.target.value)}
+              placeholder={t('contact_form.phone_placeholder')}
+              className={`${inputBase} ${errors.phone ? inputError : inputValid}`}
+            />
+          </div>
+          {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
         </div>
-        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+
       </div>
     </div>
-  </div>
   );
-}
+};

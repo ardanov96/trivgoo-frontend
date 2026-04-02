@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Star, Zap, Crown, Shield } from 'lucide-react';
-import type { MembershipTier, UserMembership } from '../services/loyaltyService';
+import { useTranslation } from 'react-i18next';
+import type { UserMembership } from '../services/loyaltyService';
 
 interface MembershipCardProps {
   membership: UserMembership;
@@ -52,17 +53,21 @@ function getConfig(slug: string) {
 
 function formatRp(n: number) {
   if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1)}jt`;
-  if (n >= 1_000) return `Rp ${(n / 1_000).toFixed(0)}rb`;
+  if (n >= 1_000)     return `Rp ${(n / 1_000).toFixed(0)}rb`;
   return `Rp ${n}`;
 }
 
 const MembershipCard: React.FC<MembershipCardProps> = ({
   membership,
-  userName = 'Member',
+  userName,
   compact = false,
 }) => {
+  const { t } = useTranslation();
   const { tier, next_tier, progress_percent, spending_to_next, total_spending } = membership;
   const cfg = getConfig(tier.slug);
+
+  // Resolve userName here so t() is in scope for the fallback
+  const displayName = userName ?? t('membership_card.default_member');
 
   return (
     <motion.div
@@ -86,11 +91,11 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
         }}
       />
 
-      {/* Top row */}
+      {/* ── Top row ── */}
       <div className="relative flex items-start justify-between mb-6">
         <div>
           <p className="text-white/60 text-xs font-bold uppercase tracking-[0.2em] mb-1">
-            Trivgoo Member
+            {t('membership_card.member_label')}
           </p>
           <h3 className="text-white text-2xl font-serif font-bold tracking-wide">
             {tier.name}
@@ -101,43 +106,51 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
         </div>
       </div>
 
-      {/* Name */}
+      {/* ── Name & spending ── */}
       <div className="relative mb-6">
-        <p className="text-white font-bold text-lg tracking-wide truncate">{userName}</p>
+        <p className="text-white font-bold text-lg tracking-wide truncate">{displayName}</p>
         <p className="text-white/60 text-xs mt-0.5">
-          Total spending: <span className="text-white font-semibold">{formatRp(total_spending)}</span>
+          {t('membership_card.total_spending')}:{' '}
+          <span className="text-white font-semibold">{formatRp(total_spending)}</span>
         </p>
       </div>
 
-      {/* Benefits row */}
+      {/* ── Benefits row ── */}
       {!compact && (
         <div className="relative flex gap-4 mb-6">
           <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
-            <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1">Diskon</p>
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1">
+              {t('membership_card.benefit_discount')}
+            </p>
             <p className="text-white font-bold text-xl">{tier.discount_percent}%</p>
           </div>
           <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
-            <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1">Point</p>
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1">
+              {t('membership_card.benefit_points')}
+            </p>
             <p className="text-white font-bold text-xl">{tier.point_multiplier}×</p>
           </div>
           {tier.max_discount_per_order && (
             <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
-              <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1">Max Diskon</p>
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1">
+                {t('membership_card.benefit_max_discount')}
+              </p>
               <p className="text-white font-bold text-base">{formatRp(tier.max_discount_per_order)}</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Progress to next tier */}
+      {/* ── Progress to next tier ── */}
       {next_tier && (
         <div className="relative">
           <div className="flex justify-between items-center mb-2">
             <p className="text-white/70 text-xs font-semibold">
-              Menuju <span className="text-white font-bold">{next_tier.name}</span>
+              {t('membership_card.progress_toward')}{' '}
+              <span className="text-white font-bold">{next_tier.name}</span>
             </p>
             <p className="text-white/70 text-xs">
-              {formatRp(spending_to_next)} lagi
+              {formatRp(spending_to_next)} {t('membership_card.progress_more')}
             </p>
           </div>
           <div className="h-2 bg-white/20 rounded-full overflow-hidden">
@@ -152,10 +165,11 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
         </div>
       )}
 
+      {/* ── Highest tier ── */}
       {!next_tier && (
         <div className="relative flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-          <p className="text-white/80 text-xs font-semibold">Tier tertinggi 🎉</p>
+          <p className="text-white/80 text-xs font-semibold">{t('membership_card.highest_tier')}</p>
         </div>
       )}
     </motion.div>
