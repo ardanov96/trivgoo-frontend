@@ -90,6 +90,32 @@ export type AuthUser = {
   phone_number?: string | null;
   pending_email?: string | null;
   referral_code?: string;
+  referral_clicks?: number;
+};
+
+export type ReferredFriend = {
+  name: string;
+  email: string;
+  verification_status: string;
+  created_at: string;
+  verify_rewarded: boolean;
+  booking_rewarded: boolean;
+  has_booking: boolean;
+};
+
+export type PointBalance = {
+  balance: number;
+  lifetime_earned: number;
+  lifetime_spent: number;
+  lifetime_expired: number;
+};
+
+export type ReferralStats = {
+  total_clicks: number;
+  total_registered: number;
+  friends: ReferredFriend[];
+  referral_code: string;
+  point_balance: PointBalance;
 };
 
 export type UploadedMediaItem = {

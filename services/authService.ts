@@ -1,4 +1,4 @@
-import { ApiEnvelope, LoginPayload, RegisterPayload, User } from '../types';
+import { ApiEnvelope, LoginPayload, RegisterPayload, User, ReferralStats } from '../types';
 import http, { unwrap } from './http';
 
 type LoginData = { user: User };
@@ -70,6 +70,16 @@ export const authService = {
   async resendUnverified(email: string): Promise<string> {
     const res = await http.post<ApiEnvelope<null>>('/auth/resend-unverified', { email });
     return res.data.message || 'Verification email resent successfully';
+  },
+
+  async trackReferralClick(code: string): Promise<void> {
+    const res = await http.post<ApiEnvelope<null>>('/auth/referral/track_click', { code });
+    unwrap(res.data);
+  },
+
+  async getReferralStats(): Promise<ReferralStats> {
+    const res = await http.get<ApiEnvelope<ReferralStats>>('/auth/referral/stats');
+    return unwrap(res.data);
   },
 
 };
