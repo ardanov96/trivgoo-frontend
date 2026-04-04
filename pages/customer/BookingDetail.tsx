@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Calendar, Package, Clock, CreditCard, AlertTriangle, Shield,
   CheckCircle2, Ticket, MapPin, User, Phone, Mail, FileText, Car, ShieldCheck,
-  Baby, CircleDot,
+  Baby, CircleDot, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
 import http from '../../services/http';
@@ -83,8 +83,8 @@ function formatCurrency(n: number): string {
   return 'Rp ' + n.toLocaleString('id-ID');
 }
 
-function parseAddOns(raw: string | null): { withDriver: boolean; premiumInsurance: boolean; childSeat: boolean } {
-  const fallback = { withDriver: false, premiumInsurance: false, childSeat: false };
+function parseAddOns(raw: string | null): { withDriver: boolean; premiumInsurance: boolean; childSeat: boolean; discountAmount: number; agentDiscountAmount: number; voucherCode: string | null; agentVoucherCode: string | null } {
+  const fallback = { withDriver: false, premiumInsurance: false, childSeat: false, discountAmount: 0, agentDiscountAmount: 0, voucherCode: null, agentVoucherCode: null };
   if (!raw) return fallback;
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -128,6 +128,63 @@ const SectionTitle: React.FC<{ icon: React.ReactNode; title: string }> = ({ icon
     {icon} {title}
   </h3>
 );
+
+/* ─── Expandable Price Component ─── */
+interface PriceRow {
+  label: string;
+  value: number;
+  isDiscount?: boolean;
+}
+
+interface PriceGroupProps {
+  title: string;
+  items: PriceRow[];
+  total: number;
+  isDiscountGroup?: boolean;
+  defaultExpanded?: boolean;
+}
+
+const ExpandablePriceGroup: React.FC<PriceGroupProps> = ({ title, items, total, isDiscountGroup, defaultExpanded = false }) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  
+  if (items.length === 0) return null;
+
+  return (
+    <div className="py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors -mx-5 px-5">
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex justify-between items-center group cursor-pointer focus:outline-none"
+      >
+        <span className="text-sm font-bold text-gray-800 group-hover:text-primary-600 transition-colors">
+          {title}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-bold ${isDiscountGroup ? 'text-green-600' : 'text-gray-900'}`}>
+            {isDiscountGroup && total > 0 ? '- ' : ''}{formatCurrency(total)}
+          </span>
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-primary-500" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-primary-500" />
+          )}
+        </div>
+      </button>
+      
+      {isExpanded && (
+        <div className="mt-3 pl-3 space-y-2.5 border-l-2 border-gray-100">
+          {items.map((item, idx) => (
+            <div key={idx} className="flex justify-between items-center">
+              <span className="text-sm text-gray-500">{item.label}</span>
+              <span className={`text-sm font-medium ${item.isDiscount ? 'text-green-600' : 'text-gray-700'}`}>
+                {item.isDiscount && item.value > 0 ? '- ' : ''}{formatCurrency(item.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ═══════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -223,15 +280,38 @@ const CustomerBookingDetail: React.FC = () => {
 
   const rentalCost    = isCar ? basePrice * dur : basePrice * booking.quantity * (isCar ? dur : 1);
   const driverCost    = addOns.withDriver       ? DRIVER_PRICE_PER_12H * dur : 0;
-  const insuranceCost = addOns.premiumInsurance  ? PREMIUM_INSURANCE          : 0;
-  const childSeatCost = addOns.childSeat         ? CHILD_SEAT                 : 0;
+  const insuranceCost = addOns.premiumInsurance  ? PREMIUM_INSURANCE * dur    : 0;
+  const childSeatCost = addOns.childSeat         ? CHILD_SEAT * dur           : 0;
   const pickupFee     = Number(booking.pickupFee)  || 0;
   const dropoffFee    = Number(booking.dropoffFee) || 0;
   const adminFee      = Number(booking.adminFee)   || 0;
+  const platformDiscount = Number(addOns.discountAmount) || 0;
+  const agentDiscount    = Number(addOns.agentDiscountAmount) || 0;
 
-  const knownCosts         = rentalCost + driverCost + insuranceCost + childSeatCost + pickupFee + dropoffFee + adminFee;
-  const hasFullItemizedData = booking.addOnsJson !== null || pickupFee > 0 || dropoffFee > 0 || adminFee > 0;
+  const knownCosts         = rentalCost + driverCost + insuranceCost + childSeatCost + pickupFee + dropoffFee + adminFee - platformDiscount - agentDiscount;
+  const hasFullItemizedData = booking.addOnsJson !== null || pickupFee > 0 || dropoffFee > 0 || adminFee > 0 || platformDiscount > 0 || agentDiscount > 0;
   const remainingFees       = booking.totalPrice - knownCosts;
+
+  // Group A: Sewa Kendaraan
+  const vehicleItems: PriceRow[] = [];
+  if (basePrice > 0) vehicleItems.push({ label: isCar ? t('booking_detail.price_rental') : t('booking_detail.price_base'), value: rentalCost });
+  if (driverCost > 0) vehicleItems.push({ label: t('booking_detail.price_driver'), value: driverCost });
+  const vehicleTotal = vehicleItems.reduce((acc, curr) => acc + curr.value, 0);
+
+  // Group B: Tambahan
+  const addonItems: PriceRow[] = [];
+  if (insuranceCost > 0) addonItems.push({ label: t('booking_detail.config_insurance'), value: insuranceCost });
+  if (childSeatCost > 0) addonItems.push({ label: t('booking_detail.config_child_seat'), value: childSeatCost });
+  const totalDeliveryFee = pickupFee + dropoffFee;
+  if (totalDeliveryFee > 0) addonItems.push({ label: 'Antar Jemput', value: totalDeliveryFee });
+  if (adminFee > 0) addonItems.push({ label: t('booking_detail.price_admin_fee'), value: adminFee });
+  const addonTotal = addonItems.reduce((acc, curr) => acc + curr.value, 0);
+
+  // Group C: Diskon
+  const discountItems: PriceRow[] = [];
+  if (platformDiscount > 0) discountItems.push({ label: `Diskon Platform ${addOns.voucherCode ? `(${addOns.voucherCode})` : ''}`, value: platformDiscount, isDiscount: true });
+  if (agentDiscount > 0) discountItems.push({ label: `Diskon Agen ${addOns.agentVoucherCode ? `(${addOns.agentVoucherCode})` : ''}`, value: agentDiscount, isDiscount: true });
+  const discountTotal = discountItems.reduce((acc, curr) => acc + curr.value, 0);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
@@ -487,41 +567,10 @@ const CustomerBookingDetail: React.FC = () => {
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <SectionTitle icon={<CreditCard className="w-4 h-4 text-primary-500" />} title={t('booking_detail.section_payment')} />
 
-              <div className="divide-y divide-gray-100">
-                {basePrice > 0 && (
-                  <InfoRow
-                    label={
-                      isCar
-                        ? `${t('booking_detail.price_rental')} (${formatCurrency(basePrice)} × ${dur} ${t('booking_detail.days_unit')})`
-                        : `${t('booking_detail.price_base')} (${formatCurrency(basePrice)} × ${booking.quantity})`
-                    }
-                    value={formatCurrency(rentalCost)}
-                  />
-                )}
-                {driverCost > 0 && (
-                  <InfoRow
-                    label={`${t('booking_detail.price_driver')} (${formatCurrency(DRIVER_PRICE_PER_12H)} × ${dur} ${t('booking_detail.days_unit')})`}
-                    value={formatCurrency(driverCost)}
-                  />
-                )}
-                {insuranceCost > 0 && (
-                  <InfoRow label={t('booking_detail.config_insurance')} value={formatCurrency(insuranceCost)} />
-                )}
-                {childSeatCost > 0 && (
-                  <InfoRow label={t('booking_detail.config_child_seat')} value={formatCurrency(childSeatCost)} />
-                )}
-                {pickupFee > 0 && (
-                  <InfoRow label={t('booking_detail.price_pickup_fee')} value={formatCurrency(pickupFee)} />
-                )}
-                {dropoffFee > 0 && (
-                  <InfoRow label={t('booking_detail.price_dropoff_fee')} value={formatCurrency(dropoffFee)} />
-                )}
-                {adminFee > 0 && (
-                  <InfoRow label={t('booking_detail.price_admin_fee')} value={formatCurrency(adminFee)} />
-                )}
-                {remainingFees > 0 && (
-                  <InfoRow label={t('booking_detail.price_delivery_fee')} value={formatCurrency(remainingFees)} />
-                )}
+              <div className="flex flex-col -mb-3 mt-2">
+                <ExpandablePriceGroup title="Sewa Kendaraan" items={vehicleItems} total={vehicleTotal} defaultExpanded={true} />
+                <ExpandablePriceGroup title="Tambahan" items={addonItems} total={addonTotal} defaultExpanded={false} />
+                <ExpandablePriceGroup title="Diskon" items={discountItems} total={discountTotal} isDiscountGroup={true} defaultExpanded={true} />
               </div>
 
               {/* Grand Total */}

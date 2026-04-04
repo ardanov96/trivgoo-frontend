@@ -22,6 +22,7 @@ const PublicLayout: React.FC = () => {
   const [scrolled, setScrolled]                       = useState(false);
   const [isCartOpen, setIsCartOpen]                   = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isMobileProfileOpen, setIsMobileProfileOpen]     = useState(false);
   const didFetchMeRef  = useRef(false);
   const dropdownRef    = useRef<HTMLDivElement>(null);
   const { langPath, langNavigate, lang } = useLangNavigate();
@@ -325,14 +326,39 @@ const PublicLayout: React.FC = () => {
                 </div>
               ) : (
                 <div className="mt-6 border-t pt-4">
-                  <div className="flex items-center px-4 py-2">
-                    <UserAvatar user={user} className="h-10 w-10" />
-                    <div className="ml-3">
-                      <div className="text-base font-medium text-gray-800">{user.name}</div>
-                      <div className="text-sm font-medium text-gray-500">{user.email}</div>
+                  <button 
+                    onClick={() => setIsMobileProfileOpen(!isMobileProfileOpen)}
+                    className="w-full flex items-center justify-between px-4 py-2 text-left rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center">
+                      <UserAvatar user={user} className="h-10 w-10 flex-shrink-0" />
+                      <div className="ml-3 overflow-hidden">
+                        <div className="text-base font-medium text-gray-800 truncate">{user.name}</div>
+                        <div className="text-sm font-medium text-gray-500 truncate">{user.email}</div>
+                      </div>
+                    </div>
+                    <ChevronDown className={`w-5 h-5 flex-shrink-0 text-gray-400 transition-transform ${isMobileProfileOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <div className={`overflow-hidden transition-all duration-300 ${isMobileProfileOpen ? 'max-h-60 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
+                    <div className="px-4 py-2 space-y-1 bg-gray-50/50 rounded-lg mx-2 border border-gray-100 shadow-inner">
+                      {user.role === UserRole.CUSTOMER && (<>
+                        <Link to={langPath('/my-account')} onClick={() => setIsMenuOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-white hover:text-primary-600 rounded-lg transition-colors shadow-sm">
+                          <UserIcon className="w-4 h-4 mr-3 text-gray-400" /> {t('nav.my_account')}
+                        </Link>
+                        <Link to={langPath('/my-bookings')} onClick={() => setIsMenuOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-white hover:text-primary-600 rounded-lg transition-colors shadow-sm">
+                          <Package className="w-4 h-4 mr-3 text-gray-400" /> {t('nav.my_bookings')}
+                        </Link>
+                      </>)}
+                      {(user.role === UserRole.ADMIN || user.role === UserRole.AGENT) && (
+                        <Link to={langPath(user.role === UserRole.ADMIN ? '/admin' : '/agent')} onClick={() => setIsMenuOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-white hover:text-primary-600 rounded-lg transition-colors shadow-sm">
+                          <LayoutDashboard className="w-4 h-4 mr-3 text-gray-400" /> {t('nav.dashboard')}
+                        </Link>
+                      )}
                     </div>
                   </div>
-                  <button onClick={handleLogout} className="mt-3 w-full flex items-center px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg">
+
+                  <button onClick={handleLogout} className="mt-3 w-full flex items-center px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                     <LogOut className="w-5 h-5 mr-3" /> {t('nav.logout')}
                   </button>
                 </div>
