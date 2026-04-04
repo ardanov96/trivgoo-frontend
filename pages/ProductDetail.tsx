@@ -1306,14 +1306,15 @@ const ProductDetail: React.FC = () => {
                     </div>
 
                     {/* CTA Buttons */}
+                    <button onClick={() => handleReserveNow('tour_stay')} 
+                      className="w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30">
+                      {t('product.reserve_now', 'Reservasi Sekarang')}
+                    </button>
                     <button onClick={handleAddToCart} disabled={isInCart(product.id)}
-                      className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${isInCart(product.id) ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30'}`}>
+                      className={`w-full py-4 rounded-2xl font-extrabold text-sm border-2 transition-all active:scale-[0.98] mt-3 ${isInCart(product.id) ? 'border-green-400 bg-green-50 text-green-700 cursor-default' : 'border-primary-600 text-primary-600 hover:bg-primary-50'}`}>
                       {isInCart(product.id)
                         ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t('product.added_to_cart')}</span>
-                        : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> {t('product.reserve_now')}</span>}
-                    </button>
-                    <button onClick={() => handleReserveNow('tour_stay')} className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3">
-                      {t('product.reserve_now')}
+                        : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> {t('cart.add_to_cart', 'Tambah ke Keranjang')}</span>}
                     </button>
                     <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
                       <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" /> {t('badge.safe')}</span>
@@ -1813,14 +1814,15 @@ const ProductDetail: React.FC = () => {
                 </div>
 
                 {/* CTA Buttons */}
+                <button onClick={() => handleReserveNow('car')} 
+                  className="w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30">
+                  {t('product.reserve_now', 'Reservasi Sekarang')}
+                </button>
                 <button onClick={handleAddToCart} disabled={isInCart(product.id)}
-                  className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg ${isInCart(product.id) ? 'bg-green-50 border-2 border-green-400 text-green-700 cursor-default' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30 hover:shadow-primary-700/40'}`}>
+                  className={`w-full py-4 rounded-2xl font-extrabold text-sm border-2 transition-all active:scale-[0.98] mt-3 ${isInCart(product.id) ? 'border-green-400 bg-green-50 text-green-700 cursor-default' : 'border-primary-600 text-primary-600 hover:bg-primary-50'}`}>
                   {isInCart(product.id)
                     ? <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t('product.added_to_cart')}</span>
-                    : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> {t('car.proceed_booking')}</span>}
-                </button>
-                <button onClick={() => handleReserveNow('car')} className="w-full py-4 rounded-2xl font-extrabold text-sm border-2 border-primary-600 text-primary-600 hover:bg-primary-50 transition-all active:scale-[0.98] mt-3">
-                  {t('product.reserve_now')}
+                    : <span className="flex items-center justify-center gap-2"><ShoppingCart className="w-4 h-4" /> {t('cart.add_to_cart', 'Tambah ke Keranjang')}</span>}
                 </button>
                 <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
                   <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-green-500" /> {t('badge.safe')}</span>

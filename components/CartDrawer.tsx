@@ -37,6 +37,15 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       return;
     }
 
+    const rawDate = item.customization?.date || '';
+    const dateStr = String(rawDate).trim();
+    if (!item.customization || !dateStr || dateStr === '-') {
+      showToast(t('cart.missing_date', 'Silakan lengkapi tanggal dan detail pemesanan terlebih dahulu'), 'error');
+      onClose();
+      langNavigate(`/product/${encodeId(productId)}`);
+      return;
+    }
+
     const activeFlashSale =
       (item.product as any).flashSale?.status === 'approved'
         ? (item.product as any).flashSale

@@ -33,8 +33,22 @@ const CheckoutSummary: React.FC = () => {
   const bookingData = location.state;
 
   React.useEffect(() => {
-    if (!bookingData || !bookingData.productName) langNavigate('/explore', { replace: true });
-  }, [bookingData]);
+    if (!bookingData || !bookingData.productName) {
+      langNavigate('/explore', { replace: true });
+      return;
+    }
+
+    const dateStr = String(bookingData.date || '').trim();
+    if (!dateStr || dateStr === '-' || !bookingData.duration) {
+      Swal.fire({
+        title: t('common.error', 'Error'),
+        text: t('checkout.invalid_data', 'Data booking tidak valid. Silakan lengkapi pesanan Anda terlebih dahulu.'),
+        icon: 'error',
+      }).then(() => {
+        langNavigate('/explore', { replace: true });
+      });
+    }
+  }, [bookingData, langNavigate, t]);
 
   React.useEffect(() => {
     if (!user) {
