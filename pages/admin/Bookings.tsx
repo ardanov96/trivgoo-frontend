@@ -109,6 +109,17 @@ const parseLocalDateStr = (dtStr: string | null | undefined) => {
   };
 };
 
+const parseAddOns = (raw: string | null | undefined) => {
+  const fallback = { discountAmount: 0, agentDiscountAmount: 0, voucherCode: null, agentVoucherCode: null };
+  if (!raw) return fallback;
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return { ...fallback, ...parsed };
+  } catch {
+    return fallback;
+  }
+};
+
 const AdminBookings: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
@@ -600,7 +611,34 @@ const AdminBookings: React.FC = () => {
                         <div className="flex justify-between items-center"><span>Base Price / Unit:</span><span className="font-medium bg-white px-2 py-1 rounded border border-blue-100">{selectedBooking.quantity} item</span></div>
                         <div className="flex justify-between items-center"><span>Biaya Jemput (Pickup):</span><span className="font-medium text-gray-900">Rp {Number(selectedBooking.pickupFee || 0).toLocaleString('id-ID')}</span></div>
                         <div className="flex justify-between items-center"><span>Biaya Kembali (Drop):</span><span className="font-medium text-gray-900">Rp {Number(selectedBooking.dropoffFee || 0).toLocaleString('id-ID')}</span></div>
-                        <div className="flex justify-between items-center pb-3 border-b border-blue-200/50"><span>Biaya Admin Sistem:</span><span className="font-medium text-gray-900">Rp {Number(selectedBooking.adminFee || 0).toLocaleString('id-ID')}</span></div>
+                        <div className={`flex justify-between items-center pb-3 ${!(parseAddOns(selectedBooking.addOnsJson).discountAmount > 0 || parseAddOns(selectedBooking.addOnsJson).agentDiscountAmount > 0) ? 'border-b border-blue-200/50' : ''}`}>
+                          <span>Biaya Admin Sistem:</span><span className="font-medium text-gray-900">Rp {Number(selectedBooking.adminFee || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                        
+                        {(() => {
+                          const addOns = parseAddOns(selectedBooking.addOnsJson);
+                          const platformDiscount = Number(addOns.discountAmount) || 0;
+                          const agentDiscount = Number(addOns.agentDiscountAmount) || 0;
+                          return (
+                            <>
+                              {platformDiscount > 0 && (
+                                <div className="flex justify-between items-center text-green-700">
+                                  <span>Diskon Platform {addOns.voucherCode ? `(${addOns.voucherCode})` : ''}:</span>
+                                  <span className="font-medium">- Rp {platformDiscount.toLocaleString('id-ID')}</span>
+                                </div>
+                              )}
+                              {agentDiscount > 0 && (
+                                <div className="flex justify-between items-center text-green-700 pb-3 border-b border-blue-200/50">
+                                  <span>Diskon Agen {addOns.agentVoucherCode ? `(${addOns.agentVoucherCode})` : ''}:</span>
+                                  <span className="font-medium">- Rp {agentDiscount.toLocaleString('id-ID')}</span>
+                                </div>
+                              )}
+                              {(platformDiscount > 0 && agentDiscount === 0) && (
+                                <div className="border-b border-blue-200/50 mb-1" />
+                              )}
+                            </>
+                          );
+                        })()}
                         
                         <div className="flex justify-between pt-2 items-center">
                           <span className="font-bold text-blue-800">Total Harga</span>
