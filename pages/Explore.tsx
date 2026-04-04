@@ -26,6 +26,7 @@ import { DestinationHero, EmptyState } from './explore/components/DestinationHer
 import { SkeletonCard, SkeletonCarCard } from './explore/components/SharedUI';
 import { encodeId }     from '../utils/hashids';
 import { generateSlug } from '../utils/slugify';
+import { useParams } from 'react-router-dom';
 
 const Explore: React.FC = () => {
   const { t } = useTranslation();
@@ -34,6 +35,24 @@ const Explore: React.FC = () => {
 
   const [products,  setProducts]  = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const { categorySlug } = useParams<{ categorySlug?: string }>();
+
+  const SEO_META: Record<string, { title: string; description: string }> = {
+    'tours':            { title: 'Paket Wisata & Tour Indonesia - Trivgoo', description: 'Temukan paket wisata terbaik di Indonesia.' },
+    'stays':            { title: 'Hotel & Villa Indonesia - Trivgoo',       description: 'Penginapan terbaik dengan harga terjangkau.' },
+    'car-rental':       { title: 'Sewa Mobil Bali & Indonesia - Trivgoo',   description: 'Rental mobil murah dengan atau tanpa driver.' },
+    'airport-transfer': { title: 'Airport Transfer Indonesia - Trivgoo',    description: 'Layanan antar jemput bandara terpercaya.' },
+    'events':           { title: 'Event & Aktivitas - Trivgoo',             description: 'Temukan event dan aktivitas seru di sekitar Anda.' },
+  };
+
+  const meta = categorySlug ? SEO_META[categorySlug] : null;
+
+  // Lalu update komponen SEO:
+  <SEO
+    title={meta?.title ?? t('explore.seo_title', 'Explore - Trivgoo')}
+    description={meta?.description ?? t('explore.seo_desc', 'Discover the perfect travel packages.')}
+  />
 
   useEffect(() => {
     const load = async () => {

@@ -72,3 +72,19 @@ export const carCardVariants: Variants = {
   hidden:  { opacity: 0, y: 32 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
 };
+
+export const CATEGORY_SLUG_MAP: Record<string, number> = {
+  'tours':            1,
+  'stays':            2,
+  'car-rental':       3,
+  'airport-transfer': 4,
+  'events':           5,
+};
+
+export const CATEGORY_ID_TO_SLUG: Record<number, string> = {
+  1: 'tours',
+  2: 'stays',
+  3: 'car-rental',
+  4: 'airport-transfer',
+  5: 'events',
+};

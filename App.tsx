@@ -240,7 +240,8 @@ const AppRoutes: React.FC = () => (
       {/* ── Public ── */}
       <Route element={<PublicLayout />}>
         <Route index                       element={<Home />} />
-        <Route path="explore"              element={<Explore />} />
+        <Route path="explore"                   element={<Explore />} />
+        <Route path="explore/:categorySlug"     element={<Explore />} />
         <Route path="product/:id"          element={<ProductDetail />} />
         <Route path="product/:id/:slug"    element={<ProductDetail />} />
         <Route path="checkout-summary"     element={<CheckoutSummary />} />

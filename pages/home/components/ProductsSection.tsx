@@ -132,7 +132,7 @@ export const ProductsSection = ({ products, isLoading }: Props) => {
                 ? <button onClick={() => setVisibleHotels((p) => p + 4)} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">
                     {t('home.products_load_more', 'Load More')} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
-                : <Link to={langPath('/explore?category_id=2')} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">
+                : <Link to={langPath('/explore/stays')} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">
                     {t('home.products_explore_hotels', 'Explore More Hotels & Villa')} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
               }
@@ -153,7 +153,7 @@ export const ProductsSection = ({ products, isLoading }: Props) => {
               {isLoading ? [...Array(4)].map((_, i) => <SkeletonCard key={i} />) : visibleCarProducts.map((p, i) => <ProductCard key={p.id} {...makeCardProps(p, i, '/day')} />)}
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex justify-center mt-10">
-              <Link to={langPath('/explore?category_id=3')} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">
+              <Link to={langPath('/explore/car-rental')} className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5 active:scale-95 group">
                 {t('home.products_explore_cars', 'Explore More Cars')}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
