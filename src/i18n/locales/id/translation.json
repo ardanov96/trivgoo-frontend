@@ -98,7 +98,7 @@
     "testimonials_title": "Cerita dari Perjalanan",
     "app_badge": "Eksklusif App",
     "app_title": "Buka Penawaran Khusus App",
-    "app_subtitle": "Hemat hingga <bold>IDR 400.000</bold> pada transaksi pertama Anda.",
+    "app_subtitle": "Hemat hingga IDR 400.000 pada transaksi pertama Anda.",
     "app_coming_soon": "Segera Hadir",
     "app_scan": "Scan untuk mengunduh",
     "cat_tours": "Tur",
@@ -2080,6 +2080,25 @@
     "quick_err_value_positive": "Harus angka positif",
     "quick_err_value_max_percent": "Maks 100%",
     "quick_err_create_failed": "Gagal membuat voucher"
+  },
+  "search": {
+    "placeholder_tours":     "Mau ke mana?",
+    "placeholder_stays":     "Kota, hotel, atau destinasi",
+    "placeholder_cars":      "Lokasi penjemputan",
+    "placeholder_transfers": "Bandara atau hotel",
+    "placeholder_events":    "Konser, festival, atau event"
+  },
+  "hero": {
+    "rental_type":      "Tipe Sewa",
+    "self_drive":       "Lepas Kunci",
+    "with_driver":      "Dengan Sopir",
+    "pick_rental_type": "Pilih tipe sewa",
+    "rental_start":     "Mulai Sewa",
+    "rental_end":       "Selesai Sewa",
+    "pick_date":        "Pilih tanggal",
+    "search_car":       "Cari Mobil",
+    "hour":             "Jam",
+    "minute":           "Menit"
   },
   "total_paid": "Total Dibayar",
   "status_code": "Kode",

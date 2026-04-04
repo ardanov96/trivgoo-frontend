@@ -1,4 +1,5 @@
 import { Building2, Calendar, Car, Palmtree, Plane } from 'lucide-react';
+import type { TFunction } from 'i18next';
 
 export const POPULAR_DESTINATIONS = [
   'Bali, Indonesia', 'Raja Ampat, Indonesia', 'Yogyakarta, Indonesia',
@@ -40,12 +41,61 @@ export const REVIEWS = [
   },
 ];
 
+// ── Fungsi — dipanggil di dalam komponen dengan t dari useTranslation ────────
+
+export const getSearchCategories = (t: TFunction) => [
+  {
+    id: 'tours',
+    label: t('home.cat_tours', 'Tour'),
+    icon: Palmtree,
+    placeholder: t('search.placeholder_tours', 'Where do you want to go?'),
+  },
+  {
+    id: 'stays',
+    label: t('home.cat_stays', 'Hotel & Villa'),
+    icon: Building2,
+    placeholder: t('search.placeholder_stays', 'City, hotel, or destination'),
+  },
+  {
+    id: 'cars',
+    label: t('home.cat_cars', 'Car Rental'),
+    icon: Car,
+    placeholder: t('search.placeholder_cars', 'Pick-up location'),
+  },
+  {
+    id: 'transfers',
+    label: t('home.cat_transfers', 'Airport Transfer'),
+    icon: Plane,
+    placeholder: t('search.placeholder_transfers', 'Airport or Hotel'),
+  },
+  {
+    id: 'events',
+    label: t('home.cat_events', 'Event'),
+    icon: Calendar,
+    placeholder: t('search.placeholder_events', 'Concert, festival, or event'),
+  },
+];
+
+export const getTravelFilters = (t: TFunction) => [
+  t('home.filter_all', 'All'),
+  t('home.filter_family', 'Family'),
+  t('home.filter_honeymoon', 'Honeymoon'),
+  t('home.filter_solo', 'Solo Travel'),
+  t('home.filter_healing', 'Healing'),
+  t('home.filter_workation', 'Workation'),
+  t('home.filter_adventure', 'Adventure'),
+  t('home.filter_cultural', 'Cultural'),
+  t('home.filter_culinary', 'Culinary'),
+  t('home.filter_eco', 'Eco Tourism'),
+];
+
+// Tetap ekspor versi statis untuk backward compatibility
 export const SEARCH_CATEGORIES = [
-  { id: 'tours',     label: 'Tour',           icon: Palmtree,  placeholder: 'Where do you want to go?' },
-  { id: 'stays',     label: 'Hotel & Villa',    icon: Building2, placeholder: 'City, hotel, or destination' },
-  { id: 'cars',      label: 'Car Rental',       icon: Car,       placeholder: 'Pick-up location' },
-  { id: 'transfers', label: 'Airport Transfer', icon: Plane,     placeholder: 'Airport or Hotel' },
-  { id: 'events',    label: 'Event',            icon: Calendar,  placeholder: 'Concert, festival, or event' },
+  { id: 'tours',     label: 'Tour',            icon: Palmtree,  placeholder: 'Where do you want to go?' },
+  { id: 'stays',     label: 'Hotel & Villa',   icon: Building2, placeholder: 'City, hotel, or destination' },
+  { id: 'cars',      label: 'Car Rental',      icon: Car,       placeholder: 'Pick-up location' },
+  { id: 'transfers', label: 'Airport Transfer',icon: Plane,     placeholder: 'Airport or Hotel' },
+  { id: 'events',    label: 'Event',           icon: Calendar,  placeholder: 'Concert, festival, or event' },
 ];
 
 export const TRAVEL_FILTERS = [
@@ -54,11 +104,11 @@ export const TRAVEL_FILTERS = [
 ];
 
 export const ITINERARY_CARDS = [
-  { id: 1, destination: 'Bali',        title: '5D4N Bali Cultural Escape',      duration: '5 Days 4 Nights', pax: 'For 2–8 pax',  tag: 'Honeymoon', tagColor: 'bg-rose-100 text-rose-600',   image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80' },
-  { id: 2, destination: 'Raja Ampat',  title: '7D6N Raja Ampat Dive Adventure', duration: '7 Days 6 Nights', pax: 'For 4–10 pax', tag: 'Adventure', tagColor: 'bg-blue-100 text-blue-600',   image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf?auto=format&fit=crop&w=600&q=80' },
-  { id: 3, destination: 'Yogyakarta',  title: '4D3N Jogja Heritage Trail',      duration: '4 Days 3 Nights', pax: 'For 2–12 pax', tag: 'Cultural',  tagColor: 'bg-amber-100 text-amber-700', image: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?auto=format&fit=crop&w=600&q=80' },
-  { id: 4, destination: 'Lombok',      title: '6D5N Lombok & Gili Islands',     duration: '6 Days 5 Nights', pax: 'For 2–6 pax',  tag: 'Healing',   tagColor: 'bg-green-100 text-green-600', image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=600&q=80' },
-  { id: 5, destination: 'Komodo',      title: '5D4N Komodo & Pink Beach',       duration: '5 Days 4 Nights', pax: 'For 4–8 pax',  tag: 'Adventure', tagColor: 'bg-blue-100 text-blue-600',   image: 'https://images.unsplash.com/photo-1596178060671-7a80dc8059ea?auto=format&fit=crop&w=600&q=80' },
+  { id: 1, destination: 'Bali',       title: '5D4N Bali Cultural Escape',      duration: '5 Days 4 Nights', pax: 'For 2–8 pax',  tag: 'Honeymoon', tagColor: 'bg-rose-100 text-rose-600',   image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80' },
+  { id: 2, destination: 'Raja Ampat', title: '7D6N Raja Ampat Dive Adventure', duration: '7 Days 6 Nights', pax: 'For 4–10 pax', tag: 'Adventure', tagColor: 'bg-blue-100 text-blue-600',   image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f9abf?auto=format&fit=crop&w=600&q=80' },
+  { id: 3, destination: 'Yogyakarta', title: '4D3N Jogja Heritage Trail',      duration: '4 Days 3 Nights', pax: 'For 2–12 pax', tag: 'Cultural',  tagColor: 'bg-amber-100 text-amber-700', image: 'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?auto=format&fit=crop&w=600&q=80' },
+  { id: 4, destination: 'Lombok',     title: '6D5N Lombok & Gili Islands',     duration: '6 Days 5 Nights', pax: 'For 2–6 pax',  tag: 'Healing',   tagColor: 'bg-green-100 text-green-600', image: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=600&q=80' },
+  { id: 5, destination: 'Komodo',     title: '5D4N Komodo & Pink Beach',       duration: '5 Days 4 Nights', pax: 'For 4–8 pax',  tag: 'Adventure', tagColor: 'bg-blue-100 text-blue-600',   image: 'https://images.unsplash.com/photo-1596178060671-7a80dc8059ea?auto=format&fit=crop&w=600&q=80' },
 ];
 
 export const PROMO_CARDS = [

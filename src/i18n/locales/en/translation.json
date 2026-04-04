@@ -98,7 +98,7 @@
     "testimonials_title": "Stories from the Road",
     "app_badge": "App Exclusive",
     "app_title": "Unlock App-Only Deals",
-    "app_subtitle": "Save up to <bold>IDR 400.000</bold> on your first transaction.",
+    "app_subtitle": "Save up to IDR 400.000 on your first transaction.",
     "app_coming_soon": "Coming Soon",
     "app_scan": "Scan to download",
     "cat_tours": "Tours",
@@ -116,6 +116,33 @@
     "filter_cultural": "Cultural",
     "filter_culinary": "Culinary",
     "filter_eco": "Eco Tourism"
+  },
+  "hero": {
+    "hello": "Hello Triverse, Let's",
+    "find_your": "Find Your",
+    "destination": "Destination",
+    "pickup_location": "Pick-up Location",
+    "from_to": "From/To",
+    "guests": "Guests",
+    "passengers": "Passengers",
+    "add_guests": "Add guests",
+    "add_passengers": "Add passengers",
+    "date": "Date",
+    "add_dates": "Add dates",
+    "suggestions": "Suggestions",
+    "popular_destinations": "Popular Destinations",
+    "today": "Today",
+    "trusted_by": "Trusted by 50,000+ travelers worldwide",
+    "rental_type":      "Rental Type",
+    "self_drive":       "Self Drive",
+    "with_driver":      "With Driver",
+    "pick_rental_type": "Choose rental type",
+    "rental_start":     "Start Rental",
+    "rental_end":       "End Rental",
+    "pick_date":        "Pick a date",
+    "search_car":       "Search Car",
+    "hour":             "Hour",
+    "minute":           "Minute"
   },
   "common": {
     "loading": "Loading...",
@@ -172,7 +199,10 @@
     "more": "more",
     "passengers": "Passengers",
     "per_day_short": "/day",
-    "save_discount": "Save"
+    "save_discount": "Save",
+    "from": "from",
+    "success": "Success!",
+    "saved": "Saved"
   },
   "footer": {
     "company": "Company",
@@ -219,7 +249,7 @@
     "hotels": "Hotels & Villas",
     "car_rental": "Car Rental",
     "view_details": "See Details",
-    "from": "From",
+    "from": "Starting from",
     "after_promo": "after promo",
     "per_night": "/ night",
     "per_day": "/ day",
@@ -239,42 +269,6 @@
     "without_driver": "Self Drive",
     "min_price": "Min Price",
     "max_price": "Max Price"
-  },
-  "product": {
-    "book_now": "Book Now",
-    "reserve_now": "Reserve Now",
-    "add_to_cart": "Add to Cart",
-    "added_to_cart": "Added",
-    "save_wishlist": "Save to Wishlist",
-    "saved_wishlist": "Saved",
-    "reviews": "reviews",
-    "no_reviews": "No reviews yet",
-    "location": "Location",
-    "duration": "Duration",
-    "min_pax": "Min. Participants",
-    "language": "Language",
-    "included": "Included",
-    "excluded": "Not Included",
-    "itinerary": "Itinerary",
-    "availability": "Availability",
-    "cancellation_policy": "Cancellation Policy",
-    "full_refund": "Full refund if cancelled 24h before",
-    "no_refund": "No refund",
-    "contact_support": "Need help? Contact Support",
-    "per_person_label": "person",
-    "per_night_label": "night",
-    "starting_from": "Starting from",
-    "select_date": "Select Date",
-    "select_guests": "Select Guests",
-    "check_in": "Check-in",
-    "check_out": "Check-out",
-    "participants": "Participants",
-    "total": "Total",
-    "back_to_explore": "Back to Explore",
-    "back": "Back",
-    "home": "Home",
-    "car_rental": "Car Rental",
-    "breadcrumb_home": "Home"
   },
   "rental": {
     "per_day": "/day",
@@ -391,7 +385,10 @@
     "what_to_do": "What should I do?",
     "check_balance": "Check your balance or card limit",
     "stable_connection": "Ensure stable internet connection",
-    "try_other_payment": "Try another payment method"
+    "try_other_payment": "Try another payment method",
+    "complete_details": "Complete Booking Details",
+    "fill_first": "Please fill in the required fields first.",
+    "waiting_calc": "Please wait for the delivery fee calculation to complete."
   },
   "checkout": {
     "title": "Checkout Summary",
@@ -439,7 +436,9 @@
     "explore_now": "Explore Now",
     "remove": "Remove",
     "added": "added to wishlist!",
-    "removed": "Removed from wishlist"
+    "removed": "Removed from wishlist",
+    "saved": "Saved to wishlist",
+    "save": "Save to wishlist"
   },
   "profile": {
     "title": "Account Settings",
@@ -628,23 +627,6 @@
     "method": "Payment Method",
     "amount": "Amount",
     "back_bookings": "Back to My Bookings"
-  },
-  "hero": {
-    "hello": "Hello Triverse, Let's",
-    "find_your": "Find Your",
-    "destination": "Destination",
-    "pickup_location": "Pick-up Location",
-    "from_to": "From/To",
-    "guests": "Guests",
-    "passengers": "Passengers",
-    "add_guests": "Add guests",
-    "add_passengers": "Add passengers",
-    "date": "Date",
-    "add_dates": "Add dates",
-    "suggestions": "Suggestions",
-    "popular_destinations": "Popular Destinations",
-    "today": "Today",
-    "trusted_by": "Trusted by 50,000+ travelers worldwide"
   },
   "trivpay": {
     "hero_title": "Travel Wallet That Accompanies Your Journey",
@@ -1045,24 +1027,49 @@
     "from": "from"
   },
   "product": {
+    "book_now": "Book Now",
+    "reserve_now": "Reserve Now",
+    "add_to_cart": "Add to Cart",
+    "added_to_cart": "Added",
+    "save_wishlist": "Save to Wishlist",
+    "saved_wishlist": "Saved",
+    "reviews": "reviews",
+    "no_reviews": "No reviews yet",
+    "location": "Location",
+    "duration": "Duration",
+    "min_pax": "Min. Participants",
+    "language": "Language",
+    "included": "Included",
+    "excluded": "Not Included",
+    "itinerary": "Itinerary",
+    "availability": "Availability",
+    "cancellation_policy": "Cancellation Policy",
+    "full_refund": "Full refund if cancelled 24h before",
+    "no_refund": "No refund",
+    "contact_support": "Need help? Contact Support",
+    "per_person_label": "person",
+    "per_night_label": "night",
+    "starting_from": "Starting from",
+    "select_date": "Select Date",
+    "select_guests": "Select Guests",
+    "check_in": "Check-in",
+    "check_out": "Check-out",
+    "participants": "Participants",
+    "total": "Total",
+    "back_to_explore": "Back to Explore",
+    "back": "Back",
+    "home": "Home",
+    "car_rental": "Car Rental",
     "breadcrumb_home": "Home",
     "not_found": "Product not found.",
     "load_error": "Failed to load product. Please try again.",
     "try_again_desc": "Please try again or go back to explore.",
-    "back_to_explore": "Back to Explore",
     "description": "Description",
     "whats_included": "What's Included",
-    "included": "Included",
-    "excluded": "Not Included",
-    "itinerary": "Travel Itinerary",
-    "cancellation_policy": "Cancellation Policy",
     "cancel_24h": "Cancel 24h before",
     "cancel_less_24h": "Cancel less than 24h",
     "no_show": "No Show",
-    "full_refund": "Full refund",
-    "no_refund": "No refund",
     "traveler_reviews": "Traveler Reviews",
-    "no_reviews": "No reviews yet for this product.",
     "excellent": "Excellent",
     "good": "Good",
     "average": "Average",
@@ -1070,11 +1077,7 @@
     "view_reply": "View Reply",
     "close_reply": "Close Reply",
     "agent_response": "Agent Response",
-    "select_date": "Date",
-    "participants": "Participants",
     "stay_dates": "Stay Dates",
-    "added_to_cart": "Added to Cart",
-    "reserve_now": "Reserve Now",
     "need_help": "Need help?",
     "contact_cs": "Contact Customer Service",
     "gallery": "Gallery",
@@ -1089,7 +1092,6 @@
     "rental_office": "Rental Office",
     "other_location": "Other Location",
     "dropoff_location": "Dropoff Location",
-    "reviews": "Reviews",
     "pickup_time": "Pickup Time",
     "return_time": "Return Time",
     "duration_label": "Duration",
@@ -1101,17 +1103,6 @@
     "child_seat_desc": "Safe seat for children",
     "pickup_fee": "Pickup Fee",
     "dropoff_fee": "Dropoff Fee"
-  },
-  "explore": {
-    "from": "Starting from"
-  },
-  "checkout": {
-    "total": "Total"
-  },
-  "booking": {
-    "complete_details": "Complete Booking Details",
-    "fill_first": "Please fill in the required fields first.",
-    "waiting_calc": "Please wait for the delivery fee calculation to complete."
   },
   "delivery": {
     "calculating_pickup": "Calculating pickup fee…",
@@ -1196,10 +1187,6 @@
     "share_to": "Share to",
     "copy_link": "Copy Link",
     "link_copied": "Link copied!"
-  },
-  "wishlist": {
-    "saved": "Saved to wishlist",
-    "save": "Save to wishlist"
   },
   "badge": {
     "safe": "Secure",
@@ -1730,11 +1717,6 @@
     "status_expired": "expired",
     "status_active": "active"
   },
-  "common": {
-    "success": "Success!",
-    "saved": "Saved",
-    "copied": "Copied!"
-  },
   "passengers_page": {
     "breadcrumb_account": "My Account",
     "breadcrumb_current": "Saved Passenger Details",
@@ -2181,6 +2163,13 @@
     "quick_err_value_positive": "Must be a positive number",
     "quick_err_value_max_percent": "Max 100%",
     "quick_err_create_failed": "Failed to create voucher"
+  },
+  "search": {
+    "placeholder_tours":     "Where do you want to go?",
+    "placeholder_stays":     "City, hotel, or destination",
+    "placeholder_cars":      "Pick-up location",
+    "placeholder_transfers": "Airport or Hotel",
+    "placeholder_events":    "Concert, festival, or event"
   },
   "total_paid": "Total Paid",
   "status_code": "Code",

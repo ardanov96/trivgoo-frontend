@@ -130,13 +130,18 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ value, onChange, onError }) =
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("image", file);
+      const uploadData = new FormData();
+      uploadData.append("image", file);
+
+      // ✅ Kirim path gambar lama agar bisa dihapus di backend
+      if (value) {
+        uploadData.append("old_image", value);
+      }
 
       const response = await fetch("/api/v1/admin/upload/car-image", {
         method:      "POST",
         credentials: "include",
-        body:        formData,
+        body:        uploadData,
       });
 
       if (!response.ok) {
@@ -145,7 +150,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ value, onChange, onError }) =
       }
 
       const data     = await response.json();
-      const imageUrl = data.url || data.image_url || data.path;
+      const imageUrl = data.data?.url || data.url || data.image_url || data.path;
+
       onChange(imageUrl);
       setPreview(imageUrl);
       onError?.("");
@@ -564,7 +570,10 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ open, car, onClose, onSucce
                 <label className="block text-sm font-bold text-gray-700 mb-1">Gambar Kendaraan</label>
                 <ImageUpload
                   value={formData.image}
-                  onChange={(url) => { setFormData({ ...formData, image: url }); setUploadError(""); }}
+                  onChange={(url) => {
+                    setFormData((prev) => ({ ...prev, image: url }));
+                    setUploadError("");
+                  }}
                   onError={setUploadError}
                 />
                 {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}

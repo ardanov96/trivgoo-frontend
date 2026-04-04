@@ -14,9 +14,10 @@ import de from './locales/de/translation.json';
 import ja from './locales/ja/translation.json';
 import ko from './locales/ko/translation.json';
 import ru from './locales/ru/translation.json';
+import hi from './locales/hi/translation.json';
 
 // ── Supported languages ────────────────────────────────────────────────────
-export const SUPPORTED_LANGS = ['id', 'en', 'zh', 'ar', 'ms', 'fr', 'de', 'ja', 'ko', 'es', 'ru'] as const;
+export const SUPPORTED_LANGS = ['id', 'en', 'zh', 'ar', 'ms', 'fr', 'de', 'ja', 'ko', 'es', 'ru', 'hi'] as const;
 export type SupportedLang = typeof SUPPORTED_LANGS[number];
 
 export const LANG_META: Record<SupportedLang, { label: string; flag: string; dir: 'ltr' | 'rtl' }> = {
@@ -31,6 +32,7 @@ export const LANG_META: Record<SupportedLang, { label: string; flag: string; dir
   ja: { label: '日本語',     flag: '🇯🇵', dir: 'ltr' },
   ko: { label: '한국어',     flag: '🇰🇷', dir: 'ltr' },
   ru: { label: 'Русский', flag: '🇷🇺', dir: 'ltr' },
+  hi: { label: 'हिन्दी', flag: '🇮🇳', dir: 'ltr' },
 };
 
 // ── Init ───────────────────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ i18n
       ja: { translation: ja },
       ko: { translation: ko },
       ru: { translation: ru },
+      hi: { translation: hi },
     },
     fallbackLng: 'id',
     detection: {
