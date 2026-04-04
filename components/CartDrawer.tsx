@@ -4,7 +4,8 @@ import { useCart } from './CartContext';
 import { useAuth } from '../AuthContext';
 import { useToast } from './ToastContext';
 import { encodeId } from '../utils/hashids';
-import { useLangNavigate } from '@/src/hooks/useLangNavigate'; 
+import { useLangNavigate } from '@/src/hooks/useLangNavigate';
+import { useTranslation } from 'react-i18next';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -15,27 +16,24 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const { cartItems, removeFromCart, cartCount } = useCart();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [processingId, setProcessingId] = useState<number | null>(null);
 
-  // ✅ Ganti useNavigate dengan useLangNavigate
   const { langNavigate } = useLangNavigate();
 
-  // Navigate to product page to fill in booking details
   const handleProductClick = (productId: string | number) => {
     onClose();
-    // ✅ langNavigate otomatis inject /:lang prefix
     langNavigate(`/product/${encodeId(productId)}`);
   };
 
-  // Reserve Now — goes directly to checkout-summary with product data
   const handleReserveNow = (productId: number) => {
     const item = cartItems.find((i) => i.product.id === productId);
     if (!item) return;
 
     if (!user) {
-      showToast('Please login to continue.', 'info');
+      showToast(t('cart.login_required'), 'info');
       onClose();
-      langNavigate('/login'); // ✅
+      langNavigate('/login');
       return;
     }
 
@@ -50,7 +48,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
     onClose();
 
     if (item.customization) {
-      langNavigate('/checkout-summary', { // ✅
+      langNavigate('/checkout-summary', {
         state: {
           ...item.customization,
           contactDetails: {
@@ -61,7 +59,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         },
       });
     } else {
-      langNavigate('/checkout-summary', { // ✅
+      langNavigate('/checkout-summary', {
         state: {
           productId: item.product.id,
           productName: item.product.name,
@@ -111,8 +109,10 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
               <ShoppingCart className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <h2 className="font-bold text-gray-900 text-lg">Keranjang</h2>
-              <p className="text-xs text-gray-400 font-medium">{cartCount} paket ditambahkan</p>
+              <h2 className="font-bold text-gray-900 text-lg">{t('nav.cart')}</h2>
+              <p className="text-xs text-gray-400 font-medium">
+                {t('cart.items_added', { count: cartCount })}
+              </p>
             </div>
           </div>
           <button
@@ -130,15 +130,15 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                 <ShoppingBag className="w-9 h-9 text-gray-300" />
               </div>
-              <h3 className="text-gray-700 font-bold text-lg mb-1">Keranjang Kosong</h3>
+              <h3 className="text-gray-700 font-bold text-lg mb-1">{t('cart.empty_title')}</h3>
               <p className="text-gray-400 text-sm max-w-[200px]">
-                Tambahkan paket wisata yang kamu minati ke keranjang
+                {t('cart.empty_desc')}
               </p>
               <button
-                onClick={() => { onClose(); langNavigate('/explore'); }} // ✅
+                onClick={() => { onClose(); langNavigate('/explore'); }}
                 className="mt-6 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 transition-colors flex items-center gap-2"
               >
-                Jelajahi Paket
+                {t('cart.explore_packages')}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -196,20 +196,20 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  {/* Actions: Hapus | Detail | Reserve Now */}
+                  {/* Actions: Remove | Detail | Reserve Now */}
                   <div className="grid grid-cols-3 border-t border-gray-100 divide-x divide-gray-100">
                     <button
                       onClick={() => removeFromCart(item.product.id)}
                       className="py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center gap-1 rounded-bl-2xl"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      Hapus
+                      {t('cart.action_remove')}
                     </button>
                     <button
                       onClick={() => handleProductClick(item.product.id)}
                       className="py-2.5 text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1"
                     >
-                      Detail
+                      {t('cart.action_detail')}
                       <ArrowRight className="w-3 h-3" />
                     </button>
                     <button
@@ -222,7 +222,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                       ) : (
                         <>
                           <CreditCard className="w-3.5 h-3.5" />
-                          Pesan
+                          {t('cart.action_order')}
                         </>
                       )}
                     </button>
@@ -237,17 +237,20 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         {cartItems.length > 0 && (
           <div className="px-6 py-5 border-t border-gray-100 bg-white space-y-3">
             <p className="text-xs text-gray-400 text-center">
-              Klik <span className="font-bold text-gray-600">"Detail"</span> untuk pilih tanggal &amp; tamu,
-              atau <span className="font-bold text-gray-900">"Pesan"</span> untuk langsung checkout.
+              {t('cart.footer_hint_prefix')}{' '}
+              <span className="font-bold text-gray-600">{t('cart.footer_hint_detail')}</span>{' '}
+              {t('cart.footer_hint_middle')}{' '}
+              <span className="font-bold text-gray-900">{t('cart.footer_hint_order')}</span>{' '}
+              {t('cart.footer_hint_suffix')}
             </p>
 
-            {/* Lanjut Pilih Paket → /explore */}
+            {/* Continue exploring → /explore */}
             <button
-              onClick={() => { onClose(); langNavigate('/explore'); }} // ✅
+              onClick={() => { onClose(); langNavigate('/explore'); }}
               className="w-full py-3 rounded-xl font-bold text-sm bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2"
             >
               <ShoppingCart className="w-4 h-4" />
-              Lanjut Pilih Paket
+              {t('cart.continue_exploring')}
             </button>
 
             {/* Reserve Now */}
@@ -261,7 +264,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
               ) : (
                 <>
                   <CreditCard className="w-4 h-4" />
-                  Reserve Now
+                  {t('product.reserve_now')}
                 </>
               )}
             </button>
