@@ -13,26 +13,23 @@ import ChatbotWidget from './components/ChatbotWidget';
 import { useTranslation } from 'react-i18next';
 import { authService } from './services/authService';
 
-// ── Infrastructure ─────────────────────────────────────────────────────────
 import { ErrorBoundary }   from './components/ErrorBoundary';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 
-// ── Layouts ────────────────────────────────────────────────────────────────
 import DashboardLayout from './components/DashboardLayout';
 import PublicLayout    from './components/PublicLayout';
 
-// ── Error / status pages ───────────────────────────────────────────────────
 import NotFound       from './pages/NotFound';
 import Forbidden403   from './pages/Forbidden403';
 import ServerError500 from './pages/ServerError500';
 import OfflinePage    from './pages/OfflinePage';
 import LegacyRedirect from './components/LegacyRedirect';
 
-// ── i18n ───────────────────────────────────────────────────────────────────
 import './src/i18n';
 import { SUPPORTED_LANGS } from './src/i18n';
+import { ROUTE_SLUGS, SLUG_TO_CANONICAL } from './src/i18n/slugs';
+import type { SupportedLang } from './src/i18n';
 
-// ── Public Pages ───────────────────────────────────────────────────────────
 import AITripPlanner     from './pages/AITripPlanner';
 import Explore           from './pages/Explore';
 import TermAndService    from './pages/TermAndService';
@@ -46,7 +43,6 @@ import VerifyEmail       from './pages/VerifyEmail';
 import PaymentResult     from './pages/PaymentResult';
 import PromoCampaignPage from './pages/PromoCampaignPage';
 
-// ── Admin Pages ────────────────────────────────────────────────────────────
 import AdminBookings        from './pages/admin/Bookings';
 import AdminDashboard       from './pages/admin/Dashboard';
 import AdminPayouts         from './pages/admin/Payouts';
@@ -60,7 +56,6 @@ import AdminPromoAnalytics  from './pages/admin/AdminPromoAnalytics';
 import AdminMembershipTiers from './pages/admin/AdminMembershipTiers';
 import AdminReferralStats   from './pages/admin/AdminReferralStats';
 
-// ── Agent Pages ────────────────────────────────────────────────────────────
 import AgentAddProduct         from './pages/agent/AddProduct';
 import AgentCommissions        from './pages/agent/Commissions';
 import AgentCustomerBookings   from './pages/agent/CustomerBookings';
@@ -74,9 +69,8 @@ import AgentLoyalty            from './pages/agent/AgentLoyalty';
 import AgentAPI                from './pages/agent/AgentAPI';
 import AgentSupport            from './pages/agent/AgentSupport';
 import AgentRating             from './pages/agent/AgentRating';
-import AgentVouchers           from './pages/agent/AgentVouchers'; // ← tambah
+import AgentVouchers           from './pages/agent/AgentVouchers';
 
-// ── Customer Pages ─────────────────────────────────────────────────────────
 import CustomerBookings        from './pages/customer/Bookings';
 import CustomerBookingDetail   from './pages/customer/BookingDetail';
 import CustomerProfileSettings from './pages/customer/ProfileSettings';
@@ -89,7 +83,6 @@ import MyPriceAlerts           from './pages/customer/MyPriceAlerts';
 import MyPassengers            from './pages/customer/MyPassengers';
 import MyNotifications         from './pages/customer/MyNotifications';
 
-// ── Misc Pages ─────────────────────────────────────────────────────────────
 import Register        from './pages/Register';
 import RegisterAgent   from './pages/RegisterAgent';
 import PrivacyPolicy   from './pages/PrivacyPolicy';
@@ -106,8 +99,19 @@ import BookingPending  from './pages/BookingPending';
 import ForgotPassword  from './pages/ForgotPassword';
 import ResetPassword   from './pages/ResetPassword';
 
-// ── Push Notifications ─────────────────────────────────────────────────────
 import { usePushNotifications } from './hooks/usePushNotifications';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Generate all localized category slugs for routing
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ALL_CATEGORY_SLUGS = [
+  ...new Set(
+    Object.values(ROUTE_SLUGS).flatMap(slugMap =>
+      Object.values(slugMap)
+    )
+  )
+].filter(s => s !== 'explore'); // exclude 'explore' itself — handled as parent
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Route Guards
@@ -120,8 +124,8 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { user, isLoading } = useAuth();
-  const location  = useLocation();
-  const { lang }  = useParams<{ lang: string }>();
+  const location = useLocation();
+  const { lang } = useParams<{ lang: string }>();
   const currentLang = lang ?? 'id';
 
   if (isLoading) return (
@@ -130,13 +134,13 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     </div>
   );
 
-  if (!user) {
-    return <Navigate
+  if (!user) return (
+    <Navigate
       to={`/${currentLang}/login`}
       replace
       state={{ from: location.pathname + location.search }}
-    />;
-  }
+    />
+  );
 
   if (!allowedRoles.includes(user.role)) return <Forbidden403 />;
   return <>{children}</>;
@@ -181,11 +185,11 @@ const AppGates: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const LangBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { lang }  = useParams<{ lang: string }>();
-  const { i18n }  = useTranslation();
+  const { lang } = useParams<{ lang: string }>();
+  const { i18n } = useTranslation();
 
   useEffect(() => {
-    if (lang && SUPPORTED_LANGS.includes(lang as any)) {
+    if (lang && SUPPORTED_LANGS.includes(lang as SupportedLang)) {
       i18n.changeLanguage(lang);
       document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
       document.documentElement.lang = lang;
@@ -200,11 +204,10 @@ const RootRedirect: React.FC = () => {
 
   useEffect(() => {
     const saved = localStorage.getItem('trivgoo_lang');
-    if (saved && SUPPORTED_LANGS.includes(saved as any)) {
+    if (saved && SUPPORTED_LANGS.includes(saved as SupportedLang)) {
       navigate(`/${saved}`, { replace: true });
       return;
     }
-
     fetch('/api/v1/locale/detect')
       .then(r => r.json())
       .then(d => navigate(`/${d.lang ?? 'id'}`, { replace: true }))
@@ -220,11 +223,11 @@ const RootRedirect: React.FC = () => {
 
 const AppRoutes: React.FC = () => (
   <Routes>
-    {/* ── Root redirect → geo-detect atau saved lang ── */}
+    {/* Root redirect */}
     <Route path="/" element={<RootRedirect />} />
     <Route path="/payment/result" element={<PaymentResult />} />
 
-    {/* ── Legacy fallback: lang-less paths → auto-detect & redirect ── */}
+    {/* Legacy redirects */}
     <Route path="/verify-email"    element={<LegacyRedirect />} />
     <Route path="/reset-password"  element={<LegacyRedirect />} />
     <Route path="/login"           element={<LegacyRedirect />} />
@@ -234,14 +237,31 @@ const AppRoutes: React.FC = () => (
     <Route path="/my-bookings/:id" element={<LegacyRedirect />} />
     <Route path="/agent/bookings"  element={<LegacyRedirect />} />
 
-    {/* ── Semua route dibungkus /:lang ── */}
+    {/* All lang-prefixed routes */}
     <Route path="/:lang" element={<LangBootstrap><Outlet /></LangBootstrap>}>
 
-      {/* ── Public ── */}
       <Route element={<PublicLayout />}>
-        <Route index                       element={<Home />} />
-        <Route path="explore"                   element={<Explore />} />
-        <Route path="explore/:categorySlug"     element={<Explore />} />
+        <Route index element={<Home />} />
+
+        {/* ── Explore — base ── */}
+        <Route path="explore" element={<Explore />} />
+
+        {/* ── Explore — all localized category slugs ──
+            Each slug resolves to canonical via SLUG_TO_CANONICAL in Explore page.
+            e.g. /id/sewa-mobil, /fr/location-voiture, /en/car-rental
+            all render <Explore /> with correct category.
+        */}
+        {ALL_CATEGORY_SLUGS.map(slug => (
+          <Route
+            key={slug}
+            path={`explore/${slug}`}
+            element={<Explore />}
+          />
+        ))}
+
+        {/* Fallback: catch-all under explore for unknown slugs */}
+        <Route path="explore/:categorySlug" element={<Explore />} />
+
         <Route path="product/:id"          element={<ProductDetail />} />
         <Route path="product/:id/:slug"    element={<ProductDetail />} />
         <Route path="checkout-summary"     element={<CheckoutSummary />} />
@@ -269,7 +289,6 @@ const AppRoutes: React.FC = () => (
         <Route path="forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
         <Route path="reset-password"  element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
 
-        {/* Customer protected */}
         <Route path="payment"            element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><Payment /></ProtectedRoute>} />
         <Route path="my-bookings"        element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerBookings /></ProtectedRoute>} />
         <Route path="my-bookings/:id"    element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerBookingDetail /></ProtectedRoute>} />
@@ -286,7 +305,7 @@ const AppRoutes: React.FC = () => (
         <Route path="*" element={<NotFound />} />
       </Route>
 
-      {/* ── Admin ── */}
+      {/* Admin */}
       <Route path="admin" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><DashboardLayout role={UserRole.ADMIN} /></ProtectedRoute>}>
         <Route index                    element={<AdminDashboard />} />
         <Route path="bookings"          element={<AdminBookings />} />
@@ -302,7 +321,7 @@ const AppRoutes: React.FC = () => (
         <Route path="referral/stats"    element={<AdminReferralStats />} />
       </Route>
 
-      {/* ── Agent ── */}
+      {/* Agent */}
       <Route path="agent" element={<ProtectedRoute allowedRoles={[UserRole.AGENT]}><DashboardLayout role={UserRole.AGENT} /></ProtectedRoute>}>
         <Route index                      element={<AgentDashboard />} />
         <Route path="products"            element={<AgentProducts />} />
@@ -314,7 +333,7 @@ const AppRoutes: React.FC = () => (
         <Route path="verification"        element={<AgentVerification />} />
         <Route path="profile/settings"    element={<ProfileSetting />} />
         <Route path="marketing"           element={<AgentMarketing />} />
-        <Route path="vouchers"            element={<AgentVouchers />} /> {/* ← tambah */}
+        <Route path="vouchers"            element={<AgentVouchers />} />
         <Route path="loyalty"             element={<AgentLoyalty />} />
         <Route path="api"                 element={<AgentAPI />} />
         <Route path="support"             element={<AgentSupport />} />

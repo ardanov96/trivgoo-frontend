@@ -116,7 +116,7 @@ const CheckoutSummary: React.FC = () => {
   const normalizedDuration = Math.max(1, Number(duration || 1));
 
   const resolvedAddOns = {
-    withDriver:       Boolean(addOns?.withDriver       ?? withDriver ?? false),
+    withDriver:       Boolean(addOns?.withDriver || withDriver || false),
     premiumInsurance: Boolean(addOns?.premiumInsurance ?? false),
     childSeat:        Boolean(addOns?.childSeat        ?? false),
   };
@@ -296,7 +296,7 @@ const CheckoutSummary: React.FC = () => {
           luggage={luggage}
           year={year}
           fuelPolicy={fuelPolicy}
-          withDriver={withDriver}
+          withDriver={resolvedAddOns.withDriver}
           pickupTime={pickupTime}
           returnTime={returnTime}
         />

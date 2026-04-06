@@ -297,7 +297,13 @@ export const AppCtaSection = () => {
             {t('home.app_title', 'Unlock App-Only Deals')}
           </h2>
           <p className="text-primary-100 text-lg md:text-xl mb-3">
-            {t('home.app_subtitle', 'Save up to')} <span className="font-bold text-white">IDR 400.000</span> {t('common.on_first_transaction', 'on your first transaction.')}
+            {t('home.app_subtitle', 'Save up to <b>IDR 400.000</b> on your first transaction.')
+              .split(/(<b>.*?<\/b>)/g)
+              .map((part, i) =>
+                part.startsWith('<b>') 
+                  ? <span key={i} className="font-bold text-white">{part.replace(/<\/?b>/g, '')}</span>
+                  : part
+              )}
           </p>
           <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
             {[

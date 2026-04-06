@@ -1,11 +1,12 @@
 'use client';
-import { Calendar, Car, ChevronLeft, ChevronRight, MapPin, Minus, Plus, Search, Users } from 'lucide-react';
+import { Calendar, Car, ChevronLeft, ChevronRight, MapPin, Minus, Plus, Search, Users, ArrowLeftRight, PlaneTakeoff, PlaneLanding } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLangNavigate } from '../../../src/hooks/useLangNavigate';
 import { useTypewriter } from '../hooks/useTypewriter';
 import { getSearchCategories, POPULAR_DESTINATIONS, CATEGORY_ID_MAP } from '../constants';
+import type { RouteSlugMap } from '../../../src/i18n/slugs';
 
 type CategoryId = 'tours' | 'stays' | 'cars' | 'transfers' | 'events';
 
@@ -66,7 +67,6 @@ const MiniCalendar = ({ value, onChange, minDate, label, placeholder }: MiniCale
   const isToday = (day: number) =>
     toDateStr(new Date(viewDate.getFullYear(), viewDate.getMonth(), day)) === toDateStr(new Date());
 
-  // Header hari — ikut locale i18n
   const dayHeaders = [
     t('calendar.days_short.sun', 'Min'),
     t('calendar.days_short.mon', 'Sen'),
@@ -271,6 +271,116 @@ const FieldWrapper = ({
   </div>
 );
 
+// ── Airport Transfer Search Bar ───────────────────────────────────────────────
+
+interface AirportTransferFieldsProps {
+  fromAirport:    string;
+  setFromAirport: (v: string) => void;
+  toDestination:  string;
+  setToDestination: (v: string) => void;
+  transferDate:   string;
+  setTransferDate: (v: string) => void;
+  transferTime:   string;
+  setTransferTime: (v: string) => void;
+}
+
+const AirportTransferFields: React.FC<AirportTransferFieldsProps> = ({
+  fromAirport, setFromAirport,
+  toDestination, setToDestination,
+  transferDate, setTransferDate,
+  transferTime, setTransferTime,
+}) => {
+  const { t } = useTranslation();
+  const [swapped, setSwapped] = useState(false);
+
+  const handleSwap = () => {
+    const tmp = fromAirport;
+    setFromAirport(toDestination);
+    setToDestination(tmp);
+    setSwapped(s => !s);
+  };
+
+  return (
+    <>
+      {/* From — Bandara */}
+      <div className="flex-1 flex items-center gap-3 p-4 md:px-5 md:border-r md:border-gray-200 relative text-left">
+        <div className="w-9 h-9 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0">
+          <PlaneTakeoff className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+            {t('hero.from_airport', 'Dari Bandara')}
+          </p>
+          <input
+            type="text"
+            placeholder={t('hero.airport_placeholder', 'Contoh: Ngurah Rai International')}
+            className="w-full text-sm text-gray-800 font-semibold focus:outline-none placeholder-gray-400 bg-transparent"
+            value={fromAirport}
+            onChange={e => setFromAirport(e.target.value)}
+          />
+        </div>
+
+        {/* Swap button — absolute center between the two location fields */}
+        <button
+          type="button"
+          onClick={handleSwap}
+          className="absolute right-0 translate-x-1/2 z-10 w-8 h-8 rounded-full bg-primary-500 hover:bg-primary-600 text-white shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          title={t('hero.swap_locations', 'Tukar lokasi')}
+        >
+          <ArrowLeftRight className={`w-3.5 h-3.5 transition-transform duration-300 ${swapped ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {/* To — Tujuan */}
+      <div className="flex-1 flex items-center gap-3 p-4 md:px-5 md:border-r md:border-gray-200 text-left">
+        <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 flex-shrink-0">
+          <PlaneLanding className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+            {t('hero.to_destination', 'Ke Tujuan')}
+          </p>
+          <input
+            type="text"
+            placeholder={t('hero.destination_placeholder', 'Area, alamat, hotel, gedung...')}
+            className="w-full text-sm text-gray-800 font-semibold focus:outline-none placeholder-gray-400 bg-transparent"
+            value={toDestination}
+            onChange={e => setToDestination(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Date */}
+      <div className="flex-1 flex items-center gap-3 p-4 md:px-5 md:border-r md:border-gray-200 text-left">
+        <div className="w-9 h-9 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0">
+          <Calendar className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <MiniCalendar
+            value={transferDate}
+            onChange={setTransferDate}
+            label={t('hero.pickup_date', 'Tanggal Jemput')}
+            placeholder={t('hero.pick_date', 'Pilih tanggal')}
+          />
+        </div>
+      </div>
+
+      {/* Time */}
+      <div className="flex-1 flex items-center gap-3 p-4 md:px-5 text-left">
+        <div className="w-9 h-9 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0">
+          <Car className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+            {t('hero.pickup_time_label', 'Waktu')}
+          </p>
+          <ScrollTimePicker value={transferTime} onChange={setTransferTime} />
+        </div>
+      </div>
+    </>
+  );
+};
+
 // ── Main HeroSection ──────────────────────────────────────────────────────────
 
 export const HeroSection = () => {
@@ -278,7 +388,6 @@ export const HeroSection = () => {
   const { t }              = useTranslation();
   const typewriterText     = useTypewriter();
 
-  // Build translated categories — dipanggil di dalam komponen agar reaktif terhadap perubahan bahasa
   const SEARCH_CATEGORIES = getSearchCategories(t);
 
   const [searchCategory,       setSearchCategory]       = useState<CategoryId>('tours');
@@ -296,12 +405,18 @@ export const HeroSection = () => {
   const [checkOut,   setCheckOut]   = useState('');
   const [stayGuests, setStayGuests] = useState(2);
 
-  // Car / Transfer
+  // Car
   const [pickupDate,  setPickupDate]  = useState('');
   const [pickupTime,  setPickupTime]  = useState('09:00');
   const [dropoffDate, setDropoffDate] = useState('');
   const [dropoffTime, setDropoffTime] = useState('09:00');
   const [withDriver,  setWithDriver]  = useState<boolean | null>(null);
+
+  // Airport Transfer — state terpisah
+  const [fromAirport,    setFromAirport]    = useState('');
+  const [toDestination,  setToDestination]  = useState('');
+  const [transferDate,   setTransferDate]   = useState('');
+  const [transferTime,   setTransferTime]   = useState('09:00');
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -325,56 +440,60 @@ export const HeroSection = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (searchQuery.trim()) params.append('search', searchQuery);
 
-    // ── Map category ke slug path ─────────────────────────────────────────────
-    const categorySlugMap: Record<CategoryId, string> = {
+    const categoryCanonicalMap: Record<CategoryId, keyof RouteSlugMap> = {
       tours:     'tours',
       stays:     'stays',
       cars:      'car-rental',
       transfers: 'airport-transfer',
       events:    'events',
     };
-    const slug = categorySlugMap[searchCategory];
+    const canonical = categoryCanonicalMap[searchCategory];
 
-    // ── Tambah filter params ──────────────────────────────────────────────────
-    if ((searchCategory === 'tours' || searchCategory === 'events') && tourDate) {
-      params.append('date', tourDate);
-    }
-    if (searchCategory === 'stays' && checkIn) {
-      params.append('check_in', checkIn);
-      if (checkOut) params.append('check_out', checkOut);
-      if (stayGuests > 1) params.append('guests', String(stayGuests));
-    }
-    if ((searchCategory === 'cars' || searchCategory === 'transfers') && pickupDate) {
-      params.append('pickup_date', pickupDate);
-      params.append('pickup_time', pickupTime);
-      if (dropoffDate) {
-        params.append('dropoff_date', dropoffDate);
-        params.append('dropoff_time', dropoffTime);
+    if (searchCategory === 'transfers') {
+      // Airport transfer — gunakan state sendiri
+      if (fromAirport.trim())   params.append('from',          fromAirport);
+      if (toDestination.trim()) params.append('to',            toDestination);
+      if (transferDate)         params.append('pickup_date',   transferDate);
+      if (transferTime)         params.append('pickup_time',   transferTime);
+    } else {
+      if (searchQuery.trim()) params.append('search', searchQuery);
+
+      if ((searchCategory === 'tours' || searchCategory === 'events') && tourDate) {
+        params.append('date', tourDate);
       }
-      if (withDriver !== null) params.append('with_driver', String(withDriver));
+      if (searchCategory === 'stays' && checkIn) {
+        params.append('check_in', checkIn);
+        if (checkOut) params.append('check_out', checkOut);
+        if (stayGuests > 1) params.append('guests', String(stayGuests));
+      }
+      if (searchCategory === 'cars' && pickupDate) {
+        params.append('pickup_date', pickupDate);
+        params.append('pickup_time', pickupTime);
+        if (dropoffDate) {
+          params.append('dropoff_date', dropoffDate);
+          params.append('dropoff_time', dropoffTime);
+        }
+        if (withDriver !== null) params.append('with_driver', String(withDriver));
+      }
     }
 
     const queryString = params.toString();
-    langNavigate(`/explore/${slug}${queryString ? `?${queryString}` : ''}`);
+    langNavigate(`/explore/${canonical}${queryString ? `?${queryString}` : ''}`);
   };
 
-  const isCarCategory  = searchCategory === 'cars' || searchCategory === 'transfers';
-  const isStayCategory = searchCategory === 'stays';
-  const activeCat      = SEARCH_CATEGORIES.find(c => c.id === searchCategory) || SEARCH_CATEGORIES[0];
-  const locationLabel  = isCarCategory
+  const isCarCategory      = searchCategory === 'cars';
+  const isTransferCategory = searchCategory === 'transfers';
+  const isStayCategory     = searchCategory === 'stays';
+  const activeCat          = SEARCH_CATEGORIES.find(c => c.id === searchCategory) || SEARCH_CATEGORIES[0];
+  const locationLabel      = isCarCategory
     ? t('hero.pickup_location', 'Lokasi Penjemputan')
     : t('hero.destination', 'Destinasi');
 
-  // ── Driver option pills ───────────────────────────────────────────────────
-
   const driverOptions = [
-    { val: false as const, Icon: Car,   label: t('hero.self_drive',   'Lepas Kunci') },
-    { val: true  as const, Icon: Users, label: t('hero.with_driver',  'Dengan Sopir') },
+    { val: false as const, Icon: Car,   label: t('hero.self_drive',  'Lepas Kunci') },
+    { val: true  as const, Icon: Users, label: t('hero.with_driver', 'Dengan Sopir') },
   ];
-
-  // ── Dynamic fields ────────────────────────────────────────────────────────
 
   const renderDynamicFields = () => {
     if (isCarCategory) return (
@@ -427,6 +546,7 @@ export const HeroSection = () => {
       </>
     );
 
+    // Default — tours / events
     return (
       <>
         <FieldWrapper icon={<Calendar className="w-4 h-4" />} border>
@@ -444,6 +564,9 @@ export const HeroSection = () => {
       </>
     );
   };
+
+  // ── Transfer form layout berbeda total — tidak pakai location input biasa ──
+  const isTransferLayout = isTransferCategory;
 
   return (
     <div className="relative min-h-[100dvh] flex items-start justify-center px-4 pt-28 md:pt-24 lg:pt-28 pb-12">
@@ -495,7 +618,7 @@ export const HeroSection = () => {
                   <button key={cat.id}
                     onClick={() => {
                       setSearchCategory(cat.id as CategoryId);
-                      if (cat.id !== 'cars' && cat.id !== 'transfers') setWithDriver(null);
+                      if (cat.id !== 'cars') setWithDriver(null);
                     }}
                     className={`flex items-center px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap mb-1 md:mb-0
                       ${isActive ? 'bg-white text-primary-700 shadow-lg scale-105' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}>
@@ -510,9 +633,9 @@ export const HeroSection = () => {
           {/* Search form */}
           <form onSubmit={handleSearchSubmit}
             className={`bg-white/95 backdrop-blur-xl shadow-2xl border border-white/40 overflow-visible
-              ${isCarCategory ? 'rounded-2xl md:rounded-3xl' : 'rounded-2xl md:rounded-full'}`}>
+              ${isCarCategory || isTransferLayout ? 'rounded-2xl md:rounded-3xl' : 'rounded-2xl md:rounded-full'}`}>
 
-            {/* Baris 1 — Driver option (car only) */}
+            {/* Driver option row — hanya untuk car rental */}
             {isCarCategory && (
               <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100">
                 <span className="text-xs font-bold text-gray-500 shrink-0">
@@ -538,92 +661,124 @@ export const HeroSection = () => {
               </div>
             )}
 
-            {/* Baris 2 — Fields */}
-            <div className={`flex flex-col md:flex-row items-stretch md:items-center divide-y divide-gray-100 md:divide-y-0 relative min-h-[72px]
-              ${isCarCategory ? 'pr-0 md:pr-40' : 'pr-0 md:pr-16'}`}>
-
-              {/* Destination / Location */}
-              <div className="flex-1 flex items-center gap-3 p-4 md:p-4 md:pl-7 md:border-r md:border-gray-200 relative text-left" ref={searchRef}>
-                <div className="w-9 h-9 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
-                    {locationLabel}
-                  </p>
-                  <input
-                    type="text"
-                    placeholder={activeCat.placeholder}
-                    className="w-full text-sm text-gray-800 font-semibold focus:outline-none placeholder-gray-400 bg-transparent text-left"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onFocus={() => setShowSuggestions(true)}
-                  />
-                </div>
-
-                {/* Suggestions dropdown */}
-                {showSuggestions && (
-                  <div className="absolute top-full left-0 mt-3 w-full md:w-80 bg-white rounded-2xl shadow-2xl py-2 overflow-hidden border border-gray-100 z-[70]">
-                    <div className="absolute -top-2 left-8 w-4 h-4 bg-white transform rotate-45 border-t border-l border-gray-100" />
-                    <div className="px-5 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
-                      {searchQuery
-                        ? t('hero.suggestions',          'Saran')
-                        : t('hero.popular_destinations', 'Destinasi Populer')}
-                    </div>
-                    {filteredDestinations.length > 0 ? (
-                      <ul className="max-h-56 overflow-y-auto">
-                        {filteredDestinations.map((dest, i) => (
-                          <li key={i}>
-                            <button type="button"
-                              onClick={() => { setSearchQuery(dest); setShowSuggestions(false); }}
-                              className="w-full text-left px-5 py-2.5 flex items-center hover:bg-gray-50 transition-colors gap-3">
-                              <div className="p-1.5 bg-primary-50 rounded-lg text-primary-600 shrink-0">
-                                <MapPin className="w-3.5 h-3.5" />
-                              </div>
-                              <span className="text-sm text-gray-700 font-medium">{dest}</span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="px-5 py-4 text-sm text-gray-400 text-center">
-                        {t('explore.no_results', 'Tidak ditemukan')}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Dynamic fields */}
-              {renderDynamicFields()}
-
-              {/* Submit — desktop car */}
-              {isCarCategory ? (
+            {/* ── Airport Transfer layout khusus ── */}
+            {isTransferLayout ? (
+              <div className="flex flex-col md:flex-row items-stretch md:items-center divide-y divide-gray-100 md:divide-y-0 relative min-h-[72px] pr-0 md:pr-40">
+                <AirportTransferFields
+                  fromAirport={fromAirport}
+                  setFromAirport={setFromAirport}
+                  toDestination={toDestination}
+                  setToDestination={setToDestination}
+                  transferDate={transferDate}
+                  setTransferDate={setTransferDate}
+                  transferTime={transferTime}
+                  setTransferTime={setTransferTime}
+                />
+                {/* Submit button */}
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:block z-10">
                   <button type="submit"
                     className="bg-primary-600 hover:bg-primary-700 text-white rounded-2xl px-5 h-14 flex items-center gap-2 font-bold text-sm shadow-lg transition-all hover:scale-105 active:scale-95 whitespace-nowrap">
                     <Search className="w-4 h-4" />
-                    {t('hero.search_car', 'Cari Mobil')}
+                    {t('hero.search_transfer', 'Cari Transfer')}
                   </button>
                 </div>
-              ) : (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:block z-10">
+                {/* Mobile submit */}
+                <div className="p-4 md:hidden">
                   <button type="submit"
-                    className="bg-primary-600 hover:bg-primary-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-xl transition-all hover:scale-105 active:scale-95">
-                    <Search className="w-5 h-5" />
+                    className="w-full bg-primary-600 text-white rounded-xl h-12 font-bold shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                    <Search className="w-4 h-4" />
+                    {t('hero.search_transfer', 'Cari Transfer')}
                   </button>
                 </div>
-              )}
-
-              {/* Submit — mobile */}
-              <div className="p-4 md:hidden">
-                <button type="submit"
-                  className="w-full bg-primary-600 text-white rounded-xl h-12 font-bold shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
-                  <Search className="w-4 h-4" />
-                  {isCarCategory ? t('hero.search_car', 'Cari Mobil') : t('common.search', 'Cari')}
-                </button>
               </div>
-            </div>
+            ) : (
+              /* ── Default layout (tours, stays, cars) ── */
+              <div className={`flex flex-col md:flex-row items-stretch md:items-center divide-y divide-gray-100 md:divide-y-0 relative min-h-[72px]
+                ${isCarCategory ? 'pr-0 md:pr-40' : 'pr-0 md:pr-16'}`}>
+
+                {/* Destination / Location */}
+                <div className="flex-1 flex items-center gap-3 p-4 md:p-4 md:pl-7 md:border-r md:border-gray-200 relative text-left" ref={searchRef}>
+                  <div className="w-9 h-9 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 flex-shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                      {locationLabel}
+                    </p>
+                    <input
+                      type="text"
+                      placeholder={activeCat.placeholder}
+                      className="w-full text-sm text-gray-800 font-semibold focus:outline-none placeholder-gray-400 bg-transparent text-left"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      onFocus={() => setShowSuggestions(true)}
+                    />
+                  </div>
+
+                  {/* Suggestions dropdown */}
+                  {showSuggestions && (
+                    <div className="absolute top-full left-0 mt-3 w-full md:w-80 bg-white rounded-2xl shadow-2xl py-2 overflow-hidden border border-gray-100 z-[70]">
+                      <div className="absolute -top-2 left-8 w-4 h-4 bg-white transform rotate-45 border-t border-l border-gray-100" />
+                      <div className="px-5 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
+                        {searchQuery
+                          ? t('hero.suggestions',          'Saran')
+                          : t('hero.popular_destinations', 'Destinasi Populer')}
+                      </div>
+                      {filteredDestinations.length > 0 ? (
+                        <ul className="max-h-56 overflow-y-auto">
+                          {filteredDestinations.map((dest, i) => (
+                            <li key={i}>
+                              <button type="button"
+                                onClick={() => { setSearchQuery(dest); setShowSuggestions(false); }}
+                                className="w-full text-left px-5 py-2.5 flex items-center hover:bg-gray-50 transition-colors gap-3">
+                                <div className="p-1.5 bg-primary-50 rounded-lg text-primary-600 shrink-0">
+                                  <MapPin className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-sm text-gray-700 font-medium">{dest}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="px-5 py-4 text-sm text-gray-400 text-center">
+                          {t('explore.no_results', 'Tidak ditemukan')}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Dynamic fields */}
+                {renderDynamicFields()}
+
+                {/* Submit — desktop car */}
+                {isCarCategory ? (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:block z-10">
+                    <button type="submit"
+                      className="bg-primary-600 hover:bg-primary-700 text-white rounded-2xl px-5 h-14 flex items-center gap-2 font-bold text-sm shadow-lg transition-all hover:scale-105 active:scale-95 whitespace-nowrap">
+                      <Search className="w-4 h-4" />
+                      {t('hero.search_car', 'Cari Mobil')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:block z-10">
+                    <button type="submit"
+                      className="bg-primary-600 hover:bg-primary-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-xl transition-all hover:scale-105 active:scale-95">
+                      <Search className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Submit — mobile */}
+                <div className="p-4 md:hidden">
+                  <button type="submit"
+                    className="w-full bg-primary-600 text-white rounded-xl h-12 font-bold shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                    <Search className="w-4 h-4" />
+                    {isCarCategory ? t('hero.search_car', 'Cari Mobil') : t('common.search', 'Cari')}
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
         </motion.div>
 

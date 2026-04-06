@@ -1,7 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
@@ -26,7 +26,6 @@ import { DestinationHero, EmptyState } from './explore/components/DestinationHer
 import { SkeletonCard, SkeletonCarCard } from './explore/components/SharedUI';
 import { encodeId }     from '../utils/hashids';
 import { generateSlug } from '../utils/slugify';
-import { useParams } from 'react-router-dom';
 
 const Explore: React.FC = () => {
   const { t } = useTranslation();
@@ -45,14 +44,7 @@ const Explore: React.FC = () => {
     'airport-transfer': { title: 'Airport Transfer Indonesia - Trivgoo',    description: 'Layanan antar jemput bandara terpercaya.' },
     'events':           { title: 'Event & Aktivitas - Trivgoo',             description: 'Temukan event dan aktivitas seru di sekitar Anda.' },
   };
-
   const meta = categorySlug ? SEO_META[categorySlug] : null;
-
-  // Lalu update komponen SEO:
-  <SEO
-    title={meta?.title ?? t('explore.seo_title', 'Explore - Trivgoo')}
-    description={meta?.description ?? t('explore.seo_desc', 'Discover the perfect travel packages.')}
-  />
 
   useEffect(() => {
     const load = async () => {
@@ -98,7 +90,6 @@ const Explore: React.FC = () => {
   const [locationPrompt,   setLocationPrompt]   = useState(false);
   const [pendingGroup,     setPendingGroup]      = useState<CarGroup | null>(null);
 
-  // ── Helper: buka picker / navigasi langsung ke product ────────────────────
   const openGroupOrProduct = (group: CarGroup) => {
     if (group.agents.length > 1) {
       setAgentPickerGroup(group);
@@ -109,10 +100,13 @@ const Explore: React.FC = () => {
     }
   };
 
-  // ── Handler klik card rental ───────────────────────────────────────────────
   const handleCarCardClick = (group: CarGroup) => {
+    // Untuk airport transfer, tidak perlu prompt lokasi
+    if (filters.isTransferCategory) {
+      openGroupOrProduct(group);
+      return;
+    }
     if (!filters.searchQuery.trim()) {
-      // Belum ada lokasi — simpan group, tampilkan prompt
       setPendingGroup(group);
       setLocationPrompt(true);
       return;
@@ -120,7 +114,6 @@ const Explore: React.FC = () => {
     openGroupOrProduct(group);
   };
 
-  // ── Handler konfirmasi lokasi dari prompt ─────────────────────────────────
   const handleLocationConfirm = (loc: string) => {
     filters.updateSearch(loc);
     setLocationPrompt(false);
@@ -151,8 +144,8 @@ const Explore: React.FC = () => {
   return (
     <div>
       <SEO
-        title={t('explore.seo_title', 'Explore - Trivgoo')}
-        description={t('explore.seo_desc', 'Discover the perfect travel packages, rentals, and experiences for your next trip.')}
+        title={meta?.title ?? t('explore.seo_title', 'Explore - Trivgoo')}
+        description={meta?.description ?? t('explore.seo_desc', 'Discover the perfect travel packages, rentals, and experiences for your next trip.')}
       />
 
       {showHero
@@ -170,29 +163,39 @@ const Explore: React.FC = () => {
           {!showHero && (
             <motion.div initial="hidden" animate="visible" variants={fadeUpVariants} className="mb-8">
               <h1 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-2">
-                {t('explore.title', 'Explore the World')}
+                {filters.isTransferCategory
+                  ? t('explore.airport_transfer_title', 'Airport Transfer')
+                  : t('explore.title', 'Explore the World')
+                }
               </h1>
               <p className="text-gray-500">
-                {t('explore.subtitle', 'Discover unique experiences and hidden gems.')}
+                {filters.isTransferCategory
+                  ? t('explore.airport_transfer_subtitle', 'Layanan antar jemput bandara terpercaya ke seluruh tujuan.')
+                  : t('explore.subtitle', 'Discover unique experiences and hidden gems.')
+                }
               </p>
             </motion.div>
           )}
 
+          {/* ── Filter panel — pass transferFilters & isTransferCategory ── */}
           <FilterPanel
             searchQuery={filters.searchQuery}
             selectedCategory={filters.selectedCategory}
             selectedSubCategory={filters.selectedSubCategory}
             sortBy={filters.sortBy}
             rentalFilters={filters.rentalFilters}
+            transferFilters={filters.transferFilters}
             isCarCategory={filters.isCarCategory}
+            isTransferCategory={filters.isTransferCategory}
             onSearch={filters.updateSearch}
             onCategorySelect={filters.handleCategorySelect}
             onSubCategorySelect={filters.setSelectedSubCategory}
             onSortChange={filters.setSortBy}
             onRentalFilterChange={filters.handleRentalFilterChange}
+            onTransferFilterChange={filters.updateTransferFilters}
           />
 
-          {/* ── Car rental grid ── */}
+          {/* ── Car / Transfer grid ── */}
           {filters.isCarCategory ? (
             <motion.div
               key={`car-${filters.selectedCategory}`}
@@ -285,8 +288,8 @@ const Explore: React.FC = () => {
         />
       )}
 
-      {/* ── Location prompt modal ── */}
-      {locationPrompt && (
+      {/* ── Location prompt — tidak muncul untuk airport transfer ── */}
+      {locationPrompt && !filters.isTransferCategory && (
         <LocationPromptModal
           onConfirm={handleLocationConfirm}
           onClose={handleLocationPromptClose}

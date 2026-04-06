@@ -279,7 +279,7 @@ const AvailabilityCalendar: React.FC<{ blockedDates: string[] }> = ({ blockedDat
   const handlePrevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   const buildDays = () => {
-    let days = [];
+    const days: (Date | null)[] = [];
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i));
     return days;
@@ -694,22 +694,27 @@ const ProductDetail: React.FC = () => {
       const end = new Date(`${carDropoffDate}T${carDropoffTime}`);
       let calculatedDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       if (calculatedDays < 1) calculatedDays = 1;
-      const driverPrice = addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
-      const insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
-      const childSeatPrice = addOns.childSeat ? 50_000 : 0;
-      const totalPerDay = Number(product.price) + driverPrice + insurancePrice + childSeatPrice;
+      // ── Driver included check untuk payload ──
+      const _isDriverIncluded = !!(product.details as CarDetails)?.driver;
+      const _driverIncludedPrice = _isDriverIncluded ? DRIVER_PRICE_PER_12H : 0;
+      const _driverAddonPrice = !_isDriverIncluded && addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
+      const _insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
+      const _childSeatPrice = addOns.childSeat ? 50_000 : 0;
+      const _totalPerDay = Number(product.price) + _driverIncludedPrice + _driverAddonPrice + _insurancePrice + _childSeatPrice;
       const deliveryTotal = effectivePickupFee + effectiveDropoffFee;
       return {
         productId: product.id, productName: product.name, location: product.location,
         image: product.image_url || product.image, currency: product.currency || 'IDR',
-        pricePerPax: totalPerDay, basePricePerPax: Number(product.price), pax: 1, guestCount: 1, duration: calculatedDays,
-        totalPrice: totalPerDay * calculatedDays + deliveryTotal,
+        pricePerPax: _totalPerDay, basePricePerPax: Number(product.price), pax: 1, guestCount: 1, duration: calculatedDays,
+        totalPrice: _totalPerDay * calculatedDays + deliveryTotal,
         date: `${carPickupDate} - ${carDropoffDate}`,
         startTime: `${carPickupDate} ${carPickupTime}:00`, endTime: `${carDropoffDate} ${carDropoffTime}:00`,
         unitLabel: t('common.days'), priceUnitLabel: 'day', vehicleType: 'car',
         transmission: (product.details as CarDetails)?.transmission, seats: (product.details as CarDetails)?.seats,
         luggage: (product.details as CarDetails)?.luggage, year: (product.details as CarDetails)?.year,
-        fuelPolicy: (product.details as CarDetails)?.fuelPolicy, withDriver: addOns.withDriver, addOns,
+        fuelPolicy: (product.details as CarDetails)?.fuelPolicy,
+        withDriver: _isDriverIncluded || addOns.withDriver,
+        addOns,
         pickupType, dropoffType,
         pickupAddress: pickupType === 'lokasi_lain' ? pickupAddress : null,
         dropoffAddress: dropoffType === 'lokasi_lain' ? dropoffAddress : null,
@@ -805,7 +810,9 @@ const ProductDetail: React.FC = () => {
   if (!isCarProduct) {
     const isTourProduct = !!tourDetails;
     const categoryLabel = isTourProduct ? t('tour.category_label') : t('stay.category_label');
-    const categoryLink = isTourProduct ? '/explore?category_id=1' : '/explore?category_id=2';
+    const categoryLink = isTourProduct
+      ? langPath('/explore/tours')
+      : langPath('/explore/stays');
     const tripType = (tourDetails as any)?.tripType || 'Open Trip';
     const minPaxFromTripType = tripType === 'Private Trip' ? 1 : tripType === 'Group Trip' ? 6 : 2;
     const minPax = (tourDetails as any)?.minPax ?? minPaxFromTripType;
@@ -836,7 +843,7 @@ const ProductDetail: React.FC = () => {
     const tourStayTotal = isTourProduct ? Number(product.price) * tourPax : Number(product.price) * (nights || 1) * stayGuests;
     const galleryImagesArray = Array.isArray(product.images) ? product.images : [];
     const mainImgSrc = getImageUrl(product.image_url || product.image);
-    const allImages = [mainImgSrc, ...galleryImagesArray.map(item => getImageUrl(typeof item === 'string' ? item : item?.url)).filter(Boolean)];
+    const allImages = [mainImgSrc, ...galleryImagesArray.map((item: any) => getImageUrl(typeof item === 'string' ? item : item?.url)).filter(Boolean)];
     const openGallery = (index: number) => { setCurrentImageIndex(index); setIsGalleryOpen(true); };
 
     return (
@@ -1018,7 +1025,6 @@ const ProductDetail: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Availability Calendar */}
                 <AvailabilityCalendar blockedDates={product.blocked_dates as unknown as string[] || []} />
 
                 {/* Cancellation Policy */}
@@ -1105,7 +1111,6 @@ const ProductDetail: React.FC = () => {
               <div className="lg:col-span-1">
                 <div className="sticky top-24 space-y-4">
                   <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xl">
-                    {/* Price */}
                     <div className="mb-5 pb-4 border-b border-gray-100">
                       <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('explore.from')}</p>
                       <p className="text-3xl font-extrabold text-gray-900">
@@ -1120,10 +1125,8 @@ const ProductDetail: React.FC = () => {
 
                     <ProductVoucherBanner vouchers={productVouchers} />
 
-                    {/* TOUR Booking Fields */}
                     {isTourProduct ? (
                       <>
-                        {/* Group Tier Selector */}
                         {tourDetails?.tripType === 'Group Trip' && getGroupTiers().length > 0 && (
                           <div className="mb-4">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
@@ -1153,7 +1156,6 @@ const ProductDetail: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Tour Date */}
                         <div className="mb-4">
                           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
                             {t('product.select_date')} <span className="text-red-500">*</span>
@@ -1171,7 +1173,6 @@ const ProductDetail: React.FC = () => {
                           <FieldError name="tourDate" />
                         </div>
 
-                        {/* Participants */}
                         <div className="mb-4">
                           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
                             {t('product.participants')} <span className="text-red-500">*</span>
@@ -1197,7 +1198,6 @@ const ProductDetail: React.FC = () => {
                           </div>
                           <FieldError name="tourPax" />
 
-                          {/* Child Pricing */}
                           {getChildPricing()?.enabled && (
                             <div className="space-y-2 mt-2">
                               {[
@@ -1227,7 +1227,6 @@ const ProductDetail: React.FC = () => {
                         </div>
                       </>
                     ) : (
-                      // STAY Booking Fields
                       <>
                         <div className="mb-4">
                           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">
@@ -1305,8 +1304,7 @@ const ProductDetail: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* CTA Buttons */}
-                    <button onClick={() => handleReserveNow('tour_stay')} 
+                    <button onClick={() => handleReserveNow('tour_stay')}
                       className="w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30">
                       {t('product.reserve_now', 'Reservasi Sekarang')}
                     </button>
@@ -1323,7 +1321,6 @@ const ProductDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Contact CS */}
                   <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0"><Phone className="w-5 h-5 text-primary-600" /></div>
                     <div>
@@ -1375,14 +1372,33 @@ const ProductDetail: React.FC = () => {
     if (rentalDays < 1) rentalDays = 0;
   }
 
-  const reviewCount = reviews.length;
-  const avgRatingStr = reviewCount > 0 ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / reviewCount).toFixed(1) : (product.rating || '0.0');
-  const basePrice = Number(product.price);
-  const driverPrice = addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
-  const insurancePrice = addOns.premiumInsurance ? 75_000 : 0;
-  const childSeatPrice = addOns.childSeat ? 50_000 : 0;
-  const totalPerDay = basePrice + driverPrice + insurancePrice + childSeatPrice;
-  const totalCarPrice = totalPerDay * rentalDays + effectivePickupFee + effectiveDropoffFee;
+  const reviewCount   = reviews.length;
+  const avgRatingStr  = reviewCount > 0
+    ? (reviews.reduce((acc, r) => acc + Number(r.rating), 0) / reviewCount).toFixed(1)
+    : (product.rating || '0.0');
+
+  // ── Driver Included logic ──────────────────────────────────────────────────
+  // Jika agent mencentang "Driver Included" saat input produk, maka:
+  // 1. Harga otomatis ditambah Rp 150.000/hari
+  // 2. Add-on "Dengan Sopir" disembunyikan
+  // 3. Section Car Details menampilkan badge "Dengan Sopir" + caption "Non Tol, Non Parkir"
+  const isDriverIncluded   = !!(carDetails as CarDetails)?.driver;
+  const basePrice          = Number(product.price);
+  const driverIncludedPrice = isDriverIncluded ? DRIVER_PRICE_PER_12H : 0;             // otomatis jika driver included
+  const driverAddonPrice   = !isDriverIncluded && addOns.withDriver ? DRIVER_PRICE_PER_12H : 0; // hanya jika tidak included & user centang
+  const insurancePrice     = addOns.premiumInsurance ? 75_000 : 0;
+  const childSeatPrice     = addOns.childSeat ? 50_000 : 0;
+  const totalPerDay        = basePrice + driverIncludedPrice + driverAddonPrice + insurancePrice + childSeatPrice;
+  const totalCarPrice      = totalPerDay * rentalDays + effectivePickupFee + effectiveDropoffFee;
+
+  // ── Car spec items — tambah badge Dengan Sopir jika driver included ────────
+  const carSpecItems = [
+    { icon: Users,     label: t('product.passengers'),  value: `${carDetails?.seats || 4} ${t('common.guests')}` },
+    { icon: Gauge,     label: t('product.transmission'), value: carDetails?.transmission === 'Automatic' ? 'Automatic' : 'Manual' },
+    { icon: Fuel,      label: t('product.fuel'),         value: carDetails?.fuelPolicy || 'Gas' },
+    { icon: Briefcase, label: t('product.luggage'),      value: `${carDetails?.luggage || 2} Bags` },
+    ...(isDriverIncluded ? [{ icon: UserCog, label: t('product.driver', 'Sopir'), value: t('product.with_driver', 'Dengan Sopir') }] : []),
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-16">
@@ -1409,24 +1425,9 @@ const ProductDetail: React.FC = () => {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Home",
-                "item": `https://trivgoo.com${langPath('/')}`
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Explore",
-                "item": `https://trivgoo.com${langPath('/explore')}`
-              },
-              {
-                "@type": "ListItem",
-                "position": 3,
-                "name": product.name,
-                "item": window.location.href
-              }
+              { "@type": "ListItem", "position": 1, "name": "Home",    "item": `https://trivgoo.com${langPath('/')}` },
+              { "@type": "ListItem", "position": 2, "name": "Explore", "item": `https://trivgoo.com${langPath('/explore')}` },
+              { "@type": "ListItem", "position": 3, "name": product.name, "item": window.location.href }
             ]
           }
         ]}
@@ -1438,7 +1439,9 @@ const ProductDetail: React.FC = () => {
             <ChevronLeft className="w-4 h-4" /> {t('common.back')}
           </button>
           <span>/</span>
-          <Link to={langPath('/explore?category_id=3')} className="hover:text-primary-600 transition-colors">Car Rental</Link>
+          <Link to={langPath('/')} className="hover:text-primary-600 transition-colors">{t('product.breadcrumb_home')}</Link>
+          <span>/</span>
+          <Link to={langPath('/explore/car-rental')} className="hover:text-primary-600 transition-colors">{t('explore.car_rental', 'Car Rental')}</Link>
           <span>/</span>
           <span className="text-gray-900 font-semibold truncate max-w-[200px]">{product.name}</span>
         </div>
@@ -1450,6 +1453,12 @@ const ProductDetail: React.FC = () => {
               <div className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 text-xs font-bold px-3 py-1 rounded-full">
                 <Car className="w-3.5 h-3.5" /> {t('car.booking_details')}
               </div>
+              {/* Badge Dengan Sopir di title area */}
+              {isDriverIncluded && (
+                <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold px-3 py-1 rounded-full">
+                  <UserCog className="w-3.5 h-3.5" /> {t('product.with_driver', 'Dengan Sopir')}
+                </div>
+              )}
               {productVouchers.filter((v: any) => v.is_active).length > 0 && (
                 <div className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-600 border border-orange-200 text-xs font-bold px-3 py-1 rounded-full">
                   <Tag className="w-3.5 h-3.5" />{productVouchers.filter((v: any) => v.is_active).length} Promo
@@ -1490,20 +1499,26 @@ const ProductDetail: React.FC = () => {
               <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Car className="w-5 h-5 text-primary-600" />{t('product.car_details')}
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[
-                  { icon: Users,    label: t('product.passengers'),  value: `${carDetails?.seats || 4} ${t('common.guests')}` },
-                  { icon: Gauge,    label: t('product.transmission'), value: carDetails?.transmission === 'Automatic' ? 'Automatic' : 'Manual' },
-                  { icon: Fuel,     label: t('product.fuel'),         value: carDetails?.fuelPolicy || 'Gas' },
-                  { icon: Briefcase,label: t('product.luggage'),      value: `${carDetails?.luggage || 2} Bags` },
-                ].map((item, i) => (
-                  <div key={i} className="bg-gray-50 rounded-2xl p-4 text-center">
-                    <item.icon className="w-6 h-6 text-primary-600 mx-auto mb-2" />
+              {/* Grid spec — dinamis, termasuk Dengan Sopir jika driver included */}
+              <div className={`grid gap-4 ${carSpecItems.length === 5 ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
+                {carSpecItems.map((item, i) => (
+                  <div key={i} className={`bg-gray-50 rounded-2xl p-4 text-center ${item.icon === UserCog ? 'bg-blue-50' : ''}`}>
+                    <item.icon className={`w-6 h-6 mx-auto mb-2 ${item.icon === UserCog ? 'text-blue-600' : 'text-primary-600'}`} />
                     <p className="text-xs text-gray-500 mb-1">{item.label}</p>
-                    <p className="font-bold text-gray-900 text-sm">{item.value}</p>
+                    <p className={`font-bold text-sm ${item.icon === UserCog ? 'text-blue-700' : 'text-gray-900'}`}>{item.value}</p>
                   </div>
                 ))}
               </div>
+
+              {/* Caption Non Tol, Non Parkir — hanya muncul jika driver included */}
+              {isDriverIncluded && (
+                <div className="mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+                  <Info className="w-4 h-4 text-amber-500 shrink-0" />
+                  <p className="text-xs text-amber-700 font-semibold">
+                    {t('car.driver_note', 'Harga sudah termasuk sopir. Non Tol, Non Parkir.')}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Facilities */}
@@ -1608,7 +1623,6 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            {/* Availability Calendar */}
             <AvailabilityCalendar blockedDates={product.blocked_dates as unknown as string[] || []} />
 
             {/* Reviews */}
@@ -1659,10 +1673,22 @@ const ProductDetail: React.FC = () => {
                 {/* Price */}
                 <div className="mb-5 pb-4 border-b border-gray-100">
                   <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('car.rental_id')}: {String(product.id).padStart(6, '0')}</p>
-                  <p className="text-3xl font-extrabold text-gray-900">
-                    {product.currency} {Number(product.price).toLocaleString('id-ID')}
-                    <span className="text-sm font-medium text-gray-400 ml-1">{t('car.per_day')}</span>
-                  </p>
+                  <div className="flex items-end gap-2 flex-wrap">
+                    <p className="text-3xl font-extrabold text-gray-900">
+                      {product.currency} {(isDriverIncluded ? basePrice + DRIVER_PRICE_PER_12H : basePrice).toLocaleString('id-ID')}
+                      <span className="text-sm font-medium text-gray-400 ml-1">{t('car.per_day')}</span>
+                    </p>
+                    {isDriverIncluded && (
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-1 rounded-full mb-1">
+                        {t('product.with_driver', 'Dengan Sopir')} included
+                      </span>
+                    )}
+                  </div>
+                  {isDriverIncluded && (
+                    <p className="text-[11px] text-amber-600 font-semibold mt-1">
+                      {t('car.driver_note', 'Harga sudah termasuk sopir. Non Tol, Non Parkir.')}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1 mt-1">
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                     <span className="text-sm font-bold text-gray-700">{avgRatingStr}</span>
@@ -1717,7 +1743,8 @@ const ProductDetail: React.FC = () => {
                   </p>
                   <div className="space-y-2">
                     {[
-                      ...(carDetails?.driver ? [{
+                      // Sembunyikan add-on "Dengan Sopir" jika driver sudah included di produk
+                      ...(!isDriverIncluded && carDetails?.driver ? [{
                         key: 'withDriver',
                         label: t('product.with_driver'),
                         desc: `${formatRp(DRIVER_PRICE_PER_12H)} / 12 jam`,
@@ -1758,12 +1785,26 @@ const ProductDetail: React.FC = () => {
                     <span>{t('price_summary.rental_label')} {rentalDays} {t('common.days')} × {product.currency} {basePrice.toLocaleString('id-ID')}</span>
                     <span className="font-semibold">{product.currency} {(basePrice * rentalDays).toLocaleString('id-ID')}</span>
                   </div>
-                  {addOns.withDriver && (
+
+                  {/* Driver included row — otomatis, tidak bisa dihapus */}
+                  {isDriverIncluded && (
+                    <div className="flex justify-between text-sm text-blue-600">
+                      <span className="flex items-center gap-1">
+                        <UserCog className="w-3 h-3 shrink-0" />
+                        {t('product.with_driver', 'Dengan Sopir')} × {rentalDays} {t('common.days')}
+                      </span>
+                      <span className="font-semibold">+{product.currency} {(DRIVER_PRICE_PER_12H * rentalDays).toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+
+                  {/* Driver add-on row — hanya jika tidak included & user centang */}
+                  {!isDriverIncluded && addOns.withDriver && (
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>{t('price_summary.driver_label')} × {rentalDays} {t('common.days')}</span>
                       <span className="font-semibold">+{product.currency} {(DRIVER_PRICE_PER_12H * rentalDays).toLocaleString('id-ID')}</span>
                     </div>
                   )}
+
                   {addOns.premiumInsurance && (
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>{t('price_summary.insurance_label')} × {rentalDays} {t('common.days')}</span>
@@ -1814,7 +1855,7 @@ const ProductDetail: React.FC = () => {
                 </div>
 
                 {/* CTA Buttons */}
-                <button onClick={() => handleReserveNow('car')} 
+                <button onClick={() => handleReserveNow('car')}
                   className="w-full py-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] shadow-lg bg-primary-600 hover:bg-primary-700 text-white shadow-primary-600/30">
                   {t('product.reserve_now', 'Reservasi Sekarang')}
                 </button>

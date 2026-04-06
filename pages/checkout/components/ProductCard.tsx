@@ -34,7 +34,7 @@ export const ProductCard: React.FC<Props> = ({
 
   const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/$/, '');
 
-  // ── Date range sub-component (needs t in scope via closure) ──────────────
+  // ── Date range sub-component ─────────────────────────────────────────────
   const DateRangeWithTime = () => {
     if (!date || !date.includes(' - ')) return <span>{formatDateDisplay(date)}</span>;
     const [start, end] = date.split(' - ');
@@ -73,6 +73,7 @@ export const ProductCard: React.FC<Props> = ({
             <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />{productLocation}
           </div>
 
+          {/* ── Badges only — no driver info here ── */}
           {isCarBooking && (
             <div className="flex items-center gap-2 mt-2">
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
@@ -122,9 +123,9 @@ export const ProductCard: React.FC<Props> = ({
 
             {/* Vehicle specs */}
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
-              {seats   != null && (
+              {seats != null && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Users     className="w-4 h-4 text-gray-400" />
+                  <Users className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-600">{seats} {t('product_card.passengers')}</span>
                 </div>
               )}
@@ -134,29 +135,35 @@ export const ProductCard: React.FC<Props> = ({
                   <span className="text-gray-600">{luggage} {t('product_card.luggage')}</span>
                 </div>
               )}
-              {year    != null && (
+              {year != null && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Award     className="w-4 h-4 text-gray-400" />
+                  <Award className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-600">{t('product_card.year')} {year}</span>
                 </div>
               )}
               {fuelPolicy && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Fuel      className="w-4 h-4 text-gray-400" />
+                  <Fuel className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-600">{fuelPolicy}</span>
                 </div>
               )}
             </div>
 
-            {/* Driver option */}
-            {withDriver !== undefined && (
-              <div className="flex items-center gap-2 text-sm pt-2 border-t border-gray-200">
-                <UserCog className="w-4 h-4 text-primary-500" />
-                <span className="text-gray-600">
-                  {withDriver ? t('product_card.with_driver') : t('product_card.without_driver')}
+            {/* Driver option — selalu tampil untuk car booking, satu kali saja */}
+            <div className="flex items-center gap-2 text-sm pt-2 border-t border-gray-200">
+              <UserCog className={`w-4 h-4 flex-shrink-0 ${withDriver ? 'text-green-500' : 'text-primary-500'}`} />
+              <span className={`font-medium ${withDriver ? 'text-green-700' : 'text-gray-600'}`}>
+                {withDriver
+                  ? t('product_card.with_driver', 'Driver Included')
+                  : t('product_card.without_driver', 'Self Drive (Key Handover)')
+                }
+              </span>
+              {withDriver && (
+                <span className="ml-auto px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                  ✓ Included
                 </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 text-sm">

@@ -738,12 +738,12 @@ const AgentAddProduct: React.FC = () => {
               } else if (product.details.type === "car") {
                 setSelectedSubCategory(product.details.transportCategory);
                 setCarDetails({
-                  seats: product.details.seats,
+                  seats:        product.details.seats,
                   transmission: product.details.transmission,
-                  luggage: product.details.luggage,
-                  fuelPolicy: product.details.fuelPolicy,
-                  year: product.details.year || new Date().getFullYear(),
-                  driver: product.details.driver || false,
+                  luggage:      product.details.luggage      ?? 2,
+                  fuelPolicy:   product.details.fuelPolicy   ?? 'Full to Full',
+                  year:         product.details.year         ?? new Date().getFullYear(),
+                  driver:       product.details.driver       ?? false,
                 });
                 if ((product.details as any).car_id) {
                   setSelectedCarId((product.details as any).car_id);
@@ -780,16 +780,16 @@ const AgentAddProduct: React.FC = () => {
     if (!car) return;
     setSelectedCarId(carId);
     setCarDetails({
-      seats: car.seats || 4,
-      transmission: car.transmission || 'Automatic',
-      luggage: carDetails.luggage,
-      fuelPolicy: carDetails.fuelPolicy,
-      year: car.model_year ? parseInt(car.model_year) : new Date().getFullYear(),
-      driver: carDetails.driver,
+      seats:        car.seats        ?? 4,
+      transmission: car.transmission ?? 'Automatic',
+      luggage:      car.luggage      ?? carDetails.luggage,
+      fuelPolicy:   car.fuelPolicy   ?? carDetails.fuelPolicy,
+      year:         car.model_year   ? parseInt(car.model_year) : new Date().getFullYear(),
+      driver:       carDetails.driver,
     });
     setFormData(prev => ({
       ...prev,
-      name: `${car.brand} ${car.name}`.trim(),
+      name:        `${car.brand ?? ''} ${car.name ?? ''}`.trim(),
       description: car.description || prev.description,
     }));
   };
@@ -1005,12 +1005,12 @@ const AgentAddProduct: React.FC = () => {
       const details: any = {
         type: "car",
         transportCategory: selectedSubCategory as TransportCategory,
-        transmission: carDetails.transmission as "Automatic" | "Manual",
-        seats: Number(carDetails.seats),
-        luggage: Number(carDetails.luggage),
-        fuelPolicy: carDetails.fuelPolicy,
-        driver: carDetails.driver,
-        year: Number(carDetails.year),
+        transmission: (carDetails.transmission || 'Automatic') as "Automatic" | "Manual",
+        seats: Number(carDetails.seats) || 4,
+        luggage: Number(carDetails.luggage) || 2,
+        fuelPolicy: carDetails.fuelPolicy || 'Full to Full',
+        driver: carDetails.driver ?? false,
+        year: Number(carDetails.year) || new Date().getFullYear(),
         requirements: [],
       };
       if (selectedCarId) details.car_id = selectedCarId;
