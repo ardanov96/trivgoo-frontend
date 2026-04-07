@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Font Families ── */
+  --font-sans: 'Nunito', sans-serif;
+  --font-serif: 'Rubik', sans-serif;
+
+  /* ── Primary Colors ── */
+  --color-primary-50:  #fef5f3;
+  --color-primary-100: #fde8e4;
+  --color-primary-200: #fbd1ca;
+  --color-primary-300: #f7aea1;
+  --color-primary-400: #f18169;
+  --color-primary-500: #e6654d;
+  --color-primary-600: #E05845;
+  --color-primary-700: #c34134;
+  --color-primary-800: #a23830;
+  --color-primary-900: #85322e;
+
+  /* ── Accent Colors ── */
+  --color-accent-500: #f97316;
+  --color-accent-600: #ea580c;
+
+  /* ── Box Shadow ── */
+  --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.08);
+}

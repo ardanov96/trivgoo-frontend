@@ -48,57 +48,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!--
-      ★ KRITIS UNTUK LCP ★
-      Preload poster image agar tampil INSTAN sebelum video selesai load.
-      Ini adalah optimasi terpenting untuk Core Web Vitals (LCP).
-    -->
+    <!-- Preload poster LCP -->
     <link rel="preload" as="image" href="/videos/video-poster.webp" type="image/webp" fetchpriority="high" />
     <link rel="preload" as="image" href="/videos/video-poster.jpg" fetchpriority="high" />
 
-    <!-- Preload CSS & Custom Font -->
-    <link rel="preload" href="/index.css" as="style" />
+    <!-- Preload font -->
     <link rel="preload" href="/fonts/Vlogger.woff" as="font" type="font/woff" crossorigin />
 
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Rubik:wght@600;700;800;900&display=swap"
       rel="stylesheet"
     />
-
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Nunito', 'sans-serif'],
-              serif: ['Rubik', 'sans-serif'],
-            },
-            colors: {
-              primary: {
-                50: '#fef5f3',
-                100: '#fde8e4',
-                200: '#fbd1ca',
-                300: '#f7aea1',
-                400: '#f18169',
-                500: '#e6654d',
-                600: '#E05845',
-                700: '#c34134',
-                800: '#a23830',
-                900: '#85322e',
-              },
-              accent: {
-                500: '#f97316',
-                600: '#ea580c',
-              },
-            },
-            boxShadow: {
-              soft: '0 10px 40px -10px rgba(0,0,0,0.08)',
-            },
-          },
-        },
-      };
-    </script>
 
     <style>
       .text-outlined {
@@ -152,7 +113,6 @@
     </style>
 
     <link rel="stylesheet" href="/index.css" />
-    <script type="module" crossorigin src="/index.tsx"></script>
   </head>
 
   <body class="bg-gray-50 text-gray-900 font-sans antialiased selection:bg-primary-100 selection:text-primary-900">
@@ -160,5 +120,6 @@
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WC97TG6R" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <div id="root"></div>
+    <script type="module" crossorigin src="/index.tsx"></script>
   </body>
 </html>

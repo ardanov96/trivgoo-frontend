@@ -47,59 +47,87 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/core-js')) {
               return 'vendor-polyfill';
             }
+
             // canvg & deps (dibawa jspdf)
-            if (id.includes('node_modules/canvg') || id.includes('node_modules/svg-parser') || id.includes('node_modules/rgbcolor')) {
+            if (
+              id.includes('node_modules/canvg') ||
+              id.includes('node_modules/svg-parser') ||
+              id.includes('node_modules/rgbcolor')
+            ) {
               return 'vendor-pdf';
             }
+
             // Firebase
             if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
               return 'vendor-firebase';
             }
+
             // PDF & Canvas
             if (id.includes('node_modules/jspdf') || id.includes('node_modules/html2canvas')) {
               return 'vendor-pdf';
             }
+
             // Map
             if (id.includes('node_modules/leaflet') || id.includes('node_modules/react-leaflet')) {
               return 'vendor-map';
             }
-            // ── FIX circular dependency ──
-            // D3 harus dipisah dari recharts agar urutan inisialisasi benar
-            if (id.includes('node_modules/d3-') || id.includes('node_modules/d3/')) {
-              return 'vendor-d3';
-            }
-            // Recharts bergantung pada d3 — pisah chunk-nya
-            if (id.includes('node_modules/recharts') || id.includes('node_modules/react-smooth') ||
-                id.includes('node_modules/victory-vendor')) {
+
+            // ── FIX: d3 + recharts WAJIB satu chunk ──
+            // Memisahkan d3 ke chunk tersendiri menyebabkan race condition:
+            // browser bisa load vendor-charts sebelum vendor-d3 selesai,
+            // sehingga variabel internal d3 (diminify jadi 'P') belum
+            // terdefinisi → ReferenceError → blank white page.
+            if (
+              id.includes('node_modules/d3-')           ||
+              id.includes('node_modules/d3/')            ||
+              id.includes('node_modules/recharts')       ||
+              id.includes('node_modules/react-smooth')   ||
+              id.includes('node_modules/victory-vendor')
+            ) {
               return 'vendor-charts';
             }
+
             // Google AI
             if (id.includes('node_modules/@google/genai')) {
               return 'vendor-genai';
             }
+
             // Core React
-            if (id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom') ||
-                id.includes('node_modules/react/')) {
+            if (
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react-router-dom') ||
+              id.includes('node_modules/react/')
+            ) {
               return 'vendor-react';
             }
+
             // Animation
             if (id.includes('node_modules/framer-motion')) {
               return 'vendor-motion';
             }
-            // i18n runtime (bukan locales)
+
+            // i18n runtime
             if (id.includes('node_modules/i18next') || id.includes('node_modules/react-i18next')) {
               return 'vendor-i18n';
             }
+
             // UI
             if (id.includes('node_modules/lucide-react') || id.includes('node_modules/sweetalert2')) {
               return 'vendor-ui';
             }
+
             // Misc
-            if (id.includes('node_modules/axios') || id.includes('node_modules/react-datepicker') ||
-                id.includes('node_modules/react-markdown') || id.includes('node_modules/qrcode.react') ||
-                id.includes('node_modules/hashids') || id.includes('node_modules/react-helmet-async') ||
-                id.includes('node_modules/micromark') || id.includes('node_modules/date-fns') ||
-                id.includes('node_modules/@floating-ui')) {
+            if (
+              id.includes('node_modules/axios')              ||
+              id.includes('node_modules/react-datepicker')   ||
+              id.includes('node_modules/react-markdown')     ||
+              id.includes('node_modules/qrcode.react')       ||
+              id.includes('node_modules/hashids')            ||
+              id.includes('node_modules/react-helmet-async') ||
+              id.includes('node_modules/micromark')          ||
+              id.includes('node_modules/date-fns')           ||
+              id.includes('node_modules/@floating-ui')
+            ) {
               return 'vendor-misc';
             }
           },
