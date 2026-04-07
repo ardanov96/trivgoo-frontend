@@ -43,10 +43,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // ── JANGAN tangkap locales di sini ──
-            // Biarkan Vite split otomatis per file JSON
-            // karena i18n/index.ts sudah pakai dynamic import()
-
             // core-js polyfills
             if (id.includes('node_modules/core-js')) {
               return 'vendor-polyfill';
@@ -67,9 +63,14 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/leaflet') || id.includes('node_modules/react-leaflet')) {
               return 'vendor-map';
             }
-            // Charts + D3
-            if (id.includes('node_modules/recharts') || id.includes('node_modules/d3') ||
-                id.includes('node_modules/d3-') || id.includes('node_modules/react-smooth')) {
+            // ── FIX circular dependency ──
+            // D3 harus dipisah dari recharts agar urutan inisialisasi benar
+            if (id.includes('node_modules/d3-') || id.includes('node_modules/d3/')) {
+              return 'vendor-d3';
+            }
+            // Recharts bergantung pada d3 — pisah chunk-nya
+            if (id.includes('node_modules/recharts') || id.includes('node_modules/react-smooth') ||
+                id.includes('node_modules/victory-vendor')) {
               return 'vendor-charts';
             }
             // Google AI
