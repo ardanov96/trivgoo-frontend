@@ -1,6 +1,7 @@
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite"; 
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
@@ -28,7 +29,7 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     define: {
       "process.env.GEMINI_API_KEY": JSON.stringify(env.GEMINI_API_KEY),
       "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
@@ -36,7 +37,28 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "."),
+        "victory-vendor/es/d3-array": path.resolve(__dirname, "node_modules/victory-vendor/es/d3-array.js"),
+        "victory-vendor/es/d3-scale": path.resolve(__dirname, "node_modules/victory-vendor/es/d3-scale.js"),
+        "victory-vendor/es/d3-shape": path.resolve(__dirname, "node_modules/victory-vendor/es/d3-shape.js"),
+        "victory-vendor/es/d3-ease": path.resolve(__dirname, "node_modules/victory-vendor/es/d3-ease.js"),
+        "victory-vendor/es/d3-interpolate": path.resolve(__dirname, "node_modules/victory-vendor/es/d3-interpolate.js"),
+        "victory-vendor/es/d3-color": path.resolve(__dirname, "node_modules/victory-vendor/es/d3-color.js"),
+        "victory-vendor/es/d3-time": path.resolve(__dirname, "node_modules/victory-vendor/es/d3-time.js"),
+        "victory-vendor/es/d3-timer": path.resolve(__dirname, "node_modules/victory-vendor/es/d3-timer.js"),
       },
+    },
+    optimizeDeps: {
+      include: [
+        'recharts',
+        'victory-vendor/es/d3-array',
+        'victory-vendor/es/d3-scale',
+        'victory-vendor/es/d3-shape',
+        'victory-vendor/es/d3-ease',
+        'victory-vendor/es/d3-interpolate',
+        'victory-vendor/es/d3-color',
+        'victory-vendor/es/d3-time',
+        'victory-vendor/es/d3-timer',
+      ],
     },
     build: {
       chunkSizeWarningLimit: 600,
