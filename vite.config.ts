@@ -5,12 +5,14 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
+  
   return {
-    // 1. Pastikan base diatur (aman untuk preview & production)
+    // 1. Base path "/" memastikan file di /public (seperti video) terbaca dengan benar di production
     base: "/",
-    
+
     server: {
       port: 3000,
+      host: false,
       strictPort: true,
       proxy: {
         '/api': {
@@ -21,14 +23,14 @@ export default defineConfig(({ mode }) => {
       }
     },
 
-    // 2. Tambahkan config preview agar tidak bentrok port lagi
+    // 2. Tambahkan config preview agar saat npm run preview tidak bentrok port
     preview: {
       port: 4173,
       strictPort: false,
     },
 
     plugins: [react(), tailwindcss()],
-    
+
     define: {
       "process.env.GEMINI_API_KEY": JSON.stringify(env.GEMINI_API_KEY),
       "process.env.GOOGLE_MAPS_API_KEY": JSON.stringify(env.GOOGLE_MAPS_API_KEY),
@@ -41,29 +43,38 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
-      // 3. Tambahkan polyfill preload untuk modul
+      // 3. Memastikan modul pendukung dimuat dengan benar oleh browser
       modulePreload: {
         polyfill: true
       },
-      chunkSizeWarningLimit: 1000, // Tingkatkan limit agar tidak banyak warning
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks(id) {
+            // Core React
             if (id.includes('node_modules/react')) return 'vendor-react-core';
-            if (id.includes('node_modules/firebase')) return 'vendor-firebase';
+            
+            // Firebase & GenAI
+            if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) return 'vendor-firebase';
+            if (id.includes('node_modules/@google/genai')) return 'vendor-genai';
+
+            // PDF & Map
             if (id.includes('node_modules/jspdf') || id.includes('node_modules/html2canvas')) return 'vendor-pdf';
             if (id.includes('node_modules/leaflet')) return 'vendor-map';
-            if (id.includes('node_modules/framer-motion')) return 'vendor-motion';
-            
-            // --- PERBAIKAN DI SINI ---
-            // Pisahkan D3 dan Recharts. Jangan dijadikan satu 'vendor-charts'.
-            // Biarkan Vite/Rollup mengelola dependensi antar keduanya.
+
+            // --- FIX: RECHARTS & D3 ---
+            // Kita pisahkan mereka agar tidak terjadi error "Cannot access before initialization"
             if (id.includes('node_modules/recharts')) return 'vendor-recharts';
             if (id.includes('node_modules/d3')) return 'vendor-d3';
             if (id.includes('node_modules/victory-vendor')) return 'vendor-victory';
-            // -------------------------
+            // --------------------------
 
-            if (id.includes('node_modules/lucide-react')) return 'vendor-ui';
+            // UI & Animation
+            if (id.includes('node_modules/framer-motion')) return 'vendor-motion';
+            if (id.includes('node_modules/lucide-react') || id.includes('node_modules/sweetalert2')) return 'vendor-ui';
+
+            // i18n
+            if (id.includes('node_modules/i18next')) return 'vendor-i18n';
           },
         },
       },

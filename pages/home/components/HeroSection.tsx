@@ -76,7 +76,7 @@ const VideoBackground = () => {
           loop
           muted
           playsInline
-          preload="none"
+          preload="auto"
           onCanPlay={onCanPlay}
         >
           {/* WebM duluan — Chrome/Firefox/Edge (3.9MB) */}
