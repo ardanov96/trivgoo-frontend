@@ -10,16 +10,19 @@
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-WC97TG6R');</script>
     <!-- End Google Tag Manager -->
+
     <link rel="icon" type="image/svg+xml" href="/favicon_trp.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trivgoo - Experience the Indonesia & Asia</title>
     <meta name="description" content="Trivgoo is your ultimate travel platform for exploring Indonesia and Asia. Discover tours, stays, and car rentals." />
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://trivgoo.com/" />
     <meta property="og:title" content="Trivgoo - Experience the Indonesia & Asia" />
     <meta property="og:description" content="Trivgoo is your ultimate travel platform for exploring Indonesia and Asia. Discover tours, stays, and car rentals." />
     <meta property="og:image" content="https://trivgoo.com/thumbnail.png" />
+
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://trivgoo.com/" />
@@ -27,10 +30,10 @@
     <meta name="twitter:description" content="Trivgoo is your ultimate travel platform for exploring Indonesia and Asia. Discover tours, stays, and car rentals." />
     <meta name="twitter:image" content="https://trivgoo.com/thumbnail.png" />
 
-    <!-- Google Search Console Verification -->
+    <!-- Google Search Console -->
     <meta name="google-site-verification" content="3byfb59Fs91PtcauTB0DRIpmy93wcWj5aWwpoN_3d8c" />
 
-    <!-- Google tag (gtag.js) -->
+    <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TY8LCPZFSB"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -39,11 +42,21 @@
       gtag('config', 'G-TY8LCPZFSB');
     </script>
 
-
+    <!-- DNS Prefetch & Preconnect -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//www.googletagmanager.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!--
+      ★ KRITIS UNTUK LCP ★
+      Preload poster image agar tampil INSTAN sebelum video selesai load.
+      Ini adalah optimasi terpenting untuk Core Web Vitals (LCP).
+    -->
+    <link rel="preload" as="image" href="/videos/video-poster.webp" type="image/webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="/videos/video-poster.jpg" fetchpriority="high" />
+
+    <!-- Preload CSS & Custom Font -->
     <link rel="preload" href="/index.css" as="style" />
     <link rel="preload" href="/fonts/Vlogger.woff" as="font" type="font/woff" crossorigin />
 
@@ -52,6 +65,7 @@
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Rubik:wght@600;700;800;900&display=swap"
       rel="stylesheet"
     />
+
     <script>
       tailwind.config = {
         theme: {
@@ -68,7 +82,7 @@
                 300: '#f7aea1',
                 400: '#f18169',
                 500: '#e6654d',
-                600: '#E05845',  
+                600: '#E05845',
                 700: '#c34134',
                 800: '#a23830',
                 900: '#85322e',
@@ -85,101 +99,65 @@
         },
       };
     </script>
+
     <style>
-      /* Text Outline Effects - EXTRA TEBAL seperti Logo */
       .text-outlined {
         -webkit-text-stroke: 8px white;
         text-stroke: 8px white;
         color: #E05845;
         paint-order: stroke fill;
-        font-weight: 400; /* ← turunkan dari 900 */
+        font-weight: 400;
       }
-
       @media (min-width: 768px) {
-        .text-outlined {
-          -webkit-text-stroke: 10px white;
-          text-stroke: 10px white;
-        }
+        .text-outlined { -webkit-text-stroke: 10px white; text-stroke: 10px white; }
       }
-
       @media (min-width: 1024px) {
-        .text-outlined {
-          -webkit-text-stroke: 12px white;
-          text-stroke: 12px white;
-        }
+        .text-outlined { -webkit-text-stroke: 12px white; text-stroke: 12px white; }
       }
 
-      @keyframes marquee-left {
-        0% { transform: translateX(0%); }
-        100% { transform: translateX(-50%); }
-      }
-
-      @keyframes marquee-right {
-        0% { transform: translateX(-50%); }
-        100% { transform: translateX(0%); }
-      }
+      @keyframes marquee-left  { 0% { transform: translateX(0%);   } 100% { transform: translateX(-50%); } }
+      @keyframes marquee-right { 0% { transform: translateX(-50%); } 100% { transform: translateX(0%);   } }
 
       @font-face {
         font-family: 'Vlogger';
         src: url('/fonts/Vlogger.woff') format('woff'),
-            url('/fonts/Vlogger.ttf') format('truetype'),
-            url('/fonts/Vlogger.otf') format('opentype');
+             url('/fonts/Vlogger.ttf') format('truetype'),
+             url('/fonts/Vlogger.otf') format('opentype');
         font-weight: normal;
         font-style: normal;
         font-display: swap;
       }
 
-      .marquee-left {
-        animation: marquee-left 40s linear infinite;
-      }
+      .marquee-left  { animation: marquee-left  40s linear infinite; }
+      .marquee-right { animation: marquee-right 40s linear infinite; }
 
-      .marquee-right {
-        animation: marquee-right 40s linear infinite;
-      }
-      
-      /* Alternative: Shadow-based outline SUPER TEBAL */
       .text-shadow-outline {
         color: #E05845;
-        text-shadow: 
-          /* Layer 1 - Inner */
-          -2px -2px 0 white, 2px -2px 0 white,
-          -2px  2px 0 white, 2px  2px 0 white,
-          /* Layer 2 */
-          -4px -4px 0 white, 4px -4px 0 white,
-          -4px  4px 0 white, 4px  4px 0 white,
-          /* Layer 3 */
-          -6px -6px 0 white, 6px -6px 0 white,
-          -6px  6px 0 white, 6px  6px 0 white,
-          /* Layer 4 - Outer */
-          -8px -8px 0 white, 8px -8px 0 white,
-          -8px  8px 0 white, 8px  8px 0 white,
-          /* Cardinal directions */
-          -6px 0 0 white, 6px 0 0 white,
-          0 -6px 0 white, 0  6px 0 white,
-          -8px 0 0 white, 8px 0 0 white,
-          0 -8px 0 white, 0  8px 0 white;
+        text-shadow:
+          -2px -2px 0 white,  2px -2px 0 white,
+          -2px  2px 0 white,  2px  2px 0 white,
+          -4px -4px 0 white,  4px -4px 0 white,
+          -4px  4px 0 white,  4px  4px 0 white,
+          -6px -6px 0 white,  6px -6px 0 white,
+          -6px  6px 0 white,  6px  6px 0 white,
+          -8px -8px 0 white,  8px -8px 0 white,
+          -8px  8px 0 white,  8px  8px 0 white,
+          -6px 0 0 white, 6px 0 0 white, 0 -6px 0 white, 0 6px 0 white,
+          -8px 0 0 white, 8px 0 0 white, 0 -8px 0 white, 0 8px 0 white;
         font-weight: 900;
       }
-      
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
     <link rel="stylesheet" href="/index.css" />
-
     <script type="module" crossorigin src="/index.tsx"></script>
   </head>
-  <body
-    class="bg-gray-50 text-gray-900 font-sans antialiased selection:bg-primary-100 selection:text-primary-900"
-  >
+
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased selection:bg-primary-100 selection:text-primary-900">
     <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WC97TG6R"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WC97TG6R" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <div id="root"></div>
   </body>
