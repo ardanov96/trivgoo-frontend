@@ -20,6 +20,7 @@ const PrivacyPolicy: React.FC = () => {
     { id: 'pihak-ketiga',        labelKey: 'privacy.nav_pihak_ketiga'  },
     { id: 'karier',              labelKey: 'privacy.nav_karier'        },
     { id: 'data-teknis',         labelKey: 'privacy.nav_data_teknis'   },
+    { id: 'cookies',             labelKey: 'privacy.nav_cookies'       },
     { id: 'cara-kami',           labelKey: 'privacy.nav_cara_kami'     },
     { id: 'tujuan',              labelKey: 'privacy.nav_tujuan'        },
     { id: 'transfer',            labelKey: 'privacy.nav_transfer'      },
@@ -239,6 +240,24 @@ const PrivacyPolicy: React.FC = () => {
                 <li>{t('privacy.teknis_li5')}</li>
                 <li>{t('privacy.teknis_li6')}</li>
               </ul>
+            </section>
+
+            {/* 1g — Kebijakan Cookie */}
+            <section id="cookies" className="mb-12 scroll-mt-6 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">
+                {t('privacy.cookies_title', 'Kebijakan Cookie & Teknologi Serupa')}
+              </h3>
+              <div className="w-8 h-0.5 bg-gray-300 rounded mb-6" />
+              <p className="text-gray-700 leading-relaxed mb-4">
+                {t('privacy.cookies_p1', 'Kami menggunakan cookie untuk meningkatkan pengalaman Anda, menganalisis lalu lintas, dan menyediakan iklan yang relevan.')}
+              </p>
+              <button
+                onClick={() => window.dispatchEvent(new Event('open-cookie-settings'))}
+                className="inline-flex items-center text-primary-600 font-bold hover:text-primary-700 transition-colors bg-white px-4 py-2 rounded-lg border border-primary-100 shadow-sm"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                {t('privacy.manage_cookies_btn', 'Atur Preferensi Cookie Anda')}
+              </button>
             </section>
 
             {/* 2 — Cara Kami */}

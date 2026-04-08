@@ -30,6 +30,8 @@ import { SUPPORTED_LANGS, changeLanguage } from './src/i18n';
 import { ROUTE_SLUGS, SLUG_TO_CANONICAL } from './src/i18n/slugs';
 import type { SupportedLang } from './src/i18n';
 
+import { CookieConsent } from './components/CookieConsent';
+
 import { usePushNotifications } from './hooks/usePushNotifications';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -375,6 +377,7 @@ const App: React.FC = () => (
               <AppGates>
                 <ErrorBoundary>
                   <AppRoutes />
+                  <CookieConsent googleAnalyticsId="G-TY8LCPZFSB" />
                   <ChatbotWidget />
                 </ErrorBoundary>
               </AppGates>
