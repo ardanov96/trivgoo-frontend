@@ -1,9 +1,9 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLangNavigate } from '../src/hooks/useLangNavigate';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import SEO from '../components/SEO';
 import { Product } from '../types';
 import { agentProductService } from '../services/agentProductService';
@@ -19,6 +19,8 @@ import { containerVariants, cardVariants, carCardVariants, fadeUpVariants } from
 
 import { FilterPanel }          from './explore/components/FilterPanel';
 import { RegularCard }          from './explore/components/RegularCard';
+import { StayCard }             from './explore/components/StayCard';
+import { StayFilterPanel }      from './explore/components/StayFilterPanel';
 import { RentalCarCard }        from './explore/components/RentalCarCard';
 import { AgentPickerModal }     from './explore/components/AgentPickerModal';
 import { LocationPromptModal }  from './explore/components/LocationPromptModal';
@@ -34,6 +36,8 @@ const Explore: React.FC = () => {
 
   const [products,  setProducts]  = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Mobile side-filter drawer
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   const { categorySlug } = useParams<{ categorySlug?: string }>();
 
@@ -101,7 +105,6 @@ const Explore: React.FC = () => {
   };
 
   const handleCarCardClick = (group: CarGroup) => {
-    // Untuk airport transfer, tidak perlu prompt lokasi
     if (filters.isTransferCategory) {
       openGroupOrProduct(group);
       return;
@@ -141,6 +144,34 @@ const Explore: React.FC = () => {
     onAddToCart: (e: React.MouseEvent) => handleAddToCart(e, p),
   });
 
+  // ── Stay category skeleton placeholder ────────────────────────────────────
+  const StaySkeletonCard = () => (
+    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 flex flex-col sm:flex-row animate-pulse">
+      <div className="sm:w-72 lg:w-80 shrink-0 aspect-[4/3] sm:aspect-auto bg-gray-200" />
+      <div className="flex-1 p-6 space-y-3">
+        <div className="h-3 bg-gray-200 rounded w-24" />
+        <div className="h-5 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 rounded w-1/2" />
+        <div className="h-3 bg-gray-200 rounded w-full" />
+        <div className="h-3 bg-gray-200 rounded w-5/6" />
+        <div className="flex gap-2 mt-4">
+          <div className="h-8 bg-gray-200 rounded-lg w-20" />
+          <div className="h-8 bg-gray-200 rounded-lg w-20" />
+        </div>
+        <div className="flex justify-between items-end pt-4 mt-4 border-t border-gray-100">
+          <div className="space-y-1">
+            <div className="h-7 bg-gray-200 rounded w-32" />
+            <div className="h-3 bg-gray-200 rounded w-20" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-9 bg-gray-200 rounded-xl w-28" />
+            <div className="h-9 bg-gray-200 rounded-xl w-28" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <SEO
@@ -177,7 +208,7 @@ const Explore: React.FC = () => {
             </motion.div>
           )}
 
-          {/* ── Filter panel — pass transferFilters & isTransferCategory ── */}
+          {/* ── Filter panel ── */}
           <FilterPanel
             searchQuery={filters.searchQuery}
             selectedCategory={filters.selectedCategory}
@@ -195,8 +226,128 @@ const Explore: React.FC = () => {
             onTransferFilterChange={filters.updateTransferFilters}
           />
 
-          {/* ── Car / Transfer grid ── */}
-          {filters.isCarCategory ? (
+          {/* ── Stay layout: sidebar + 1-col cards ── */}
+          {filters.isStayCategory ? (
+            <div className="flex gap-6 items-start">
+
+              {/* ── Desktop side filter ── */}
+              <motion.aside
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.35 }}
+                className="hidden lg:block w-64 xl:w-72 shrink-0"
+              >
+                <StayFilterPanel
+                  filters={filters.stayFilters}
+                  onChange={filters.updateStayFilters}
+                  onClear={filters.clearStayFilters}
+                />
+              </motion.aside>
+
+              {/* ── Main content ── */}
+              <div className="flex-1 min-w-0">
+                {/* Mobile filter button */}
+                <div className="lg:hidden mb-4">
+                  <button
+                    onClick={() => setShowMobileFilter(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 shadow-sm hover:border-primary-400 hover:text-primary-600 transition-all"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    {t('explore.filters', 'Filter')}
+                    {(filters.stayFilters.starRatings.length + filters.stayFilters.hotelTypes.length + filters.stayFilters.areas.length) > 0 && (
+                      <span className="bg-primary-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                        {filters.stayFilters.starRatings.length + filters.stayFilters.hotelTypes.length + filters.stayFilters.areas.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Results count */}
+                {!isLoading && (
+                  <p className="text-sm text-gray-500 mb-4 font-medium">
+                    {filters.filteredProducts.length} {t('explore.stays_found', 'penginapan ditemukan')}
+                  </p>
+                )}
+
+                {/* Cards */}
+                <motion.div
+                  key={`stay-${filters.selectedCategory}`}
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="flex flex-col gap-5"
+                >
+                  {isLoading
+                    ? [...Array(4)].map((_, i) => <StaySkeletonCard key={i} />)
+                    : filters.filteredProducts.slice(0, filters.visibleCount).map((p) => (
+                        <motion.div key={p.id} variants={cardVariants}>
+                          <StayCard {...makeCardProps(p)} />
+                        </motion.div>
+                      ))
+                  }
+                </motion.div>
+
+                {/* Load more */}
+                {!isLoading && filters.filteredProducts.length > filters.visibleCount && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="flex justify-center mt-10"
+                  >
+                    <motion.button
+                      onClick={() => filters.setVisibleCount((p) => p + 8)}
+                      whileHover={{ y: -3, scale: 1.03, transition: { duration: 0.2 } }}
+                      whileTap={{ scale: 0.96 }}
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-colors duration-300 group"
+                    >
+                      {t('common.show_more', 'Load More')}
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </motion.button>
+                  </motion.div>
+                )}
+
+                {/* Empty state */}
+                {!isLoading && filters.filteredProducts.length === 0 && (
+                  <EmptyState isCarCategory={false} onClear={filters.clearAll} />
+                )}
+              </div>
+
+              {/* ── Mobile filter drawer ── */}
+              <AnimatePresence>
+                {showMobileFilter && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+                      onClick={() => setShowMobileFilter(false)}
+                    />
+                    <motion.div
+                      initial={{ x: '-100%' }}
+                      animate={{ x: 0 }}
+                      exit={{ x: '-100%' }}
+                      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                      className="fixed left-0 top-0 bottom-0 w-80 max-w-[90vw] bg-gray-50 z-50 overflow-y-auto lg:hidden"
+                    >
+                      <div className="p-4">
+                        <StayFilterPanel
+                          filters={filters.stayFilters}
+                          onChange={filters.updateStayFilters}
+                          onClear={filters.clearStayFilters}
+                          isMobile
+                          onClose={() => setShowMobileFilter(false)}
+                        />
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+          /* ── Car / Transfer grid ── */
+          ) : filters.isCarCategory ? (
             <motion.div
               key={`car-${filters.selectedCategory}`}
               variants={containerVariants}
@@ -222,6 +373,7 @@ const Explore: React.FC = () => {
                   ))
               }
             </motion.div>
+
           ) : (
             /* ── Regular product grid ── */
             <motion.div
@@ -248,8 +400,8 @@ const Explore: React.FC = () => {
             </motion.div>
           )}
 
-          {/* ── Load more ── */}
-          {!isLoading && !filters.isCarCategory && filters.filteredProducts.length > filters.visibleCount && (
+          {/* ── Load more (non-stay) ── */}
+          {!isLoading && !filters.isCarCategory && !filters.isStayCategory && filters.filteredProducts.length > filters.visibleCount && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -268,8 +420,8 @@ const Explore: React.FC = () => {
             </motion.div>
           )}
 
-          {/* ── Empty state ── */}
-          {!isLoading && (
+          {/* ── Empty state (non-stay, non-car) ── */}
+          {!isLoading && !filters.isStayCategory && (
             filters.isCarCategory
               ? filters.carGroups.length === 0
               : filters.filteredProducts.length === 0
@@ -288,7 +440,7 @@ const Explore: React.FC = () => {
         />
       )}
 
-      {/* ── Location prompt — tidak muncul untuk airport transfer ── */}
+      {/* ── Location prompt ── */}
       {locationPrompt && !filters.isTransferCategory && (
         <LocationPromptModal
           onConfirm={handleLocationConfirm}

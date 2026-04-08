@@ -3,6 +3,8 @@ import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import { Product } from '../../../types';
 import { isCar, isTour, isStay, groupCarProducts } from '../utils';
 import { CATEGORY_SLUG_MAP, CATEGORY_ID_TO_SLUG } from '../constants';
+import type { StayFilters } from '../components/StayFilterPanel';
+import { INITIAL_STAY_FILTERS } from '../components/StayFilterPanel';
 
 export interface RentalFilters {
   transmission:      string;
@@ -29,6 +31,8 @@ const INITIAL_TRANSFER_FILTERS: TransferFilters = {
   from: '', to: '', pickupDate: '', pickupTime: '',
 };
 
+export type { StayFilters };
+
 export const useExploreFilters = (products: Product[]) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { categorySlug, lang }          = useParams<{ categorySlug?: string; lang: string }>();
@@ -43,6 +47,7 @@ export const useExploreFilters = (products: Product[]) => {
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [sortBy,              setSortBy]              = useState<'price_asc' | 'price_desc' | 'rating' | null>(null);
   const [rentalFilters,       setRentalFilters]       = useState<RentalFilters>(INITIAL_RENTAL_FILTERS);
+  const [stayFilters,         setStayFilters]         = useState<StayFilters>(INITIAL_STAY_FILTERS);
   const [visibleCount,        setVisibleCount]        = useState(8);
 
   // ── Airport Transfer state — di-init dari URL params ─────────────────────
@@ -103,11 +108,22 @@ export const useExploreFilters = (products: Product[]) => {
     setSearchParams(p, { replace: true });
   };
 
+  // ── Update stay filters ───────────────────────────────────────────────────
+  const updateStayFilters = (filters: StayFilters) => {
+    setStayFilters(filters);
+    setVisibleCount(8);
+  };
+
+  const clearStayFilters = () => {
+    setStayFilters(INITIAL_STAY_FILTERS);
+  };
+
   const handleCategorySelect = (id: number | null) => {
     setSelectedCategory(id);
     setSelectedSubCategory(null);
     setRentalFilters(INITIAL_RENTAL_FILTERS);
     setTransferFilters(INITIAL_TRANSFER_FILTERS);
+    setStayFilters(INITIAL_STAY_FILTERS);
     setVisibleCount(8);
 
     const slug        = id ? CATEGORY_ID_TO_SLUG[id] : null;
@@ -131,10 +147,12 @@ export const useExploreFilters = (products: Product[]) => {
     setSortBy(null);
     setRentalFilters(INITIAL_RENTAL_FILTERS);
     setTransferFilters(INITIAL_TRANSFER_FILTERS);
+    setStayFilters(INITIAL_STAY_FILTERS);
   };
 
   const isCarCategory      = selectedCategory === 3 || selectedCategory === 4;
   const isTransferCategory = selectedCategory === 4;
+  const isStayCategory     = selectedCategory === 2;
 
   const filteredProducts = useMemo(() => {
     let filtered = products.filter((p) => {
@@ -165,6 +183,45 @@ export const useExploreFilters = (products: Product[]) => {
         return matchSearch;
       }
 
+      // ── Stay filters ──────────────────────────────────────────────────────
+      if (selectedCategory === 2) {
+        if (!isStay(p.details)) return false;
+
+        const price = Number(p.price);
+        if (stayFilters.minPrice && price < Number(stayFilters.minPrice)) return false;
+        if (stayFilters.maxPrice && price > Number(stayFilters.maxPrice)) return false;
+
+        if (stayFilters.starRatings.length > 0) {
+          const pStars = (p.details as any)?.starRating || Math.round(p.rating || 4);
+          if (!stayFilters.starRatings.includes(pStars)) return false;
+        }
+
+        if (stayFilters.hotelTypes.length > 0) {
+          const pType = (p.details as any)?.stayCategory || '';
+          if (!stayFilters.hotelTypes.some(t => pType.toLowerCase().includes(t.toLowerCase()))) return false;
+        }
+
+        if (stayFilters.areas.length > 0) {
+          const pLoc = (p.location || '').toLowerCase();
+          if (!stayFilters.areas.some(a => pLoc.includes(a.toLowerCase()))) return false;
+        }
+
+        if (stayFilters.facilities.length > 0) {
+          const pFac: string[] = (p.details as any)?.facilities || [];
+          const pFacLower = pFac.map(f => f.toLowerCase());
+          if (!stayFilters.facilities.every(f => pFacLower.includes(f.toLowerCase()))) return false;
+        }
+
+        // Promotions filter (basic — check vouchers)
+        if (stayFilters.promotions.includes('Free Cancellation')) {
+          const vouchers = (p as any).vouchers || [];
+          const hasRefund = vouchers.some((v: any) => v.type === 'free_cancellation');
+          if (!hasRefund) return false;
+        }
+
+        return matchSearch;
+      }
+
       const matchCat = selectedCategory ? Number(p.category_id) === Number(selectedCategory) : true;
       let matchSubCat = true;
       if (selectedCategory && selectedSubCategory && p.details) {
@@ -186,7 +243,7 @@ export const useExploreFilters = (products: Product[]) => {
       });
     }
     return filtered;
-  }, [products, searchQuery, selectedCategory, selectedSubCategory, sortBy, rentalFilters, transferFilters, isTransferCategory]);
+  }, [products, searchQuery, selectedCategory, selectedSubCategory, sortBy, rentalFilters, transferFilters, isTransferCategory, stayFilters]);
 
   const carGroups = useMemo(() => {
     if (!isCarCategory) return [];
@@ -195,11 +252,11 @@ export const useExploreFilters = (products: Product[]) => {
 
   return {
     searchQuery, selectedCategory, selectedSubCategory, sortBy,
-    rentalFilters, transferFilters,
-    visibleCount, fromItinerary, isCarCategory, isTransferCategory,
+    rentalFilters, transferFilters, stayFilters,
+    visibleCount, fromItinerary, isCarCategory, isTransferCategory, isStayCategory,
     filteredProducts, carGroups,
     setSelectedSubCategory, setSortBy, setVisibleCount,
-    updateSearch, updateTransferFilters,
+    updateSearch, updateTransferFilters, updateStayFilters, clearStayFilters,
     handleCategorySelect, handleRentalFilterChange, clearAll,
   };
 };
