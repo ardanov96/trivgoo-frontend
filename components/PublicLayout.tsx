@@ -360,6 +360,8 @@ const PublicLayout: React.FC = () => {
               <ul className="space-y-4 text-gray-400 text-sm">
                 <li><Link to={langPath('/about-us')} className="hover:text-primary-400">About Us</Link></li>
                 <li><Link to={langPath('/career')} className="hover:text-primary-400">Careers</Link></li>
+                <li><Link to={langPath('/press-and-media')} className="hover:text-primary-400">Press & Media</Link></li>
+                <li><Link to={langPath('/travel-blog')} className="hover:text-primary-400">Travel Blog</Link></li>
                 <li><Link to={langPath('/register/agent')} className="hover:text-primary-400">Become an Agent</Link></li>
               </ul>
             </div>
@@ -368,6 +370,7 @@ const PublicLayout: React.FC = () => {
               <h4 className="font-bold mb-6">{t('footer.support')}</h4>
               <ul className="space-y-4 text-gray-400 text-sm">
                 <li><Link to={langPath('/help-center')} className="hover:text-primary-400">Help Center</Link></li>
+                <li><Link to={langPath('/contact-us')} className="hover:text-primary-400">Contact Us</Link></li>
                 <li><Link to={langPath('/privacy-policy')} className="hover:text-primary-400">Privacy Policy</Link></li>
                 <li><Link to={langPath('/terms-and-service')} className="hover:text-primary-400">Terms of Service</Link></li>
               </ul>

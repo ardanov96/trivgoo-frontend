@@ -162,12 +162,29 @@ export const StayCard = ({ product, isLoggedIn, isSaved, isInCart, onWishlist, o
 
   // Build full image list: main + gallery extras
   const mainImgSrc       = getImageUrl(product.image_url || product.image);
-  const galleryImagesArr = Array.isArray((product as any).images)
-    ? (product as any).images
-        .map((item: any) => getImageUrl(typeof item === 'string' ? item : item?.url))
-        .filter(Boolean)
-    : [];
-  const allImages: string[] = [mainImgSrc, ...galleryImagesArr];
+    const galleryImagesArr = [
+    ...( Array.isArray((product as any).images)
+        ? (product as any).images.map((item: any) =>
+            getImageUrl(typeof item === 'string' ? item : item?.url)
+        )
+        : []
+    ),
+    ...( Array.isArray((product?.details as any)?.images)
+        ? (product?.details as any).images.map((item: any) =>
+            getImageUrl(typeof item === 'string' ? item : item?.url)
+        )
+        : []
+    ),
+    ...( Array.isArray((product as any).gallery)
+        ? (product as any).gallery.map((item: any) =>
+            getImageUrl(typeof item === 'string' ? item : item?.url)
+        )
+        : []
+    ),
+    ].filter((img): img is string => !!img && img !== mainImgSrc);
+
+    // Deduplicate dengan Set, mainImg selalu pertama
+    const allImages: string[] = [mainImgSrc, ...Array.from(new Set(galleryImagesArr))];
 
   const openGallery = (e: React.MouseEvent, index = 0) => {
     e.preventDefault();
