@@ -11,7 +11,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import SEO from '../components/SEO';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useToast } from '../components/ToastContext';
 import { mockService } from '../services/mockService';
@@ -80,7 +80,7 @@ const Payment: React.FC = () => {
     } else if (isPaid && redirectSeconds === 0) {
       langNavigate('/my-bookings');
     }
-  }, [isPaid, redirectSeconds, navigate]);
+  }, [isPaid, redirectSeconds, langNavigate]);
 
   // Format Time (MM:SS)
   const formatTime = (seconds: number) => {
@@ -109,6 +109,7 @@ const Payment: React.FC = () => {
       // Save to Mock DB (New Booking)
       await mockService.createBooking({
         userId: user.id,
+        userName: state.contactDetails?.name ?? user.name ?? '',
         productId: state.product.id,
         productName: state.product.name,
         productImage: state.product.image,
@@ -133,7 +134,7 @@ const Payment: React.FC = () => {
     if (!state) {
       langNavigate('/', { replace: true });
     }
-  }, [state, navigate]);
+  }, [state, langNavigate]);
 
   if (!state) {
     // Tampilkan loading singkat sebelum redirect terjadi
