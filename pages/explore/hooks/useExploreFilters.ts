@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Product } from '../../../types';
 import { isCar, isTour, isStay, groupCarProducts } from '../utils';
 import { CATEGORY_SLUG_MAP, CATEGORY_ID_TO_SLUG } from '../constants';
@@ -38,7 +38,10 @@ export const useExploreFilters = (products: Product[]) => {
   const { categorySlug, lang }          = useParams<{ categorySlug?: string; lang: string }>();
   const navigate                        = useNavigate();
 
-  const categoryFromSlug  = categorySlug ? (CATEGORY_SLUG_MAP[categorySlug] ?? null) : null;
+  const { pathname } = useLocation();
+  const slugFromPath  = pathname.split('/').filter(Boolean).pop() ?? '';
+  const effectiveSlug = categorySlug ?? (CATEGORY_SLUG_MAP[slugFromPath] !== undefined ? slugFromPath : null);
+  const categoryFromSlug = effectiveSlug ? (CATEGORY_SLUG_MAP[effectiveSlug] ?? null) : null;
   const categoryFromParam = searchParams.get('category_id') ? Number(searchParams.get('category_id')) : null;
 
   const [selectedCategory,    setSelectedCategory]    = useState<number | null>(
@@ -65,10 +68,10 @@ export const useExploreFilters = (products: Product[]) => {
   useEffect(() => {
     if (categoryFromSlug !== null) {
       setSelectedCategory(categoryFromSlug);
-    } else if (!categorySlug) {
+    } else if (!effectiveSlug) {
       setSelectedCategory(categoryFromParam ?? 1);
     }
-  }, [categorySlug]);
+  }, [categorySlug, pathname]);
 
   // Sync transfer filters saat URL params berubah (misal dari hero search)
   useEffect(() => {
@@ -250,11 +253,36 @@ export const useExploreFilters = (products: Product[]) => {
     return groupCarProducts(filteredProducts.filter((p) => isCar(p.details)));
   }, [filteredProducts, isCarCategory]);
 
+  const dynamicAreas = useMemo(() => {
+  if (selectedCategory !== 2) return [];
+  
+  // Ambil semua produk stay (tanpa filter area agar area tidak hilang saat dipilih)
+  const stayProducts = products.filter(p => isStay(p.details));
+  
+  const areaSet = new Set<string>();
+  stayProducts.forEach(p => {
+    const loc = p.location || '';
+    // Pecah lokasi berdasarkan koma, ambil bagian yang relevan
+    loc.split(',')
+      .map(s => s.trim())
+      .filter(s =>
+        s.length > 1 &&
+        !/\d/.test(s) &&
+        !['indonesia', 'jawa', 'java', 'bali', 'lombok'].includes(s.toLowerCase()) &&
+        !/^(rt|rw|dusun|jalan|jl\.|gang|gg\.)/i.test(s)
+      )
+      .forEach(s => areaSet.add(s));
+  });
+  
+  return Array.from(areaSet).sort();
+}, [products, selectedCategory]);
+
   return {
     searchQuery, selectedCategory, selectedSubCategory, sortBy,
     rentalFilters, transferFilters, stayFilters,
     visibleCount, fromItinerary, isCarCategory, isTransferCategory, isStayCategory,
     filteredProducts, carGroups,
+    dynamicAreas, 
     setSelectedSubCategory, setSortBy, setVisibleCount,
     updateSearch, updateTransferFilters, updateStayFilters, clearStayFilters,
     handleCategorySelect, handleRentalFilterChange, clearAll,

@@ -36,7 +36,6 @@ const Explore: React.FC = () => {
 
   const [products,  setProducts]  = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  // Mobile side-filter drawer
   const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   const { categorySlug } = useParams<{ categorySlug?: string }>();
@@ -144,7 +143,7 @@ const Explore: React.FC = () => {
     onAddToCart: (e: React.MouseEvent) => handleAddToCart(e, p),
   });
 
-  // ── Stay category skeleton placeholder ────────────────────────────────────
+  // ── Stay skeleton ──────────────────────────────────────────────────────────
   const StaySkeletonCard = () => (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 flex flex-col sm:flex-row animate-pulse">
       <div className="sm:w-72 lg:w-80 shrink-0 aspect-[4/3] sm:aspect-auto bg-gray-200" />
@@ -230,7 +229,7 @@ const Explore: React.FC = () => {
           {filters.isStayCategory ? (
             <div className="flex gap-6 items-start">
 
-              {/* ── Desktop side filter ── */}
+              {/* ── Desktop sidebar ── */}
               <motion.aside
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -241,6 +240,7 @@ const Explore: React.FC = () => {
                   filters={filters.stayFilters}
                   onChange={filters.updateStayFilters}
                   onClear={filters.clearStayFilters}
+                  areaOptions={filters.dynamicAreas}
                 />
               </motion.aside>
 
@@ -296,7 +296,7 @@ const Explore: React.FC = () => {
                     className="flex justify-center mt-10"
                   >
                     <motion.button
-                      onClick={() => filters.setVisibleCount((p) => p + 8)}
+                      onClick={() => filters.setVisibleCount(p => p + 8)}
                       whileHover={{ y: -3, scale: 1.03, transition: { duration: 0.2 } }}
                       whileTap={{ scale: 0.96 }}
                       className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-colors duration-300 group"
@@ -336,6 +336,7 @@ const Explore: React.FC = () => {
                           filters={filters.stayFilters}
                           onChange={filters.updateStayFilters}
                           onClear={filters.clearStayFilters}
+                          areaOptions={filters.dynamicAreas}
                           isMobile
                           onClose={() => setShowMobileFilter(false)}
                         />
@@ -409,7 +410,7 @@ const Explore: React.FC = () => {
               className="flex justify-center mt-10"
             >
               <motion.button
-                onClick={() => filters.setVisibleCount((p) => p + 8)}
+                onClick={() => filters.setVisibleCount(p => p + 8)}
                 whileHover={{ y: -3, scale: 1.03, transition: { duration: 0.2 } }}
                 whileTap={{ scale: 0.96 }}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-gray-900 hover:bg-primary-600 text-white rounded-full font-bold text-sm shadow-lg hover:shadow-primary-600/30 transition-colors duration-300 group"

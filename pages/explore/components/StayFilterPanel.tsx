@@ -30,7 +30,6 @@ export const INITIAL_STAY_FILTERS: StayFilters = {
 const STAR_OPTIONS  = [5, 4, 3, 2, 1];
 const PROMO_OPTIONS = ['Free Cancellation', 'Breakfast', 'Last Minute', 'Package Rate', 'Deal of the Day'];
 const TYPE_OPTIONS  = ['Hotel', 'Villa', 'Resort', 'Guest House', 'Bed & Breakfast', 'Hostel'];
-const AREA_OPTIONS  = ['Kuta', 'Seminyak', 'Ubud', 'Nusa Dua', 'Sanur', 'Canggu', 'Legian', 'Jimbaran', 'Denpasar', 'Amed', 'Lovina'];
 const FACILITY_OPTIONS = ['Wi-Fi', 'Swimming Pool', 'Gym', 'Spa', 'Restaurant', 'Parking', 'Airport Shuttle', 'Wheelchair', 'Safety Box', 'Extrabed Allowed'];
 
 function StarIcon({ filled }: { filled: boolean }) {
@@ -89,14 +88,15 @@ function toggleArr<T>(arr: T[], val: T): T[] {
 // ── Main StayFilterPanel ──────────────────────────────────────────────────────
 
 interface Props {
-  filters:   StayFilters;
-  onChange:  (filters: StayFilters) => void;
-  onClear:   () => void;
-  isMobile?: boolean;
-  onClose?:  () => void;
+  filters:      StayFilters;
+  onChange:     (filters: StayFilters) => void;
+  onClear:      () => void;
+  areaOptions?: string[]; 
+  isMobile?:    boolean;
+  onClose?:     () => void;
 }
 
-export const StayFilterPanel = ({ filters, onChange, onClear, isMobile, onClose }: Props) => {
+export const StayFilterPanel = ({ filters, onChange, onClear, areaOptions = [], isMobile, onClose }: Props) => {
   const { t } = useTranslation();
 
   const activeCount = [
@@ -245,7 +245,11 @@ export const StayFilterPanel = ({ filters, onChange, onClear, isMobile, onClose 
       {/* Areas */}
       <Section title={t('explore.areas', 'Areas')}>
         <div className="flex flex-col gap-2">
-          {AREA_OPTIONS.map(area => {
+          {areaOptions.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">
+              {t('explore.no_areas', 'Ketik destinasi di kolom pencarian untuk melihat area.')}
+            </p>
+          ) : areaOptions.map(area => {
             const checked = filters.areas.includes(area);
             return (
               <label key={area} className="flex items-center gap-2.5 cursor-pointer group">
