@@ -80,6 +80,8 @@ const MyRefunds               = lazy(() => import('./pages/customer/MyRefunds'))
 const MyPriceAlerts           = lazy(() => import('./pages/customer/MyPriceAlerts'));
 const MyPassengers            = lazy(() => import('./pages/customer/MyPassengers'));
 const MyNotifications         = lazy(() => import('./pages/customer/MyNotifications'));
+const SavedItineraries        = lazy(() => import('./pages/customer/SavedItineraries'));
+const SharedItinerary         = lazy(() => import('./pages/SharedItinerary'));
 
 // Admin pages
 const AdminDashboard       = lazy(() => import('./pages/admin/Dashboard'));
@@ -275,6 +277,7 @@ const AppRoutes: React.FC = () => (
           <Route path="booking-pending"      element={<BookingPending />} />
           <Route path="booking-failed"       element={<BookingFailed />} />
           <Route path="ai-planner"           element={<AITripPlanner />} />
+          <Route path="itinerary/share/:token" element={<SharedItinerary />} />
           <Route path="login"                element={<Login />} />
           <Route path="register"             element={<Register />} />
           <Route path="trivpay"              element={<TrivPay />} />
@@ -298,6 +301,7 @@ const AppRoutes: React.FC = () => (
           <Route path="payment"            element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><Payment /></ProtectedRoute>} />
           <Route path="my-bookings"        element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerBookings /></ProtectedRoute>} />
           <Route path="my-bookings/:id"    element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerBookingDetail /></ProtectedRoute>} />
+          <Route path="my-itineraries"     element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><SavedItineraries /></ProtectedRoute>} />
           <Route path="my-account"         element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><CustomerProfileSettings /></ProtectedRoute>} />
           <Route path="loyalty"            element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><LoyaltyPage /></ProtectedRoute>} />
           <Route path="loyalty/redeem"     element={<ProtectedRoute allowedRoles={[UserRole.CUSTOMER]}><RedeemPointPage /></ProtectedRoute>} />

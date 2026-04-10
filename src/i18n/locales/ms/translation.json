@@ -366,7 +366,7 @@
     "try_prompts": "Cuba arahan ini",
     "your_itinerary": "Jadual Perjalanan Peribadi Anda",
     "recommended": "Disyorkan untuk Anda",
-    "no_match": "Tiada pakej khusus yang sepadan dengan permintaan anda, tetapi anda boleh meneroka lebih banyak",
+    "no_match": "Tiada pakej khusus yang sepadan dengan permintaan anda, tetapi anda boleh meneroka lebih banyak ",
     "options": "pilihan.",
     "suggestion_1": "Saya mahu bulan madu romantik 3 hari di Bali dengan vila kolam renang peribadi, bajet sekitar $500.",
     "suggestion_2": "Merancang perjalanan keluarga ke Jepun selama 5 hari. Kami perlukan lawatan mesra kanak-kanak dan pengangkutan mudah.",
@@ -2019,7 +2019,7 @@
   "layout": {
     "change_language": "Tukar bahasa",
     "pick_language": "Pilih Bahasa",
-    "footer_tagline": "Mengkurasi pengembaraan paling menakjubkan dan penginapan mewah di dunia. Perjalanan anda bermula dengan satu klik."
+    "footer_tagline": "Pilihan destinasi percutian impian dan penginapan terbaik untuk anda. Hanya satu klik ke pengalaman istimewa."
   },
   "referral_modal": {
     "illustration_alt": "Ilustrasi Rujukan",

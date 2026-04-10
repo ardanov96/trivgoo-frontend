@@ -315,7 +315,7 @@
     "try_prompts": "Coba prompt ini",
     "your_itinerary": "Itinerary Pribadi Anda",
     "recommended": "Direkomendasikan Untuk Anda",
-    "no_match": "Tidak ada paket spesifik yang cocok, tetapi Anda bisa menjelajahi",
+    "no_match": "Tidak ada paket spesifik yang cocok, tetapi Anda bisa menjelajahi ",
     "options": "pilihan lainnya.",
     "suggestion_1": "Saya ingin bulan madu romantis 3 hari di Bali dengan vila kolam pribadi, anggaran sekitar Rp 10 juta.",
     "suggestion_2": "Merencanakan liburan keluarga ke Jepang selama 5 hari. Kami butuh tur ramah anak dan transportasi mudah.",
@@ -2031,7 +2031,7 @@
   "layout": {
     "change_language": "Ganti bahasa",
     "pick_language": "Pilih Bahasa",
-    "footer_tagline": "Mengkurasi petualangan paling menakjubkan dan penginapan mewah di dunia. Perjalanan Anda dimulai dengan satu klik."
+    "footer_tagline": "Kurasi destinasi wisata impian dan penginapan terbaik untuk Anda. Satu klik menuju pengalaman istimewa."
   },
   "referral_modal": {
     "illustration_alt": "Ilustrasi Referral",
