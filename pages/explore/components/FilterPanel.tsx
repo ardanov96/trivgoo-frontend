@@ -31,13 +31,13 @@ interface InlineDatePickerProps {
 }
 
 const InlineDatePicker = ({ value, onChange, placeholder }: InlineDatePickerProps) => {
-  const [open, setOpen]         = useState(false);
-  const [view, setView]         = useState(new Date());
-  const ref                     = useRef<HTMLDivElement>(null);
-  const today                   = new Date(); today.setHours(0, 0, 0, 0);
-  const daysInMonth             = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
-  const firstDay                = new Date(view.getFullYear(), view.getMonth(), 1).getDay();
-  const monthLabel              = view.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  const [open, setOpen]     = useState(false);
+  const [view, setView]     = useState(new Date());
+  const ref                 = useRef<HTMLDivElement>(null);
+  const today               = new Date(); today.setHours(0, 0, 0, 0);
+  const daysInMonth         = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+  const firstDay            = new Date(view.getFullYear(), view.getMonth(), 1).getDay();
+  const monthLabel          = view.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
@@ -139,7 +139,6 @@ const AirportTransferSearchBar = ({ filters, onChange }: AirportTransferSearchBa
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-visible">
-      {/* Label header */}
       <div className="px-5 py-2.5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-primary-50 rounded-t-2xl flex items-center gap-2">
         <PlaneTakeoff className="w-4 h-4 text-primary-600" />
         <span className="text-xs font-extrabold text-primary-700 uppercase tracking-wider">
@@ -148,7 +147,7 @@ const AirportTransferSearchBar = ({ filters, onChange }: AirportTransferSearchBa
       </div>
 
       <div className="flex flex-col md:flex-row divide-y divide-gray-100 md:divide-y-0 md:divide-x">
-        {/* From — Bandara */}
+        {/* From */}
         <div className="flex-1 flex items-center gap-3 px-4 py-3.5 relative">
           <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center shrink-0">
             <PlaneTakeoff className="w-3.5 h-3.5 text-primary-600" />
@@ -157,22 +156,17 @@ const AirportTransferSearchBar = ({ filters, onChange }: AirportTransferSearchBa
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
               {t('hero.from_airport', 'Dari Bandara')}
             </p>
-            <input
-              type="text"
-              placeholder={t('hero.airport_placeholder', 'Nama bandara...')}
-              value={filters.from}
-              onChange={e => onChange('from', e.target.value)}
-              className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none placeholder-gray-400"
-            />
+            <input type="text" placeholder={t('hero.airport_placeholder', 'Nama bandara...')}
+              value={filters.from} onChange={e => onChange('from', e.target.value)}
+              className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none placeholder-gray-400" />
           </div>
-          {/* Swap button */}
           <button type="button" onClick={handleSwap}
             className="absolute right-0 translate-x-1/2 z-10 w-7 h-7 rounded-full bg-primary-500 hover:bg-primary-600 text-white shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-95">
             <ArrowLeftRight className={`w-3 h-3 transition-transform duration-300 ${swapped ? 'rotate-180' : ''}`} />
           </button>
         </div>
 
-        {/* To — Tujuan */}
+        {/* To */}
         <div className="flex-1 flex items-center gap-3 px-4 py-3.5">
           <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
             <PlaneLanding className="w-3.5 h-3.5 text-orange-500" />
@@ -181,13 +175,9 @@ const AirportTransferSearchBar = ({ filters, onChange }: AirportTransferSearchBa
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
               {t('hero.to_destination', 'Ke Tujuan')}
             </p>
-            <input
-              type="text"
-              placeholder={t('hero.destination_placeholder', 'Area, hotel, gedung...')}
-              value={filters.to}
-              onChange={e => onChange('to', e.target.value)}
-              className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none placeholder-gray-400"
-            />
+            <input type="text" placeholder={t('hero.destination_placeholder', 'Area, hotel, gedung...')}
+              value={filters.to} onChange={e => onChange('to', e.target.value)}
+              className="w-full text-sm font-semibold text-gray-800 bg-transparent focus:outline-none placeholder-gray-400" />
           </div>
         </div>
 
@@ -200,11 +190,9 @@ const AirportTransferSearchBar = ({ filters, onChange }: AirportTransferSearchBa
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
               {t('hero.pickup_date', 'Tanggal Jemput')}
             </p>
-            <InlineDatePicker
-              value={filters.pickupDate}
+            <InlineDatePicker value={filters.pickupDate}
               onChange={v => onChange('pickupDate', v)}
-              placeholder={t('hero.pick_date', 'Pilih tanggal')}
-            />
+              placeholder={t('hero.pick_date', 'Pilih tanggal')} />
           </div>
         </div>
 
@@ -231,7 +219,7 @@ const AirportTransferSearchBar = ({ filters, onChange }: AirportTransferSearchBa
                         <button key={h} type="button" onClick={() => setHour(h)}
                           className={`w-full py-1.5 text-xs font-semibold text-center transition-colors
                             ${h === hour ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          {String(h).padStart(2,'0')}
+                          {String(h).padStart(2,'00')}
                         </button>
                       ))}
                     </div>
@@ -243,7 +231,7 @@ const AirportTransferSearchBar = ({ filters, onChange }: AirportTransferSearchBa
                         <button key={m} type="button" onClick={() => setMinute(m)}
                           className={`w-full py-1.5 text-xs font-semibold text-center transition-colors
                             ${m === minute ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'}`}>
-                          {String(m).padStart(2,'0')}
+                          {String(m).padStart(2,'00')}
                         </button>
                       ))}
                     </div>
@@ -294,7 +282,7 @@ export const FilterPanel = ({
     <motion.div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-gray-100 mb-12">
       <div className="flex flex-col gap-8">
 
-        {/* Category tabs */}
+        {/* ── Category tabs ── */}
         <motion.div variants={filterContainerVariants} initial="hidden" animate="visible"
           className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
           {CATEGORY_TABS.map((item) => (
@@ -309,7 +297,7 @@ export const FilterPanel = ({
           ))}
         </motion.div>
 
-        {/* ── Airport Transfer: search bar khusus ── */}
+        {/* ── Airport Transfer search bar ── */}
         {isTransferCategory ? (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
             <AirportTransferSearchBar filters={transferFilters} onChange={onTransferFilterChange} />
@@ -329,7 +317,7 @@ export const FilterPanel = ({
                   : t('explore.search_placeholder')
                 }
                 value={searchQuery}
-                onChange={(e) => onSearch(e.target.value)}
+                onChange={e => onSearch(e.target.value)}
                 className="w-full pl-12 pr-10 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm font-medium"
               />
               {searchQuery && (
@@ -342,7 +330,7 @@ export const FilterPanel = ({
 
             {selectedCategory === 1 && (
               <div className="relative w-full lg:w-56">
-                <select value={selectedSubCategory || ''} onChange={(e) => onSubCategorySelect(e.target.value || null)}
+                <select value={selectedSubCategory || ''} onChange={e => onSubCategorySelect(e.target.value || null)}
                   className="w-full appearance-none px-4 py-3.5 pr-10 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer">
                   <option value="">{t('explore.trip_type')}</option>
                   <option value="Open Trip">{t('explore.open_trip')}</option>
@@ -354,37 +342,37 @@ export const FilterPanel = ({
             )}
 
             <div className="relative w-full lg:w-56">
-              <select value={sortBy || ''} onChange={(e) => onSortChange(e.target.value || null)}
+              <select value={sortBy || ''} onChange={e => onSortChange(e.target.value || null)}
                 className="w-full appearance-none px-4 py-3.5 pr-10 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer">
                 <option value="">{t('explore.sort')}</option>
-                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </motion.div>
         )}
 
-        {/* Sort — tampil juga untuk transfer category */}
+        {/* ── Sort for transfer ── */}
         {isTransferCategory && (
           <div className="flex justify-end">
             <div className="relative w-full lg:w-56">
-              <select value={sortBy || ''} onChange={(e) => onSortChange(e.target.value || null)}
+              <select value={sortBy || ''} onChange={e => onSortChange(e.target.value || null)}
                 className="w-full appearance-none px-4 py-3.5 pr-10 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer">
                 <option value="">{t('explore.sort')}</option>
-                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
         )}
 
-        {/* Rental filters — hanya car rental (bukan airport transfer) */}
+        {/* ── Rental filters ── */}
         {isCarCategory && !isTransferCategory && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Gauge className="h-5 w-5 text-gray-400" /></div>
-              <select value={rentalFilters.transmission} onChange={(e) => onRentalFilterChange('transmission', e.target.value)}
+              <select value={rentalFilters.transmission} onChange={e => onRentalFilterChange('transmission', e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer appearance-none">
                 <option value="">{t('explore.transmission')}</option>
                 <option value="Automatic">{t('explore.automatic')}</option>
@@ -394,7 +382,7 @@ export const FilterPanel = ({
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Users className="h-5 w-5 text-gray-400" /></div>
-              <select value={rentalFilters.passengerCapacity} onChange={(e) => onRentalFilterChange('passengerCapacity', e.target.value)}
+              <select value={rentalFilters.passengerCapacity} onChange={e => onRentalFilterChange('passengerCapacity', e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer appearance-none">
                 <option value="">{t('explore.passenger_capacity')}</option>
                 <option value="2">2 {t('common.passengers')}</option>
@@ -406,7 +394,7 @@ export const FilterPanel = ({
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><UserCog className="h-5 w-5 text-gray-400" /></div>
-              <select value={rentalFilters.driverType} onChange={(e) => onRentalFilterChange('driverType', e.target.value)}
+              <select value={rentalFilters.driverType} onChange={e => onRentalFilterChange('driverType', e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500 cursor-pointer appearance-none">
                 <option value="">{t('explore.all_driver_types')}</option>
                 <option value="with_driver">{t('explore.with_driver')}</option>
@@ -417,19 +405,19 @@ export const FilterPanel = ({
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><span className="text-gray-400 font-medium">Rp</span></div>
               <input type="number" placeholder={t('explore.min_price')} value={rentalFilters.minPrice}
-                onChange={(e) => onRentalFilterChange('minPrice', e.target.value)} min="0"
+                onChange={e => onRentalFilterChange('minPrice', e.target.value)} min="0"
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500" />
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><span className="text-gray-400 font-medium">Rp</span></div>
               <input type="number" placeholder={t('explore.max_price')} value={rentalFilters.maxPrice}
-                onChange={(e) => onRentalFilterChange('maxPrice', e.target.value)} min="0"
+                onChange={e => onRentalFilterChange('maxPrice', e.target.value)} min="0"
                 className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white font-medium text-gray-600 text-sm focus:outline-none focus:border-primary-500" />
             </div>
           </motion.div>
         )}
 
-        {/* Tag filters for tours / stays */}
+        {/* ── Tag filters for tours / stays ── */}
         {(selectedCategory === 1 || selectedCategory === 2) && (
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}
             className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
@@ -451,6 +439,7 @@ export const FilterPanel = ({
             ))}
           </motion.div>
         )}
+
       </div>
     </motion.div>
   );
