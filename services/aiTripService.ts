@@ -9,6 +9,7 @@ export interface TripPlanResult {
   unavailableProducts:  Product[];   // booked/blocked on requested dates
   rawForHistory:        string;
   travelDates:          { start: string; end: string } | null;
+  errorCode?:           string;
 }
 
 export interface ConvMessage {
@@ -41,13 +42,15 @@ export interface SavedItineraryListItem {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function emptyResult(message: string): TripPlanResult {
+function emptyResult(message: string, code?: string): TripPlanResult {
+  const isRateLimit = code === 'RATE_LIMIT';
   return {
-    itinerary:           `**Gagal:** ${message}`,
+    itinerary:           isRateLimit ? '__RATE_LIMIT__' : `**Gagal:** ${message}`,
     recommendedProducts: [],
     unavailableProducts: [],
     rawForHistory:       '',
     travelDates:         null,
+    errorCode:           code,   // tambah field ini ke interface
   };
 }
 
@@ -58,6 +61,7 @@ function extractResult(data: any): TripPlanResult {
     unavailableProducts: data.unavailableProducts ?? [],
     rawForHistory:       data.rawForHistory       ?? data.itinerary ?? '',
     travelDates:         data.travelDates         ?? null,
+    errorCode:           undefined,
   };
 }
 
@@ -76,9 +80,10 @@ export const generateTripPlan = async (
     if (res.data?.error) throw new Error(res.data.message ?? 'AI error');
     return extractResult(res.data.data);
   } catch (err: any) {
-    const msg = err?.response?.data?.message ?? err?.message ?? 'Terjadi kesalahan.';
-    console.error('[aiTripService.generate]', msg);
-    return emptyResult(msg);
+    const msg  = err?.response?.data?.message ?? err?.message ?? 'Terjadi kesalahan.';
+    const code = err?.response?.data?.code;
+    console.error('[aiTripService.generate]', msg, code ?? '');
+    return emptyResult(msg, code);
   }
 };
 
@@ -97,9 +102,10 @@ export const refineTripPlan = async (
     if (res.data?.error) throw new Error(res.data.message ?? 'AI error');
     return extractResult(res.data.data);
   } catch (err: any) {
-    const msg = err?.response?.data?.message ?? err?.message ?? 'Terjadi kesalahan.';
-    console.error('[aiTripService.refine]', msg);
-    return emptyResult(msg);
+    const msg  = err?.response?.data?.message ?? err?.message ?? 'Terjadi kesalahan.';
+    const code = err?.response?.data?.code;
+    console.error('[aiTripService.refine]', msg, code ?? '');
+    return emptyResult(msg, code);
   }
 };
 
@@ -139,4 +145,27 @@ export const getSharedItinerary = async (token: string): Promise<SavedItinerary>
   const res = await http.get(`/ai/itineraries/share/${token}`);
   if (res.data?.error) throw new Error(res.data.message);
   return res.data.data;
+};
+
+export interface BundleDiscountResult {
+  discountPct:      number;
+  bundleType:       'single' | 'partial' | 'full';
+  bundleLabel:      string;
+  categories:       string[];
+  productCount:     number;
+  totals:           Record<string, number>;
+  discountedTotals: Record<string, number>;
+  savings:          Record<string, number>;
+}
+
+export const getBundleDiscount = async (
+  productIds: number[]
+): Promise<BundleDiscountResult | null> => {
+  try {
+    const res = await http.post('/ai/bundle-discount', { productIds });
+    if (res.data?.error) return null;
+    return res.data.data;
+  } catch {
+    return null;
+  }
 };

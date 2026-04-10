@@ -10,6 +10,8 @@ import { authService } from '../../services/authService';
 import { VerificationStatus } from '../../types';
 import http from '../../services/http';
 import { useLangNavigate } from '../../src/hooks/useLangNavigate';
+import AgentAIAnalytics from './AgentAIAnalytics';
+import AgentKnowledgeBase from './AgentKnowledgeBase';
 
 type StatCardProps = {
   title: string;
@@ -312,6 +314,21 @@ const AgentDashboard: React.FC = () => {
             </ResponsiveContainer>
           </div>
         )}
+      
+
+      {/* AI Planner Analytics — hanya tampil jika verified */}
+      {isVerified && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <AgentAIAnalytics />
+        </div>
+      )}
+
+      {isVerified && (
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <AgentKnowledgeBase />
+        </div>
+      )}
+
       </div>
     </div>
   );

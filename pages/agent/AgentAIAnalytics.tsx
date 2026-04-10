@@ -1,7 +1,3 @@
-// AgentAIAnalytics.tsx
-// Taruh di: pages/agent/AgentAIAnalytics.tsx (atau import di AgentDashboard)
-// Backend endpoint perlu ditambahkan — lihat komentar di bawah
-
 import React, { useEffect, useState } from 'react';
 import { Sparkles, TrendingUp, Eye, Package } from 'lucide-react';
 import { motion } from 'framer-motion';

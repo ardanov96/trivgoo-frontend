@@ -10,8 +10,9 @@ import { useAuth } from '../../AuthContext';
 import http from '../../services/http';
 import { useLangNavigate } from '../../src/hooks/useLangNavigate';
 import { getImageUrl, FALLBACK_IMAGE } from '../../utils/imageUtils';
+import BookingConcierge from '@/components/BookingConcierge';
 
-/* ─── Constants (must match pricing_service.js) ─── */
+/* ─── Constants ─── */
 const DRIVER_PRICE_PER_12H = 150_000;
 const PREMIUM_INSURANCE    = 75_000;
 const CHILD_SEAT           = 50_000;
@@ -83,15 +84,20 @@ function formatCurrency(n: number): string {
   return 'Rp ' + n.toLocaleString('id-ID');
 }
 
-function parseAddOns(raw: string | null): { withDriver: boolean; premiumInsurance: boolean; childSeat: boolean; discountAmount: number; agentDiscountAmount: number; voucherCode: string | null; agentVoucherCode: string | null } {
-  const fallback = { withDriver: false, premiumInsurance: false, childSeat: false, discountAmount: 0, agentDiscountAmount: 0, voucherCode: null, agentVoucherCode: null };
+function parseAddOns(raw: string | null): {
+  withDriver: boolean; premiumInsurance: boolean; childSeat: boolean;
+  discountAmount: number; agentDiscountAmount: number;
+  voucherCode: string | null; agentVoucherCode: string | null;
+} {
+  const fallback = {
+    withDriver: false, premiumInsurance: false, childSeat: false,
+    discountAmount: 0, agentDiscountAmount: 0, voucherCode: null, agentVoucherCode: null,
+  };
   if (!raw) return fallback;
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
     return { ...fallback, ...parsed };
-  } catch {
-    return fallback;
-  }
+  } catch { return fallback; }
 }
 
 /* ─── Countdown Hook ─── */
@@ -130,46 +136,28 @@ const SectionTitle: React.FC<{ icon: React.ReactNode; title: string }> = ({ icon
 );
 
 /* ─── Expandable Price Component ─── */
-interface PriceRow {
-  label: string;
-  value: number;
-  isDiscount?: boolean;
-}
-
+interface PriceRow { label: string; value: number; isDiscount?: boolean; }
 interface PriceGroupProps {
-  title: string;
-  items: PriceRow[];
-  total: number;
-  isDiscountGroup?: boolean;
-  defaultExpanded?: boolean;
+  title: string; items: PriceRow[]; total: number;
+  isDiscountGroup?: boolean; defaultExpanded?: boolean;
 }
 
 const ExpandablePriceGroup: React.FC<PriceGroupProps> = ({ title, items, total, isDiscountGroup, defaultExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  
   if (items.length === 0) return null;
-
   return (
     <div className="py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors -mx-5 px-5">
-      <button 
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex justify-between items-center group cursor-pointer focus:outline-none"
-      >
-        <span className="text-sm font-bold text-gray-800 group-hover:text-primary-600 transition-colors">
-          {title}
-        </span>
+      <button onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex justify-between items-center group cursor-pointer focus:outline-none">
+        <span className="text-sm font-bold text-gray-800 group-hover:text-primary-600 transition-colors">{title}</span>
         <div className="flex items-center gap-2">
           <span className={`text-sm font-bold ${isDiscountGroup ? 'text-green-600' : 'text-gray-900'}`}>
             {isDiscountGroup && total > 0 ? '- ' : ''}{formatCurrency(total)}
           </span>
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-primary-500" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-primary-500" />
-          )}
+          {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-primary-500" />
+                      : <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-primary-500" />}
         </div>
       </button>
-      
       {isExpanded && (
         <div className="mt-3 pl-3 space-y-2.5 border-l-2 border-gray-100">
           {items.map((item, idx) => (
@@ -190,15 +178,15 @@ const ExpandablePriceGroup: React.FC<PriceGroupProps> = ({ title, items, total, 
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════ */
 const CustomerBookingDetail: React.FC = () => {
-  const { id }              = useParams<{ id: string }>();
-  const navigate            = useNavigate();
-  const { langNavigate }    = useLangNavigate();
-  const { t }               = useTranslation();
-  const { user }            = useAuth();
+  const { id }           = useParams<{ id: string }>();
+  const navigate         = useNavigate();
+  const { langNavigate } = useLangNavigate();
+  const { t }            = useTranslation();
+  const { user }         = useAuth();
 
-  const [booking, setBooking]   = useState<BookingDetailData | null>(null);
+  const [booking,   setBooking]   = useState<BookingDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg,  setErrorMsg]  = useState('');
 
   const loadDetail = async () => {
     try {
@@ -212,9 +200,7 @@ const CustomerBookingDetail: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (user && id) loadDetail();
-  }, [user, id]);
+  useEffect(() => { if (user && id) loadDetail(); }, [user, id]);
 
   const remaining = useCountdown(
     booking?.status === 'PENDING' && booking?.paymentStatus !== 'PAID' ? booking.paymentExpiredAt : undefined
@@ -246,10 +232,8 @@ const CustomerBookingDetail: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold font-serif text-gray-900 mb-2">{t('booking_detail.error_title')}</h1>
         <p className="text-gray-500 mb-8 max-w-sm text-center">{errorMsg || t('booking_detail.not_found')}</p>
-        <button
-          onClick={() => langNavigate('/my-bookings')}
-          className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
-        >
+        <button onClick={() => langNavigate('/my-bookings')}
+          className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors">
           {t('booking_detail.back_to_bookings')}
         </button>
       </div>
@@ -264,8 +248,7 @@ const CustomerBookingDetail: React.FC = () => {
   const computedDuration = (() => {
     if (booking.duration && booking.duration > 1) return booking.duration;
     if (booking.startTime && booking.endTime) {
-      const s = new Date(booking.startTime);
-      const e = new Date(booking.endTime);
+      const s = new Date(booking.startTime), e = new Date(booking.endTime);
       if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
         const days = Math.ceil((e.getTime() - s.getTime()) / 86400000);
         if (days > 0) return days;
@@ -285,12 +268,8 @@ const CustomerBookingDetail: React.FC = () => {
   const pickupFee     = Number(booking.pickupFee)  || 0;
   const dropoffFee    = Number(booking.dropoffFee) || 0;
   const adminFee      = Number(booking.adminFee)   || 0;
-  const platformDiscount = Number(addOns.discountAmount) || 0;
+  const platformDiscount = Number(addOns.discountAmount)      || 0;
   const agentDiscount    = Number(addOns.agentDiscountAmount) || 0;
-
-  const knownCosts         = rentalCost + driverCost + insuranceCost + childSeatCost + pickupFee + dropoffFee + adminFee - platformDiscount - agentDiscount;
-  const hasFullItemizedData = booking.addOnsJson !== null || pickupFee > 0 || dropoffFee > 0 || adminFee > 0 || platformDiscount > 0 || agentDiscount > 0;
-  const remainingFees       = booking.totalPrice - knownCosts;
 
   // Group A: Sewa Kendaraan
   const vehicleItems: PriceRow[] = [];
@@ -312,6 +291,9 @@ const CustomerBookingDetail: React.FC = () => {
   if (platformDiscount > 0) discountItems.push({ label: `Diskon Platform ${addOns.voucherCode ? `(${addOns.voucherCode})` : ''}`, value: platformDiscount, isDiscount: true });
   if (agentDiscount > 0) discountItems.push({ label: `Diskon Agen ${addOns.agentVoucherCode ? `(${addOns.agentVoucherCode})` : ''}`, value: agentDiscount, isDiscount: true });
   const discountTotal = discountItems.reduce((acc, curr) => acc + curr.value, 0);
+
+  // Apakah booking sudah PAID / COMPLETED — concierge hanya untuk booking yang sudah lunas
+  const isConciergeEligible = booking.paymentStatus === 'PAID' || booking.status === 'COMPLETED';
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
@@ -352,7 +334,6 @@ const CustomerBookingDetail: React.FC = () => {
                     </span>
                   )}
                   <h2 className="text-lg font-bold text-gray-900 mb-3 leading-snug">{booking.productName}</h2>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="flex items-center gap-2.5">
                       <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><Calendar className="w-3.5 h-3.5" /></div>
@@ -368,9 +349,7 @@ const CustomerBookingDetail: React.FC = () => {
                         <p className="text-sm font-medium text-gray-900">
                           {formatDateTime(booking.startTime).split(', ')[1] || '-'} — {formatDateTime(booking.endTime).split(', ')[1] || '-'}
                           {dur > 1 && (
-                            <span className="text-primary-600 ml-1.5 font-bold">
-                              ({dur} {t('booking_detail.days_unit')})
-                            </span>
+                            <span className="text-primary-600 ml-1.5 font-bold">({dur} {t('booking_detail.days_unit')})</span>
                           )}
                         </p>
                       </div>
@@ -395,31 +374,23 @@ const CustomerBookingDetail: React.FC = () => {
                 <SectionTitle icon={<MapPin className="w-4 h-4 text-red-500" />} title={t('booking_detail.section_pickup')} />
                 <div className="relative pl-6">
                   <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gray-200" />
-
-                  {/* Pickup */}
                   <div className="relative mb-6">
                     <div className="absolute -left-6 top-0.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                       <CircleDot className="w-3 h-3 text-white" />
                     </div>
                     <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wide">{t('booking_detail.pickup_label')}</p>
                     <p className="text-sm font-bold text-gray-900 mt-0.5">
-                      {booking.pickupLocation
-                        || <span className="text-gray-400 italic">{t('booking_detail.location_not_recorded')}</span>
-                      }
+                      {booking.pickupLocation || <span className="text-gray-400 italic">{t('booking_detail.location_not_recorded')}</span>}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">{formatDateTime(booking.startTime)}</p>
                   </div>
-
-                  {/* Drop-off */}
                   <div className="relative">
                     <div className="absolute -left-6 top-0.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
                       <CircleDot className="w-3 h-3 text-white" />
                     </div>
                     <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wide">{t('booking_detail.dropoff_label')}</p>
                     <p className="text-sm font-bold text-gray-900 mt-0.5">
-                      {booking.dropoffLocation || booking.pickupLocation
-                        || <span className="text-gray-400 italic">{t('booking_detail.location_not_recorded')}</span>
-                      }
+                      {booking.dropoffLocation || booking.pickupLocation || <span className="text-gray-400 italic">{t('booking_detail.location_not_recorded')}</span>}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">{formatDateTime(booking.endTime)}</p>
                   </div>
@@ -431,45 +402,34 @@ const CustomerBookingDetail: React.FC = () => {
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <SectionTitle icon={<Ticket className="w-4 h-4 text-primary-500" />} title={t('booking_detail.section_config')} />
               <div className="bg-gray-50 rounded-xl divide-y divide-gray-200">
-
                 <div className="flex justify-between items-center px-4 py-3">
                   <span className="text-sm text-gray-600">{t('booking_detail.config_quantity')}</span>
                   <span className="font-bold text-gray-900">{booking.quantity}</span>
                 </div>
-
                 {isCar && (
                   <div className="flex justify-between items-center px-4 py-3">
-                    <span className="text-sm text-gray-600 flex items-center gap-1.5">
-                      <Car className="w-4 h-4 text-gray-400" /> {t('booking_detail.config_driver')}
-                    </span>
+                    <span className="text-sm text-gray-600 flex items-center gap-1.5"><Car className="w-4 h-4 text-gray-400" /> {t('booking_detail.config_driver')}</span>
                     <span className={`text-sm font-bold ${addOns.withDriver ? 'text-green-600' : 'text-gray-400'}`}>
                       {addOns.withDriver ? t('booking_detail.with_driver') : t('booking_detail.without_driver')}
                     </span>
                   </div>
                 )}
-
                 {isCar && (
                   <div className="flex justify-between items-center px-4 py-3">
-                    <span className="text-sm text-gray-600 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-gray-400" /> {t('booking_detail.config_insurance')}
-                    </span>
+                    <span className="text-sm text-gray-600 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-gray-400" /> {t('booking_detail.config_insurance')}</span>
                     <span className={`text-sm font-bold ${addOns.premiumInsurance ? 'text-green-600' : 'text-gray-400'}`}>
                       {addOns.premiumInsurance ? t('booking_detail.addon_active') : t('booking_detail.addon_inactive')}
                     </span>
                   </div>
                 )}
-
                 {isCar && (
                   <div className="flex justify-between items-center px-4 py-3">
-                    <span className="text-sm text-gray-600 flex items-center gap-1.5">
-                      <Baby className="w-4 h-4 text-gray-400" /> {t('booking_detail.config_child_seat')}
-                    </span>
+                    <span className="text-sm text-gray-600 flex items-center gap-1.5"><Baby className="w-4 h-4 text-gray-400" /> {t('booking_detail.config_child_seat')}</span>
                     <span className={`text-sm font-bold ${addOns.childSeat ? 'text-green-600' : 'text-gray-400'}`}>
                       {addOns.childSeat ? t('booking_detail.addon_active') : t('booking_detail.addon_inactive')}
                     </span>
                   </div>
                 )}
-
                 {booking.specialRequest && (
                   <div className="px-4 py-3">
                     <p className="text-sm text-gray-600 mb-1">{t('booking_detail.config_special_request')}</p>
@@ -522,6 +482,7 @@ const CustomerBookingDetail: React.FC = () => {
                 </div>
               </div>
             </div>
+
           </div>
 
           {/* ═══════ RIGHT COLUMN ═══════ */}
@@ -532,18 +493,14 @@ const CustomerBookingDetail: React.FC = () => {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-500 to-primary-600" />
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">
-                    {t('booking_detail.status_label')}
-                  </p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">{t('booking_detail.status_label')}</p>
                   <span className={`px-3 py-1 inline-flex text-xs font-bold rounded-lg border ${getStatusColor(displayStatus)} uppercase tracking-wider`}>
                     {displayStatus}
                   </span>
                 </div>
                 {booking.status === 'PENDING' && !isExpired && remaining && (
                   <div className="text-right">
-                    <p className="text-[10px] text-amber-600 font-bold mb-1 uppercase">
-                      {t('booking_detail.pay_before')}
-                    </p>
+                    <p className="text-[10px] text-amber-600 font-bold mb-1 uppercase">{t('booking_detail.pay_before')}</p>
                     <p className="text-base font-bold font-mono text-gray-900 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
                       {remaining.h > 0 && `${String(remaining.h).padStart(2, '0')}:`}
                       {String(remaining.m).padStart(2, '0')}:{String(remaining.s).padStart(2, '0')}
@@ -563,17 +520,23 @@ const CustomerBookingDetail: React.FC = () => {
               </div>
             </div>
 
+            {/* ── AI CONCIERGE ── hanya tampil setelah booking PAID/COMPLETED */}
+            {isConciergeEligible && (
+              <BookingConcierge
+                bookingId={booking.id}
+                productName={booking.productName}
+                location={booking.productLocation}
+              />
+            )}
+
             {/* ── PAYMENT BREAKDOWN ── */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <SectionTitle icon={<CreditCard className="w-4 h-4 text-primary-500" />} title={t('booking_detail.section_payment')} />
-
               <div className="flex flex-col -mb-3 mt-2">
                 <ExpandablePriceGroup title="Sewa Kendaraan" items={vehicleItems} total={vehicleTotal} defaultExpanded={true} />
                 <ExpandablePriceGroup title="Tambahan" items={addonItems} total={addonTotal} defaultExpanded={false} />
                 <ExpandablePriceGroup title="Diskon" items={discountItems} total={discountTotal} isDiscountGroup={true} defaultExpanded={true} />
               </div>
-
-              {/* Grand Total */}
               <div className="bg-primary-50 rounded-xl p-4 mt-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-bold text-gray-900 uppercase">{t('booking_detail.total_label')}</span>
@@ -591,10 +554,8 @@ const CustomerBookingDetail: React.FC = () => {
             <div className="fixed bottom-0 left-0 w-full bg-white p-4 border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] lg:relative lg:bg-transparent lg:border-t-0 lg:shadow-none lg:p-0 z-40">
               <div className="max-w-5xl mx-auto flex flex-col gap-2.5">
                 {booking.status === 'PENDING' && !isExpired && booking.paymentStatus !== 'PAID' && (
-                  <button
-                    onClick={handlePayNow}
-                    className="w-full py-3.5 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 shadow-lg shadow-primary-500/20 transition-all flex items-center justify-center gap-2"
-                  >
+                  <button onClick={handlePayNow}
+                    className="w-full py-3.5 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 shadow-lg shadow-primary-500/20 transition-all flex items-center justify-center gap-2">
                     <CreditCard className="w-4 h-4" /> {t('booking_detail.action_pay_now')}
                   </button>
                 )}
