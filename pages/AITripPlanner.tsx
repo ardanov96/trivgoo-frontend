@@ -884,7 +884,7 @@ const AITripPlanner: React.FC = () => {
                     animate={{ width: `${(retryCountdown / 60) * 100}%` }}
                     transition={{ duration: 1, ease: 'linear' }} />
                 </div>
-                <p className="text-xs text-amber-500 mt-3">Atau coba gunakan prompt yang lebih singkat untuk hemat quota</p>
+                <p className="text-xs text-amber-500 mt-3">Atau coba gunakan prompt yang lebih singkat untuk hemat token</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -970,6 +970,7 @@ const AITripPlanner: React.FC = () => {
                       <Link to={langPath('/my-itineraries')} className="font-bold hover:underline flex-shrink-0">Lihat semua →</Link>
                     </motion.div>
                   )}
+                  {!isLoading && recommendedProducts.length > 0 && <BudgetEstimator products={recommendedProducts} />}
                   {!isLoading && rawItinerary && <ChatSection onRefine={handleRefine} isRefining={isRefining} bubbles={chatBubbles} />}
                 </motion.div>
 
@@ -1043,7 +1044,6 @@ const AITripPlanner: React.FC = () => {
                     ) : null}
 
                     {!isLoading && <UnavailablePanel products={unavailableProducts} langPath={langPath} />}
-                    {!isLoading && <BudgetEstimator products={recommendedProducts} />}
                     {!isLoading && recommendedProducts.length > 0 && <ItineraryMap products={recommendedProducts} />}
 
                   </div>

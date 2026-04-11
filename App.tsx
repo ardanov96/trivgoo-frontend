@@ -67,6 +67,7 @@ const PressAndMedia     = lazy(() => import('./pages/PressAndMedia'));
 const TravelBlog        = lazy(() => import('./pages/TravelBlog'));
 const HelpCenter        = lazy(() => import('./pages/HelpCenter'));
 const ContactUs         = lazy(() => import('./pages/ContactUs'));
+const Cart              = lazy(() => import('./pages/Cart'));
 
 // Customer pages
 const CustomerBookings        = lazy(() => import('./pages/customer/Bookings'));
@@ -293,6 +294,7 @@ const AppRoutes: React.FC = () => (
           <Route path="terms-and-service"    element={<TermAndService />} />
           <Route path="privacy-policy"       element={<PrivacyPolicy />} />
           <Route path="contact-us"           element={<ContactUs />} />
+          <Route path="cart"                 element={<Cart />} />
 
           <Route path="register/agent"  element={<PublicOnlyRoute><RegisterAgent /></PublicOnlyRoute>} />
           <Route path="forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
