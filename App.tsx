@@ -35,8 +35,7 @@ import { CookieConsent } from './components/CookieConsent';
 import { usePushNotifications } from './hooks/usePushNotifications';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Lazy imports — setiap halaman jadi chunk terpisah
-// Browser hanya download halaman yang dikunjungi
+// Lazy imports
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Public pages
@@ -68,6 +67,9 @@ const TravelBlog        = lazy(() => import('./pages/TravelBlog'));
 const HelpCenter        = lazy(() => import('./pages/HelpCenter'));
 const ContactUs         = lazy(() => import('./pages/ContactUs'));
 const Cart              = lazy(() => import('./pages/Cart'));
+
+// ✅ Flash Sale page
+const FlashSalePage     = lazy(() => import('./pages/FlashSalePage'));
 
 // Customer pages
 const CustomerBookings        = lazy(() => import('./pages/customer/Bookings'));
@@ -103,7 +105,7 @@ const AgentDashboard           = lazy(() => import('./pages/agent/Dashboard'));
 const AgentAddProduct          = lazy(() => import('./pages/agent/AddProduct'));
 const AgentCommissions         = lazy(() => import('./pages/agent/Commissions'));
 const AgentCustomerBookings    = lazy(() => import('./pages/agent/CustomerBookings'));
-const AgentCustomerManagement  = lazy(() => import('./pages/agent/CustomerManagement'));
+const AgentCustomerManagement  = lazy(() => import('./pages/agent/CustomerManagement' ));
 const AgentProducts            = lazy(() => import('./pages/agent/products/MyProducts'));
 const AgentVerification        = lazy(() => import('./pages/agent/Verification'));
 const ProfileSetting           = lazy(() => import('./pages/agent/ProfileSetting'));
@@ -115,7 +117,7 @@ const AgentRating              = lazy(() => import('./pages/agent/AgentRating'))
 const AgentVouchers            = lazy(() => import('./pages/agent/AgentVouchers'));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Loading fallback — spinner ringan, tidak load library apapun
+// Loading fallback
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PageLoader = () => (
@@ -209,20 +211,16 @@ const AppGates: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const LangBootstrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { lang } = useParams<{ lang: string }>();
-
   useEffect(() => {
     if (lang && SUPPORTED_LANGS.includes(lang as SupportedLang)) {
-      // Gunakan changeLanguage dari i18n — lazy load otomatis
       changeLanguage(lang as SupportedLang);
     }
   }, [lang]);
-
   return <>{children}</>;
 };
 
 const RootRedirect: React.FC = () => {
   const navigate = useNavigate();
-
   useEffect(() => {
     const saved = localStorage.getItem('trivgoo_lang');
     if (saved && SUPPORTED_LANGS.includes(saved as SupportedLang)) {
@@ -234,12 +232,11 @@ const RootRedirect: React.FC = () => {
       .then(d => navigate(`/${d.lang ?? 'id'}`, { replace: true }))
       .catch(() => navigate('/id', { replace: true }));
   }, []);
-
   return null;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AppRoutes — dibungkus Suspense untuk lazy loading
+// AppRoutes
 // ─────────────────────────────────────────────────────────────────────────────
 
 const AppRoutes: React.FC = () => (
@@ -270,6 +267,9 @@ const AppRoutes: React.FC = () => (
             <Route key={slug} path={`explore/${slug}`} element={<Explore />} />
           ))}
           <Route path="explore/:categorySlug" element={<Explore />} />
+
+          {/* ✅ Flash Sale page */}
+          <Route path="flash-sale" element={<FlashSalePage />} />
 
           <Route path="product/:id"          element={<ProductDetail />} />
           <Route path="product/:id/:slug"    element={<ProductDetail />} />

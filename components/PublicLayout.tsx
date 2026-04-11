@@ -1,4 +1,4 @@
-import { Heart, LogOut, Menu, ShoppingCart, Sparkles, X, User as UserIcon, ChevronDown, Package, LayoutDashboard } from "lucide-react";
+import { Heart, LogOut, Menu, ShoppingCart, Sparkles, X, User as UserIcon, ChevronDown, Package, LayoutDashboard, Zap } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
@@ -188,6 +188,15 @@ const PublicLayout: React.FC = () => {
                 </Link>
                 <Link to={langPath('/explore')} className={`text-sm font-medium transition-colors hover:text-accent-500 leading-none ${isScrolledOrNotHome ? "text-gray-600" : "text-white/90"}`}>
                   {t('nav.explore')}
+                </Link>
+                <Link
+                  to={langPath('/flash-sale')}
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-orange-500 leading-none ${
+                    isScrolledOrNotHome ? 'text-gray-600' : 'text-white/90'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5 fill-current text-orange-500" />
+                  Flash Sale
                 </Link>
                 <Link to={langPath('/ai-planner')} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all leading-none ${
                   isScrolledOrNotHome

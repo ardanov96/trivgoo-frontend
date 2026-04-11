@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { MessageSquare, X, Send, Bot } from 'lucide-react';
+import { MessageSquare, X, Send } from 'lucide-react'; // ✅ Bot dihapus
+import ReactMarkdown from 'react-markdown';
 import http from '../services/http';
 
-// Define message type
 interface Message {
   role: 'user' | 'bot';
   content: string;
@@ -22,11 +22,9 @@ const ChatbotWidget: React.FC = () => {
   const location = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Ambil lang dari URL param /:lang
   const { lang } = useParams<{ lang?: string }>();
   const l = lang ?? 'id';
 
-  // ✅ hiddenRoutes sekarang menyertakan /:lang prefix
   const hiddenRoutes = [
     `/${l}/login`,
     `/${l}/register`,
@@ -41,15 +39,10 @@ const ChatbotWidget: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isOpen) {
-      scrollToBottom();
-    }
+    if (isOpen) scrollToBottom();
   }, [messages, isOpen, isLoading]);
 
-  // ✅ Cek apakah pathname cocok dengan hiddenRoutes
-  if (hiddenRoutes.includes(location.pathname)) {
-    return null;
-  }
+  if (hiddenRoutes.includes(location.pathname)) return null;
 
   const toggleChat = () => setIsOpen(!isOpen);
 
@@ -89,15 +82,13 @@ const ChatbotWidget: React.FC = () => {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-      {/* Chat Window */}
       {isOpen && (
         <div className="absolute bottom-16 right-0 w-[350px] sm:w-[400px] bg-white rounded-2xl shadow-soft overflow-hidden border border-gray-100 flex flex-col h-[520px] animate-in slide-in-from-bottom-5 fade-in duration-200">
           {/* Header */}
           <div className="bg-primary-600 p-4 flex justify-between items-center text-white">
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-full">
-                <Bot size={20} className="text-white" />
-              </div>
+              {/* ✅ Ganti Bot icon dengan gambar */}
+              <img src="/chatbot.png" alt="Trivgoo AI" className="w-9 h-9 rounded-full object-cover" />
               <div>
                 <h3 className="font-bold text-lg leading-tight">Trivgoo AI</h3>
                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -109,10 +100,7 @@ const ChatbotWidget: React.FC = () => {
                 </div>
               </div>
             </div>
-            <button
-              onClick={toggleChat}
-              className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
-            >
+            <button onClick={toggleChat} className="p-1.5 hover:bg-white/20 rounded-full transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -122,28 +110,45 @@ const ChatbotWidget: React.FC = () => {
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex gap-2 items-end ${msg.role === 'user' ? 'justify-end' : ''}`}>
                 {msg.role === 'bot' && (
-                  <div className="bg-primary-100 p-2 rounded-full flex-shrink-0">
-                    <Bot size={16} className="text-primary-700" />
-                  </div>
+                  // ✅ Ganti Bot icon dengan gambar
+                  <img src="/chatbot.png" alt="bot" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                 )}
                 <div
-                  className={`p-3 rounded-2xl shadow-sm text-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
+                  className={`p-3 rounded-2xl shadow-sm text-sm max-w-[85%] leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-primary-600 text-white rounded-br-sm'
                       : 'bg-white text-gray-700 border border-gray-100 rounded-bl-sm'
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === 'user' ? (
+                    <span className="whitespace-pre-wrap">{msg.content}</span>
+                  ) : (
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                        ul: ({ children }) => <ul className="list-disc list-outside ml-4 mt-1 mb-1.5 space-y-0.5">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-outside ml-4 mt-1 mb-1.5 space-y-0.5">{children}</ol>,
+                        li: ({ children }) => <li className="text-sm leading-relaxed">{children}</li>,
+                        h1: ({ children }) => <h1 className="font-bold text-base text-gray-900 mb-1">{children}</h1>,
+                        h2: ({ children }) => <h2 className="font-semibold text-sm text-gray-900 mb-1 mt-2">{children}</h2>,
+                        h3: ({ children }) => <h3 className="font-semibold text-sm text-gray-800 mb-0.5 mt-1.5">{children}</h3>,
+                        code: ({ children }) => <code className="bg-gray-100 text-gray-800 text-xs px-1 py-0.5 rounded font-mono">{children}</code>,
+                        hr: () => <hr className="my-2 border-gray-200" />,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
                 </div>
               </div>
             ))}
 
-            {/* Bot Typing Indicator */}
+            {/* Typing Indicator */}
             {isLoading && (
               <div className="flex gap-2 items-end opacity-70">
-                <div className="bg-primary-100 p-2 rounded-full flex-shrink-0">
-                  <Bot size={16} className="text-primary-700" />
-                </div>
+                {/* ✅ Ganti Bot icon dengan gambar */}
+                <img src="/chatbot.png" alt="bot" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                 <div className="bg-white px-4 py-4 rounded-2xl rounded-bl-sm shadow-sm border border-gray-100 flex gap-1.5">
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce"></span>
                   <span className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce delay-100"></span>
