@@ -140,12 +140,12 @@ const SORT_OPTIONS = [
 ];
 
 const CATEGORY_OPTIONS = [
-  { value: '',               label: 'Semua' },
-  { value: 'tour',           label: '🏔️ Tour' },
-  { value: 'stays',          label: '🏨 Penginapan' },
-  { value: 'car-rental',     label: '🚗 Sewa Mobil' },
-  { value: 'airport-transfer', label: '✈️ Transfer' },
-  { value: 'events',         label: '🎟️ Event' },
+  { value: '',         label: 'Semua' },
+  { value: 'tour',     label: '🏔️ Tour' },
+  { value: 'stay',     label: '🏨 Penginapan' },
+  { value: 'car',      label: '🚗 Sewa Mobil' },
+  { value: 'transfer', label: '✈️ Transfer' },
+  { value: 'event',    label: '🎟️ Event' },
 ];
 
 const FlashSalePage: React.FC = () => {
@@ -166,7 +166,12 @@ const FlashSalePage: React.FC = () => {
   // Find nearest ending
   const nearestEnd = useMemo(() => {
     if (!products.length) return null;
-    return products.reduce<string | null>((acc, p) => {
+    const now = Date.now();
+    const validProducts = products.filter(
+      (p) => p.flash_ends_at && new Date(p.flash_ends_at).getTime() > now
+    );
+    if (!validProducts.length) return null;
+    return validProducts.reduce<string | null>((acc, p) => {
       if (!p.flash_ends_at) return acc;
       if (!acc) return p.flash_ends_at;
       return new Date(p.flash_ends_at) < new Date(acc) ? p.flash_ends_at : acc;

@@ -348,6 +348,9 @@ const CheckoutSummary: React.FC = () => {
           dropoffFee={dropoffFee}
           needsManualPickupConfirmation={needsManualPickupConfirmation}
           needsManualDropoffConfirmation={needsManualDropoffConfirmation}
+          isFlashSale={bookingData.isFlashSale ?? false}
+          flashDiscountPct={bookingData.flashDiscountPct ?? null}
+          originalPricePerDay={bookingData.originalPricePerDay ?? null}
         />
 
         {isCarBooking && <RentalInfoBanner />}

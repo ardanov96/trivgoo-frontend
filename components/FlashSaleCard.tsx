@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Heart, ShoppingCart, MapPin, Zap, Clock } from 'lucide-react';
 import { encodeId } from '@/utils/hashids';
 import { generateSlug } from '@/utils/slugify';
+import { useLangNavigate } from '../src/hooks/useLangNavigate';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,13 +67,15 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export const FlashSaleCard: React.FC<FlashSaleCardProps> = ({
   product, isLoggedIn, isSaved, isInCart, onWishlist, onAddToCart, index = 0, compact = false,
 }) => {
+  const { langPath } = useLangNavigate(); // ← tambahkan ini
+
   const time  = useCountdown(product.flash_ends_at);
   const img   = product.image_url || product.image || '';
   const price = product.flash_sale_price ?? product.price;
   const orig  = product.price;
   const pct   = product.flash_discount_pct ?? 0;
   const curr  = product.currency ?? 'IDR';
-  const to    = `/product/${encodeId(product.id)}/${generateSlug(product.name)}`;
+  const to    = langPath(`/product/${encodeId(product.id)}/${generateSlug(product.name)}`); 
   const isFlash = !!product.is_flash_sale && !!product.flash_sale_price;
   const urgency = time && !time.expired && time.h < 3;
 

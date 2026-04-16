@@ -629,11 +629,12 @@ const ProductDetail: React.FC = () => {
       return {
         productId: product.id, productName: product.name, location: product.location,
         image: product.image_url || product.image, currency: product.currency || 'IDR',
-        pricePerPax: isTourProduct ? getTierPrice(Number(product.price)) : Number(product.price),
+        pricePerPax: isTourProduct ? getTierPrice(effectivePrice) : effectivePrice,
         basePricePerPax: Number(product.price),
-        pax: isTourProduct ? totalPaxCount() : qty, guestCount: isTourProduct ? totalPaxCount() : qty,
+        pax: isTourProduct ? totalPaxCount() : qty,
+        guestCount: isTourProduct ? totalPaxCount() : qty,
         duration: dur,
-        totalPrice: isTourProduct ? calcTourTotal(Number(product.price)) : Number(product.price) * qty * dur,
+        totalPrice: isTourProduct ? calcTourTotal(effectivePrice) : effectivePrice * qty * dur,
         adultPax: isTourProduct ? tourPax : qty, infantPax: isTourProduct ? infantPax : 0,
         childPax: isTourProduct ? childPax : 0, teenPax: isTourProduct ? teenPax : 0,
         selectedTier: isTourProduct ? getGroupTiers()[selectedTierIdx] : null,
@@ -642,6 +643,9 @@ const ProductDetail: React.FC = () => {
         unitLabel: isTourProduct ? t('tour.check_availability') : t('stay.nights_label'),
         priceUnitLabel: isTourProduct ? 'person' : 'night',
         vehicleType: isTourProduct ? 'tour' : 'stay', availableVouchers: productVouchers,
+        isFlashSale:          isFlashSale,
+        flashDiscountPct:     flashDiscountPct,
+        originalPricePerDay:  Number(product.price),
       };
     } else {
       const start = new Date(`${carPickupDate}T${carPickupTime}`);
@@ -653,7 +657,7 @@ const ProductDetail: React.FC = () => {
       const _driverAddonPrice    = !_isDriverIncluded && addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
       const _insurancePrice      = addOns.premiumInsurance ? 75_000 : 0;
       const _childSeatPrice      = addOns.childSeat        ? 50_000 : 0;
-      const _totalPerDay         = Number(product.price) + _driverIncludedPrice + _driverAddonPrice + _insurancePrice + _childSeatPrice;
+      const _totalPerDay         = effectivePrice + _driverIncludedPrice + _driverAddonPrice + _insurancePrice + _childSeatPrice;
       return {
         productId: product.id, productName: product.name, location: product.location,
         image: product.image_url || product.image, currency: product.currency || 'IDR',
@@ -748,6 +752,12 @@ const ProductDetail: React.FC = () => {
   const carDetails      = isCarProduct ? (product.details as CarDetails) : null;
   const tourDetails     = isTour(product.details) ? (product.details as TourDetails) : null;
   const stayDetails     = isStay(product.details) ? (product.details as StayDetails) : null;
+
+  const isFlashSale     = !!(product as any).is_flash_sale && !!(product as any).flash_sale_price;
+  const flashPrice      = isFlashSale ? Number((product as any).flash_sale_price) : null;
+  const flashDiscountPct = isFlashSale ? Number((product as any).flash_discount_pct) : null;
+  const effectivePrice  = flashPrice ?? Number(product.price); 
+
   const productVouchers = (product as any).vouchers || [];
   const shareUrl        = window.location.href;
   const parseDateStr    = (dStr: string) => dStr ? new Date(dStr) : null;
@@ -789,7 +799,7 @@ const ProductDetail: React.FC = () => {
     ];
     const itinerary      = (isTourProduct && tourDetails?.itinerary) || [];
     const nights         = calcNights();
-    const tourStayTotal  = isTourProduct ? Number(product.price) * tourPax : Number(product.price) * (nights || 1) * stayGuests;
+    const tourStayTotal = isTourProduct ? calcTourTotal(effectivePrice) : effectivePrice * (nights || 1) * stayGuests;
 
     // Build image list and sync to ref for keyboard handler
     const galleryImagesArray = Array.isArray(product.images) ? product.images : [];
@@ -1032,10 +1042,22 @@ const ProductDetail: React.FC = () => {
                   <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-xl">
                     <div className="mb-5 pb-4 border-b border-gray-100">
                       <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('explore.from')}</p>
-                      <p className="text-3xl font-extrabold text-gray-900">
-                        {product.currency} {Number(product.price).toLocaleString('id-ID')}
-                        <span className="text-sm font-medium text-gray-400 ml-1">/{isTourProduct ? 'person' : 'night'}</span>
-                      </p>
+                        <div className="mb-1">
+                          {isFlashSale && (
+                            <p className="text-sm text-gray-400 line-through leading-none mb-1">
+                              {product.currency} {Number(product.price).toLocaleString('id-ID')}
+                            </p>
+                          )}
+                          <p className={`text-3xl font-extrabold leading-none ${isFlashSale ? 'text-red-600' : 'text-gray-900'}`}>
+                            {product.currency} {effectivePrice.toLocaleString('id-ID')}
+                            <span className="text-sm font-medium text-gray-400 ml-1">/{isTourProduct ? 'person' : 'night'}</span>
+                          </p>
+                          {isFlashSale && flashDiscountPct && (
+                            <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
+                              ⚡ Flash Sale -{flashDiscountPct}%
+                            </span>
+                          )}
+                        </div>
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className="bg-primary-600 text-white text-xs font-bold px-1.5 py-0.5 rounded"><Star className="w-3 h-3 inline mr-0.5" />{avgRatingStr}</span>
                         <span className="text-xs text-gray-500">{reviewCount} {t('reviews_section.reviews_label')}</span>
@@ -1106,7 +1128,7 @@ const ProductDetail: React.FC = () => {
                                 { key: 'child',  label: `👦 ${t('tour.child')}`,  desc: t('tour.child_age'),  pax: childPax,  setter: setChildPax,  priceType: 'child'  as const },
                                 { key: 'teen',   label: `🧑 ${t('tour.teen')}`,   desc: t('tour.teen_age'),   pax: teenPax,   setter: setTeenPax,   priceType: 'teen'   as const },
                               ].map(cat => {
-                                const price      = getChildPrice(Number(product.price), cat.priceType);
+                                const price      = getChildPrice(effectivePrice, cat.priceType);
                                 const discountPct = getChildPricing()?.[cat.priceType] ?? 0;
                                 return (
                                   <div key={cat.key} className="flex items-center gap-3 border border-amber-100 rounded-xl p-2 bg-amber-50">
@@ -1158,12 +1180,12 @@ const ProductDetail: React.FC = () => {
                       {isTourProduct ? (
                         <div className="space-y-1.5">
                           <div className="flex justify-between text-sm text-gray-600">
-                            <span>{tourPax} {t('price_summary.adult_pax')} × {product.currency} {getTierPrice(Number(product.price)).toLocaleString('id-ID')}</span>
-                            <span className="font-semibold">{product.currency} {(getTierPrice(Number(product.price)) * tourPax).toLocaleString('id-ID')}</span>
+                            <span>{tourPax} {t('price_summary.adult_pax')} × {product.currency} {getTierPrice(effectivePrice).toLocaleString('id-ID')}</span>
+                            <span className="font-semibold">{product.currency} {(getTierPrice(effectivePrice) * tourPax).toLocaleString('id-ID')}</span>
                           </div>
-                          {getChildPricing()?.enabled && infantPax > 0 && <div className="flex justify-between text-sm text-gray-600"><span>{infantPax} {t('tour.infant')} × {getChildPricing().infant === 100 ? t('tour.free') : `${product.currency} ${getChildPrice(Number(product.price),'infant').toLocaleString('id-ID')}`}</span><span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'infant') * infantPax).toLocaleString('id-ID')}</span></div>}
-                          {getChildPricing()?.enabled && childPax  > 0 && <div className="flex justify-between text-sm text-gray-600"><span>{childPax}  {t('tour.child')}  × {product.currency} {getChildPrice(Number(product.price),'child').toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'child')  * childPax).toLocaleString('id-ID')}</span></div>}
-                          {getChildPricing()?.enabled && teenPax   > 0 && <div className="flex justify-between text-sm text-gray-600"><span>{teenPax}   {t('tour.teen')}   × {product.currency} {getChildPrice(Number(product.price),'teen').toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(getChildPrice(Number(product.price),'teen')   * teenPax).toLocaleString('id-ID')}</span></div>}
+                          {getChildPricing()?.enabled && infantPax > 0 && <div className="flex justify-between text-sm text-gray-600"><span>{infantPax} {t('tour.infant')} × {getChildPricing().infant === 100 ? t('tour.free') : `${product.currency} ${getChildPrice(effectivePrice,'infant').toLocaleString('id-ID')}`}</span><span className="font-semibold">{product.currency} {(getChildPrice(effectivePrice,'infant') * infantPax).toLocaleString('id-ID')}</span></div>}
+                          {getChildPricing()?.enabled && childPax  > 0 && <div className="flex justify-between text-sm text-gray-600"><span>{childPax}  {t('tour.child')}  × {product.currency} {getChildPrice(effectivePrice,'child').toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(getChildPrice(effectivePrice,'child')  * childPax).toLocaleString('id-ID')}</span></div>}
+                          {getChildPricing()?.enabled && teenPax   > 0 && <div className="flex justify-between text-sm text-gray-600"><span>{teenPax}   {t('tour.teen')}   × {product.currency} {getChildPrice(effectivePrice,'teen').toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(getChildPrice(effectivePrice,'teen')   * teenPax).toLocaleString('id-ID')}</span></div>}
                         </div>
                       ) : (
                         <div className="flex justify-between text-sm text-gray-600">
@@ -1174,7 +1196,7 @@ const ProductDetail: React.FC = () => {
                       <div className="border-t border-gray-200 pt-2 flex justify-between font-extrabold text-gray-900">
                         <span>{t('checkout.total')}</span>
                         <span className="text-primary-600">
-                          {isTourProduct ? `${product.currency} ${calcTourTotal(Number(product.price)).toLocaleString('id-ID')}`
+                          {isTourProduct ? `${product.currency} ${calcTourTotal(effectivePrice).toLocaleString('id-ID')}`
                             : nights > 0 ? `${product.currency} ${tourStayTotal.toLocaleString('id-ID')}` : '—'}
                         </span>
                       </div>
@@ -1295,7 +1317,8 @@ const ProductDetail: React.FC = () => {
     : (product.rating || '0.0');
 
   const isDriverIncluded    = !!(carDetails as CarDetails)?.driver;
-  const basePrice           = Number(product.price);
+  const basePrice           = effectivePrice; 
+  const originalPrice       = Number(product.price); 
   const driverIncludedPrice = isDriverIncluded ? DRIVER_PRICE_PER_12H : 0;
   const driverAddonPrice    = !isDriverIncluded && addOns.withDriver ? DRIVER_PRICE_PER_12H : 0;
   const insurancePrice      = addOns.premiumInsurance ? 75_000 : 0;
@@ -1473,7 +1496,22 @@ const ProductDetail: React.FC = () => {
                 <div className="mb-5 pb-4 border-b border-gray-100">
                   <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('car.rental_id')}: {String(product.id).padStart(6, '0')}</p>
                   <div className="flex items-end gap-2 flex-wrap">
-                    <p className="text-3xl font-extrabold text-gray-900">{product.currency} {(isDriverIncluded ? basePrice + DRIVER_PRICE_PER_12H : basePrice).toLocaleString('id-ID')}<span className="text-sm font-medium text-gray-400 ml-1">{t('car.per_day')}</span></p>
+                    <div>
+                      {isFlashSale && (
+                        <p className="text-sm text-gray-400 line-through leading-none mb-1">
+                          {product.currency} {(isDriverIncluded ? Number(product.price) + DRIVER_PRICE_PER_12H : Number(product.price)).toLocaleString('id-ID')}
+                        </p>
+                      )}
+                      <p className={`text-3xl font-extrabold ${isFlashSale ? 'text-red-600' : 'text-gray-900'}`}>
+                        {product.currency} {(isDriverIncluded ? basePrice + DRIVER_PRICE_PER_12H : basePrice).toLocaleString('id-ID')}
+                        <span className="text-sm font-medium text-gray-400 ml-1">{t('car.per_day')}</span>
+                      </p>
+                      {isFlashSale && flashDiscountPct && (
+                        <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
+                          ⚡ Flash Sale -{flashDiscountPct}%
+                        </span>
+                      )}
+                    </div>
                     {isDriverIncluded && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-1 rounded-full mb-1">{t('product.with_driver', 'Dengan Sopir')} included</span>}
                   </div>
                   {isDriverIncluded && <p className="text-[11px] text-amber-600 font-semibold mt-1">{t('car.driver_note', 'Harga sudah termasuk sopir. Non Tol, Non Parkir.')}</p>}
@@ -1528,7 +1566,10 @@ const ProductDetail: React.FC = () => {
                 </div>
                 {/* Price Summary */}
                 <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-2">
-                  <div className="flex justify-between text-sm text-gray-600"><span>{t('price_summary.rental_label')} {rentalDays} {t('common.days')} × {product.currency} {basePrice.toLocaleString('id-ID')}</span><span className="font-semibold">{product.currency} {(basePrice * rentalDays).toLocaleString('id-ID')}</span></div>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{t('price_summary.rental_label')} {rentalDays} {t('common.days')} × {product.currency} {basePrice.toLocaleString('id-ID')}</span>
+                    <span className="font-semibold">{product.currency} {(basePrice * rentalDays).toLocaleString('id-ID')}</span>
+                  </div>
                   {isDriverIncluded && <div className="flex justify-between text-sm text-blue-600"><span className="flex items-center gap-1"><UserCog className="w-3 h-3 shrink-0" />{t('product.with_driver', 'Dengan Sopir')} × {rentalDays} {t('common.days')}</span><span className="font-semibold">+{product.currency} {(DRIVER_PRICE_PER_12H * rentalDays).toLocaleString('id-ID')}</span></div>}
                   {!isDriverIncluded && addOns.withDriver && <div className="flex justify-between text-sm text-gray-600"><span>{t('price_summary.driver_label')} × {rentalDays} {t('common.days')}</span><span className="font-semibold">+{product.currency} {(DRIVER_PRICE_PER_12H * rentalDays).toLocaleString('id-ID')}</span></div>}
                   {addOns.premiumInsurance && <div className="flex justify-between text-sm text-gray-600"><span>{t('price_summary.insurance_label')} × {rentalDays} {t('common.days')}</span><span className="font-semibold">+{product.currency} {(75_000 * rentalDays).toLocaleString('id-ID')}</span></div>}

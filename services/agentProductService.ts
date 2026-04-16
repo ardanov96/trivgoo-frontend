@@ -38,6 +38,12 @@ function normalizeProduct(data: AgentProduct): AgentProduct {
     seo_keyword: (data as any).seo_keyword,
     seo_canonical: (data as any).seo_canonical,
     seo_og_image: (data as any).seo_og_image,
+
+    // ✅ Flash sale fields — tambahkan ini
+    is_flash_sale:      (data as any).is_flash_sale      ? 1 : 0,
+    flash_sale_price:   (data as any).flash_sale_price   ? Number((data as any).flash_sale_price)   : null,
+    flash_discount_pct: (data as any).flash_discount_pct ? Number((data as any).flash_discount_pct) : null,
+    flash_ends_at:      (data as any).flash_ends_at      ?? null,
   };
 }
 

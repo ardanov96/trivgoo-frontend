@@ -547,6 +547,11 @@ export interface AgentProduct {
   seo_og_image?: string;
 
   vouchers?: VoucherItem[];
+
+  is_flash_sale?:      0 | 1;
+  flash_sale_price?:   number | null;
+  flash_discount_pct?: number | null;
+  flash_ends_at?:      string | null;
 }
 
 export type ListAgentProductsResponse = ApiResponse<Paginated<AgentProduct>>;

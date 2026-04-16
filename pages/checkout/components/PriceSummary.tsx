@@ -25,6 +25,9 @@ interface Props {
   dropoffFee?:      number;
   needsManualPickupConfirmation?:  boolean;
   needsManualDropoffConfirmation?: boolean;
+  isFlashSale?:         boolean;
+  flashDiscountPct?:    number | null;
+  originalPricePerDay?: number;
 }
 
 export const PriceSummary: React.FC<Props> = ({
@@ -34,6 +37,9 @@ export const PriceSummary: React.FC<Props> = ({
   pickupFee, dropoffFee,
   needsManualPickupConfirmation,
   needsManualDropoffConfirmation,
+  isFlashSale,
+  flashDiscountPct,
+  originalPricePerDay,
 }) => {
   const { t } = useTranslation();
 
@@ -55,11 +61,28 @@ export const PriceSummary: React.FC<Props> = ({
         {/* ── Base price ── */}
         {isCarBooking ? (
           <div className="space-y-1.5">
-            <div className="flex justify-between text-gray-600 text-sm">
-              <span>
-                {formatCurrency(basePricePerPax || pricePerPax)} / {dayUnit} × {duration} {dayUnit}
+            {/* Harga asli dicoret jika flash sale */}
+            {isFlashSale && originalPricePerDay && originalPricePerDay !== pricePerPax && (
+              <div className="flex justify-between text-gray-400 text-xs line-through">
+                <span>
+                  {formatCurrency(originalPricePerDay)} / {dayUnit} × {duration} {dayUnit}
+                </span>
+                <span>{formatCurrency(originalPricePerDay * duration)}</span>
+              </div>
+            )}
+            {/* Harga efektif (flash atau normal) */}
+            <div className="flex justify-between text-sm">
+              <span className={isFlashSale ? 'text-red-600 font-semibold flex items-center gap-1.5 flex-wrap' : 'text-gray-600'}>
+                {formatCurrency(pricePerPax)} / {dayUnit} × {duration} {dayUnit}
+                {isFlashSale && flashDiscountPct && (
+                  <span className="text-[10px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">
+                    ⚡ -{flashDiscountPct}%
+                  </span>
+                )}
               </span>
-              <span>{formatCurrency((basePricePerPax || pricePerPax) * duration)}</span>
+              <span className={isFlashSale ? 'text-red-600 font-semibold' : 'text-gray-600'}>
+                {formatCurrency(pricePerPax * duration)}
+              </span>
             </div>
             {addOns?.withDriver && (
               <div className="flex justify-between text-gray-500 text-xs pl-2">
@@ -80,15 +103,30 @@ export const PriceSummary: React.FC<Props> = ({
               </div>
             )}
           </div>
-        ) : (
-          <div className="flex justify-between text-gray-600 text-sm">
-            <span>
-              {formatCurrency(pricePerPax)} / {priceUnitLabel} × {guestCount ?? pax} {unitLabel}
-              {duration > 1 && ` × ${duration} ${priceUnitLabel}`}
-            </span>
-            <span>{formatCurrency(baseTotal)}</span>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-1">
+              {isFlashSale && originalPricePerDay && originalPricePerDay !== pricePerPax && (
+                <div className="flex justify-between text-gray-400 text-xs line-through">
+                  <span>{formatCurrency(originalPricePerDay)} / {priceUnitLabel} × {guestCount ?? pax} {unitLabel}</span>
+                  <span>{formatCurrency(originalPricePerDay * (guestCount ?? pax) * Math.max(1, duration))}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className={`${isFlashSale ? 'text-red-600 font-semibold' : 'text-gray-600'} flex items-center gap-1.5 flex-wrap`}>
+                  {formatCurrency(pricePerPax)} / {priceUnitLabel} × {guestCount ?? pax} {unitLabel}
+                  {duration > 1 && ` × ${duration} ${priceUnitLabel}`}
+                  {isFlashSale && flashDiscountPct && (
+                    <span className="text-[10px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">
+                      ⚡ -{flashDiscountPct}%
+                    </span>
+                  )}
+                </span>
+                <span className={isFlashSale ? 'text-red-600 font-semibold' : 'text-gray-600'}>
+                  {formatCurrency(baseTotal)}
+                </span>
+              </div>
+            </div>
+          )}
 
         {/* ── Pickup fee ── */}
         {(pickupFee ?? 0) > 0 && (
